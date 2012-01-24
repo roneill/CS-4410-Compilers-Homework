@@ -8,9 +8,14 @@ fun err(p1,p2) = ErrorMsg.error p1
 fun eof() = let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end
 
 %% 
-
+id=[a-zA-Z][a-zA-Z0-9_]*;
+int=[0-9]+;
+ws=[\ \t];
+string=\"[\x20-\x5B\x5D-\x7E\n\t]*\";
 %%
+
 \n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
+{ws}+   => (lex());
 "while" => (Tokens.WHILE(yypos,yypos+5));
 "for"   => (Tokens.FOR(yypos, yypos+3));
 "to"    => (Tokens.TO(yypos, yypos+2));
@@ -51,5 +56,7 @@ fun eof() = let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end
 "&"     => (Tokens.AND(yypos, yypos+1));
 "|"     => (Tokens.OR(yypos, yypos+1));
 ":="    => (Tokens.ASSIGN(yypos, yypos+2));
+{id}+   => (Tokens.ID(yytext, yypos, yypos+String.size(yytext)));
+{int}+  => (Tokens.INT(getOpt(Int.fromString(yytext),0), yypos, yypos+String.size(yytext)));
 .       => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
 
