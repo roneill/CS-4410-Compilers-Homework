@@ -43,7 +43,7 @@ ws=[\ \t];
 ctrlEsc=\^[A-Z@\[\]\\\^_\?];
 decEsc=[01][0-9][0-9]|2[0-4][0-9]|25[0-5];
 formatChar=\\[\ \t\n\f]+\\;
-printable=[\ !\035-\091\093-\126]+;
+printable=[\ !\035-\091\093-\126];
 validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 %%
 
@@ -87,8 +87,8 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 <COMMENT> . => (continue());
 
 <STRING> \" => (YYBEGIN(INITIAL);
-		let val s = implode(!stringAcc) in Tokens.STRING(s,yypos,yypos+String.size(s)) end); 
-<STRING> {printable} => (stringAcc := (!stringAcc)@explode(yytext); continue());
+		let val s = implode(rev(!stringAcc)) in Tokens.STRING(s,yypos,yypos+String.size(s)) end); 
+<STRING> {printable} => (stringAcc := hd(explode(yytext))::(!stringAcc); continue());
 
 <STRING> \\ => (YYBEGIN(ESCAPE); continue());
 
@@ -96,7 +96,7 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 
 <STRING> . => (ErrorMsg.error yypos ("illegal character inside string " ^ yytext); continue());
 
-<ESCAPE> {validEsc} => (stringAcc := (!stringAcc)@(#"\\"::explode(yytext)); 
+<ESCAPE> {validEsc} => (stringAcc := rev(explode(yytext))@((#"\\")::(!stringAcc)); 
                         YYBEGIN(STRING); continue());
 
 <ESCAPE> [0-9]{3}|. => (ErrorMsg.error yypos ("illegal escape sequence \\" ^ yytext); 
