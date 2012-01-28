@@ -96,7 +96,7 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 
 <STRING> . => (ErrorMsg.error yypos ("illegal character inside string " ^ yytext); continue());
 
-<ESCAPE> {validEsc} => (stringAcc := (!stringAcc)@([#"\\"])@explode(yytext); 
+<ESCAPE> {validEsc} => (stringAcc := (!stringAcc)@(#"\\"::explode(yytext)); 
                         YYBEGIN(STRING); continue());
 
 <ESCAPE> [0-9]{3}|. => (ErrorMsg.error yypos ("illegal escape sequence \\" ^ yytext); 
