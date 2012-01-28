@@ -3,14 +3,15 @@ type lexresult = Tokens.token
  
 val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
-val commentStack: int list ref = ref []	      
+val commentStack: int list ref = ref []
+val stringAcc: char list ref = ref []
 fun err(p1,p2) = ErrorMsg.error p1
 
 fun eof() =
     (if(!commentStack) = [] then ()
      else
 	 let val line = hd(!commentStack)  
-	    in ErrorMsg.error 42 ("Found EOF in comment beginning at line " ^ Int.toString(line))
+	    in ErrorMsg.error 4 ("Found EOF in comment beginning at line " ^ Int.toString(line))
 	 end;
      let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end)
 	
@@ -35,16 +36,20 @@ fun keywordMap ("while", yypos)    = Tokens.WHILE(yypos,yypos+5)
 
 
 %%
-%s COMMENT;
+%s COMMENT STRING;
 id=[a-zA-Z][a-zA-Z0-9_]*;
 int=[0-9]+;
 ws=[\ \t];
-string=\"[\x20-\x5B\x5D-\x7E\n\t]*\";
+control="\^"[A-Z@\[\]\\^_\?];
+singlechar=\\([01][0-9][0-9]|2[0-4][0-9]|25[0-5]);
+formatchar=\\[\ \t\n\f]+\\;
+printable=[\40-\133\135-\176]+;
 %%
 
 <INITIAL> \n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
 <INITIAL> {ws}+   => (continue());
-<INITIAL> "/*"    => (YYBEGIN(COMMENT); continue());    
+<INITIAL> "/*"    => (YYBEGIN(COMMENT); continue());
+<INITIAL> "\""    => (YYBEGIN(STRING); continue());
 <INITIAL> ","	=> (Tokens.COMMA(yypos,yypos+1));
 <INITIAL> "("     => (Tokens.RPAREN(yypos, yypos+1));
 <INITIAL> ")"     => (Tokens.LPAREN(yypos, yypos+1));
@@ -80,7 +85,17 @@ string=\"[\x20-\x5B\x5D-\x7E\n\t]*\";
 
 <COMMENT> . => (continue());
 
-
+<STRING> \" => (YYBEGIN(INITIAL);
+		  let val s = implode(rev (!stringAcc)) in Tokens.STRING(s,yypos,yypos+String.size(s)) end); 
+<STRING> "\n" => (stringAcc := explode("\n") @ (!stringAcc); continue());
+<STRING> "\t" => (stringAcc := explode("\t") @ (!stringAcc); continue());
+<STRING> control => (stringAcc := explode(yytext)@(!stringAcc); continue());
+<STRING> singlechar => (stringAcc := explode(yytext)@(!stringAcc); continue());
+<STRING> "\"" => (stringAcc := explode("\"")@(!stringAcc); continue());
+<STRING> "\\" => (stringAcc := explode("\\")@(!stringAcc); continue());
+<STRING> formatchar => (continue());    
+<STRING> \\. => (ErrorMsg.error yypos ("illegal character inside string " ^ yytext); continue());
+<STRING> . => (stringAcc := explode(yytext) @ (!stringAcc); continue()); 
 
 
 
