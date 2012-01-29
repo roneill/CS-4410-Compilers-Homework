@@ -20,7 +20,7 @@ structure KeywordMap = BinaryMapFn(struct
         val compare = String.compare
     end)
     
-val keywords  = [
+val keywords  = foldr KeywordMap.insert' KeywordMap.empty [
     ("while", Tokens.WHILE),
     ("for", Tokens.FOR),
     ("to", Tokens.TO),
@@ -37,27 +37,12 @@ val keywords  = [
     ("else", Tokens.ELSE),
     ("do", Tokens.DO),
     ("of", Tokens.OF),
-    ("nil", Tokens.NIL)]
- 
-fun keywordMap ("while", yypos)    = Tokens.WHILE(yypos,yypos+5)
-  | keywordMap ("for", yypos)      = Tokens.FOR(yypos, yypos+3)
-  | keywordMap ("to", yypos)	   = Tokens.TO(yypos, yypos+2)
-  | keywordMap ("break", yypos)    = Tokens.BREAK(yypos, yypos+5)
-  | keywordMap ("let", yypos)	   = Tokens.LET(yypos, yypos+3)
-  | keywordMap ("in", yypos)	   = Tokens.IN(yypos, yypos+2)
-  | keywordMap ("end", yypos)	   = Tokens.END(yypos, yypos+3)
-  | keywordMap ("function", yypos) = Tokens.FUNCTION(yypos, yypos+8)
-  | keywordMap ("var", yypos)	   = Tokens.VAR(yypos, yypos+3)
-  | keywordMap ("type", yypos)	   = Tokens.TYPE(yypos, yypos+4)
-  | keywordMap ("array", yypos)    = Tokens.ARRAY(yypos, yypos+5)
-  | keywordMap ("if", yypos)	   = Tokens.IF(yypos, yypos+5)
-  | keywordMap ("then", yypos)	   = Tokens.THEN(yypos, yypos+4)
-  | keywordMap ("else", yypos)	   = Tokens.ELSE(yypos, yypos+4)
-  | keywordMap ("do", yypos)	   = Tokens.DO(yypos, yypos+2)
-  | keywordMap ("of", yypos)	   = Tokens.OF(yypos, yypos+2)
-  | keywordMap ("nil", yypos)	   = Tokens.NIL(yypos, yypos+3)
-  | keywordMap (yytext, yypos)     = Tokens.ID(yytext, yypos, yypos+String.size(yytext));
+    ("nil", Tokens.NIL)];
 
+fun keywordMap(yytext, yypos) =
+    case KeywordMap.find(keywords, yytext)
+     of SOME keyword => keyword(yypos, yypos + String.size(yytext))
+      | NONE => Tokens.ID(yytext, yypos, yypos + String.size(yytext));
 
 %%
 %s COMMENT STRING ESCAPE;
