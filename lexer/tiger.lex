@@ -14,7 +14,31 @@ fun eof() =
 	    in ErrorMsg.error 4 ("Found EOF in comment beginning at line " ^ Int.toString(line))
 	 end;
      let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end)
-	
+    
+structure KeywordMap = BinaryMapFn(struct
+        type ord_key = string
+        val compare = String.compare
+    end)
+    
+val keywords  = [
+    ("while", Tokens.WHILE),
+    ("for", Tokens.FOR),
+    ("to", Tokens.TO),
+    ("break", Tokens.BREAK),
+    ("let", Tokens.LET),
+    ("in", Tokens.IN),
+    ("end", Tokens.END),
+    ("function", Tokens.FUNCTION),
+    ("var",	Tokens.VAR),
+    ("type", Tokens.TYPE),
+    ("array", Tokens.ARRAY),
+    ("if", Tokens.IF),
+    ("then", Tokens.THEN),
+    ("else", Tokens.ELSE),
+    ("do", Tokens.DO),
+    ("of", Tokens.OF),
+    ("nil", Tokens.NIL)]
+ 
 fun keywordMap ("while", yypos)    = Tokens.WHILE(yypos,yypos+5)
   | keywordMap ("for", yypos)      = Tokens.FOR(yypos, yypos+3)
   | keywordMap ("to", yypos)	   = Tokens.TO(yypos, yypos+2)
