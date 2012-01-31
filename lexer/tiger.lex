@@ -66,6 +66,10 @@ fun reset () =
     stringAcc := [];
     
 end
+
+fun getInt s =
+    getOpt(Int.fromString(s),0);
+    
 			 
 %%
 %s COMMENT STRING ESCAPE;
@@ -79,7 +83,9 @@ printable=[\ !\035-\091\093-\126];
 validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 %%
 
-<INITIAL> \n	      => (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
+<INITIAL> \n	      => (lineNum := !lineNum+1;
+			  linePos := yypos :: !linePos;
+			  continue());
 <INITIAL> {ws}+       => (continue());
 <INITIAL> "/*"        => (YYBEGIN(COMMENT); continue());
 <INITIAL> "\""        => (YYBEGIN(STRING); continue());
@@ -107,8 +113,11 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 <INITIAL> "|"         => (Tokens.OR(yypos, yypos+1));
 <INITIAL> ":="        => (Tokens.ASSIGN(yypos, yypos+2));
 <INITIAL> {id}        => (keywordMap(yytext, yypos));
-<INITIAL> {int}       => (Tokens.INT(getOpt(Int.fromString(yytext),0), yypos, yypos+String.size(yytext)));
-<INITIAL> .           => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
+<INITIAL> {int}       => (Tokens.INT(getInt(yytext),
+				     yypos,
+				     yypos+String.size(yytext)));
+<INITIAL> .           => (ErrorMsg.error yypos ("illegal character " ^ yytext);
+			  continue());
 
 <COMMENT> \n          => (lineNum := !lineNum+1;
 		          linePos := yypos :: !linePos;
