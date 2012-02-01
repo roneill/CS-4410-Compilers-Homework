@@ -15,7 +15,7 @@ fun init () = lineStart := !lineNum
     
 fun appendCharString s =
     case Char.fromString(s)
-     of SOME c => charList := c :: !charList
+     of SOME c => (charList := c :: !charList;)
       | NONE => () (* Should never get here *)
 
 fun getString yypos  =
@@ -33,14 +33,15 @@ end
 			   
 fun eof() =
     (if not((!commentStack) = []) then
-	let val line = hd(!commentStack)
-	in
-	    err (hd(!linePos))  ("Found EOF in comment beginning at line " ^ Int.toString(line))
-	end
-    else if not((StringBuilder.empty())) then
-	err (hd(!linePos)) ("Found EOF inside of string beginning at line " ^
-			    Int.toString(!StringBuilder.lineStart))
-    else ();
+	 let val line = hd(!commentStack)
+	 in
+	     err (hd(!linePos))  ("Found EOF in comment beginning at line " ^
+				  Int.toString(line))
+	 end
+     else if not((StringBuilder.empty())) then
+	 err (hd(!linePos)) ("Found EOF inside of string beginning at line " ^
+			     Int.toString(!StringBuilder.lineStart))
+     else ();
      let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end)
     
 structure KeywordMap = BinaryMapFn(struct
@@ -74,9 +75,6 @@ fun keywordMap(yytext, yypos) =
      of SOME keyword => keyword(yypos, yypos + String.size(yytext))
       | NONE => Tokens.ID(yytext, yypos, yypos + String.size(yytext));
 
-(* Functions to build a string with characters *)    
-
-
 fun getInt s =
     getOpt(Int.fromString(s),0);    
 			 
@@ -95,7 +93,7 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 <INITIAL> \n	      => (lineNum := !lineNum+1;
 			  linePos := yypos :: !linePos;
 			  continue());
-<INITIAL> {ws}+       => (continue());
+<INITIAL> {ws}        => (continue());
 <INITIAL> "/*"        => (YYBEGIN(COMMENT); continue());
 <INITIAL> "\""        => (StringBuilder.init();YYBEGIN(STRING); continue());
 <INITIAL> ","	      => (Tokens.COMMA(yypos,yypos+1));
@@ -142,17 +140,16 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 <COMMENT> .           => (continue());
 	  
 <STRING> \"           => (YYBEGIN(INITIAL);
-		          StringBuilder.getString(yypos)); 
+		          StringBuilder.getString(yypos);
+			 continue()); 
 		       
 <STRING> \\           => (YYBEGIN(ESCAPE);
 		       	 continue());
 
 <STRING> {printable}  => (StringBuilder.appendCharString(yytext);
 		       	 continue());
-		       
-<STRING> {formatChar} => (continue());
-
-<STRING> .            => (err yypos ("illegal character inside string " ^ yytext);
+		      
+<STRING> . | \n       => (err yypos ("illegal character inside string " ^ yytext);
 			  continue());
 
 <ESCAPE> {validEsc}   => (StringBuilder.appendCharString("\\" ^ yytext); 
