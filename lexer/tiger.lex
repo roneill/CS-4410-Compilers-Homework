@@ -4,15 +4,43 @@ type lexresult = Tokens.token
 val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 val commentStack: int list ref = ref []
-val stringAcc: char list ref = ref []
 fun err(p1) = ErrorMsg.error p1
 
+structure StringBuilder  = struct
+type clr = char list ref;
+val charList: clr = ref [];
+val lineStart = ref 0;    
+
+fun init () = lineStart := !lineNum
+    
+fun appendCharString s =
+    case Char.fromString(s)
+     of SOME c => charList := c :: !charList
+      | NONE => () (* Should never get here *)
+
+fun getString yypos  =
+    let val s = implode(rev(!charList))
+    in
+	charList := []; (* Reset charList *)
+	Tokens.STRING(s,yypos,yypos+String.size(s))
+    end
+
+fun empty () = !charList = [];    
+    
+end
+
+(* Handle line start *)
+			   
 fun eof() =
-    (if(!commentStack) = [] then ()
-     else
-	 let val line = hd(!commentStack)  
-	    in err !linePos  ("Found EOF in comment beginning at line " ^ Int.toString(line))
-	 end;
+    (if not((!commentStack) = []) then
+	let val line = hd(!commentStack)
+	in
+	    err (hd(!linePos))  ("Found EOF in comment beginning at line " ^ Int.toString(line))
+	end
+    else if not((StringBuilder.empty())) then
+	err (hd(!linePos)) ("Found EOF inside of string beginning at line " ^
+			    Int.toString(!StringBuilder.lineStart))
+    else ();
      let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end)
     
 structure KeywordMap = BinaryMapFn(struct
@@ -48,37 +76,19 @@ fun keywordMap(yytext, yypos) =
 
 (* Functions to build a string with characters *)    
 
-structure StringBuilder  = struct
-type clr = char list ref;
-val charList: clr = ref [];
-    
-fun appendChar c =
-    charList := c :: !charList;
-    
-fun getString yypos  =
-    let val s = implode(rev(!stringAcc))
-    in
-	stringAcc := [];
-	Tokens.STRING(s,yypos,yypos+String.size(s))
-    end
-    
-fun reset () =
-    stringAcc := [];
-    
-end
 
 fun getInt s =
     getOpt(Int.fromString(s),0);    
 			 
 %%
-%s COMMENT STRING ESCAPE;
+%s COMMENT STRING ESCAPE FORMAT;
 id=[a-zA-Z][a-zA-Z0-9_]*;
 int=[0-9]+;
 ws=[\ \t];
 ctrlEsc=\^[A-Z@\[\]\\\^_\?];
 decEsc=[01][0-9][0-9]|2[0-4][0-9]|25[0-5];
-formatChar=\\[\ \t\n\f]+\\;
-printable=[\ !\035-\091\093-\126];
+formatChar=[\ \t\n\f];
+printable=[\032-\126];
 validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 %%
 
@@ -87,7 +97,7 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 			  continue());
 <INITIAL> {ws}+       => (continue());
 <INITIAL> "/*"        => (YYBEGIN(COMMENT); continue());
-<INITIAL> "\""        => (YYBEGIN(STRING); continue());
+<INITIAL> "\""        => (StringBuilder.init();YYBEGIN(STRING); continue());
 <INITIAL> ","	      => (Tokens.COMMA(yypos,yypos+1));
 <INITIAL> "("         => (Tokens.LPAREN(yypos, yypos+1));
 <INITIAL> ")"         => (Tokens.RPAREN(yypos, yypos+1));
@@ -134,22 +144,40 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 <STRING> \"           => (YYBEGIN(INITIAL);
 		          StringBuilder.getString(yypos)); 
 		       
-<STRING> {printable}  => (stringAcc := hd(explode(yytext))::(!stringAcc);
-		       	 continue());
-		       
 <STRING> \\           => (YYBEGIN(ESCAPE);
 		       	 continue());
 
+<STRING> {printable}  => (StringBuilder.appendCharString(yytext);
+		       	 continue());
+		       
 <STRING> {formatChar} => (continue());
 
 <STRING> .            => (err yypos ("illegal character inside string " ^ yytext);
 			  continue());
 
-<ESCAPE> {validEsc}   => (stringAcc := rev(explode(yytext))@((#"\\")::(!stringAcc)); 
-                          YYBEGIN(STRING); continue());
+<ESCAPE> {validEsc}   => (StringBuilder.appendCharString("\\" ^ yytext); 
+                          YYBEGIN(STRING);
+			  continue());
 
+<ESCAPE> {formatChar} => (YYBEGIN(FORMAT);
+			  continue());
+    
 <ESCAPE> [0-9]{3}|.   => (err yypos ("illegal escape sequence \\" ^ yytext); 
-                          YYBEGIN(STRING); continue());
+                          YYBEGIN(STRING);
+			  continue());
+
+<FORMAT> \\           => (YYBEGIN(STRING);
+			  continue());
+    
+<FORMAT> \n           => (lineNum := !lineNum+1;
+		          linePos := yypos :: !linePos;
+		          continue());
+    
+<FORMAT> {formatChar} => (continue());
+    
+<FORMAT> .            => (err yypos ("illegal escape sequence" ); 
+                          YYBEGIN(STRING);
+			  continue());
 
 
 
