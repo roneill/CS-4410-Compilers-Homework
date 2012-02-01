@@ -15,7 +15,7 @@ fun init () = lineStart := !lineNum
     
 fun appendCharString s =
     case Char.fromString(s)
-     of SOME c => (charList := c :: !charList;)
+     of SOME c => (charList := c :: !charList)
       | NONE => () (* Should never get here *)
 
 fun getString yypos  =
