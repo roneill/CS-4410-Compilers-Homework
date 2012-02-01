@@ -4,14 +4,13 @@ type lexresult = Tokens.token
 val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 val commentStack: int list ref = ref []
-val stringAcc: char list ref = ref []
 fun err(p1,p2) = ErrorMsg.error p1
 
 fun eof() =
     (if(!commentStack) = [] then ()
      else
 	 let val line = hd(!commentStack)  
-	    in ErrorMsg.error 4 ("Found EOF in comment beginning at line " ^ Int.toString(line))
+	    in ErrorMsg.error 4 (* FIX *) ("Found EOF in comment beginning at line " ^ Int.toString(line))
 	 end;
      let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end)
     
@@ -52,18 +51,17 @@ structure StringBuilder  = struct
 type clr = char list ref;
 val charList: clr = ref [];
     
-fun appendChar c =
-    charList := c :: !charList;
-    
+fun appendCharString s =
+    case Char.fromString(s)
+     of SOME c => charList := c :: !charList
+      | NONE => () (* Should never get here *)
+
 fun getString yypos  =
-    let val s = implode(rev(!stringAcc))
+    let val s = implode(rev(!charList))
     in
-	stringAcc := [];
+	charList := []; (* Reset charList *)
 	Tokens.STRING(s,yypos,yypos+String.size(s))
     end
-    
-fun reset () =
-    stringAcc := [];
     
 end
 
@@ -79,7 +77,7 @@ ws=[\ \t];
 ctrlEsc=\^[A-Z@\[\]\\\^_\?];
 decEsc=[01][0-9][0-9]|2[0-4][0-9]|25[0-5];
 formatChar=\\[\ \t\n\f]+\\;
-printable=[\ !\035-\091\093-\126];
+printable=[\032-\126];
 validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 %%
 
@@ -134,18 +132,18 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 <STRING> \"           => (YYBEGIN(INITIAL);
 		          StringBuilder.getString(yypos)); 
 		       
-<STRING> {printable}  => (stringAcc := hd(explode(yytext))::(!stringAcc);
-		       	 continue());
-		       
 <STRING> \\           => (YYBEGIN(ESCAPE);
 		       	 continue());
 
+<STRING> {printable}  => (StringBuilder.appendCharString(yytext);
+		       	 continue());
+		       
 <STRING> {formatChar} => (continue());
 
 <STRING> .            => (ErrorMsg.error yypos ("illegal character inside string " ^ yytext);
 			  continue());
 
-<ESCAPE> {validEsc}   => (stringAcc := rev(explode(yytext))@((#"\\")::(!stringAcc)); 
+<ESCAPE> {validEsc}   => (StringBuilder.appendCharString(yytext); 
                           YYBEGIN(STRING); continue());
 
 <ESCAPE> [0-9]{3}|.   => (ErrorMsg.error yypos ("illegal escape sequence \\" ^ yytext); 
