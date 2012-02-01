@@ -5,13 +5,13 @@ val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 val commentStack: int list ref = ref []
 val stringAcc: char list ref = ref []
-fun err(p1,p2) = ErrorMsg.error p1
+fun err(p1) = ErrorMsg.error p1
 
 fun eof() =
     (if(!commentStack) = [] then ()
      else
 	 let val line = hd(!commentStack)  
-	    in ErrorMsg.error 4 ("Found EOF in comment beginning at line " ^ Int.toString(line))
+	    in err !linePos  ("Found EOF in comment beginning at line " ^ Int.toString(line))
 	 end;
      let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end)
     
@@ -68,8 +68,7 @@ fun reset () =
 end
 
 fun getInt s =
-    getOpt(Int.fromString(s),0);
-    
+    getOpt(Int.fromString(s),0);    
 			 
 %%
 %s COMMENT STRING ESCAPE;
@@ -116,14 +115,15 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 <INITIAL> {int}       => (Tokens.INT(getInt(yytext),
 				     yypos,
 				     yypos+String.size(yytext)));
-<INITIAL> .           => (ErrorMsg.error yypos ("illegal character " ^ yytext);
+<INITIAL> .           => (err yypos ("illegal character: " ^ yytext);
 			  continue());
 
 <COMMENT> \n          => (lineNum := !lineNum+1;
 		          linePos := yypos :: !linePos;
 		          continue());
 		       
-<COMMENT> "*/"        => (if (!commentStack)=[] then YYBEGIN(INITIAL) else commentStack := tl(!commentStack);
+<COMMENT> "*/"        => (if (!commentStack)=[] then YYBEGIN(INITIAL)
+			  else commentStack := tl(!commentStack);
 		          continue());
 		       
 <COMMENT> "/*"        => (commentStack := !lineNum :: !commentStack;
@@ -142,13 +142,13 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 
 <STRING> {formatChar} => (continue());
 
-<STRING> .            => (ErrorMsg.error yypos ("illegal character inside string " ^ yytext);
+<STRING> .            => (err yypos ("illegal character inside string " ^ yytext);
 			  continue());
 
 <ESCAPE> {validEsc}   => (stringAcc := rev(explode(yytext))@((#"\\")::(!stringAcc)); 
                           YYBEGIN(STRING); continue());
 
-<ESCAPE> [0-9]{3}|.   => (ErrorMsg.error yypos ("illegal escape sequence \\" ^ yytext); 
+<ESCAPE> [0-9]{3}|.   => (err yypos ("illegal escape sequence \\" ^ yytext); 
                           YYBEGIN(STRING); continue());
 
 
