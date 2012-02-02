@@ -95,7 +95,7 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 			  continue());
 <INITIAL> {ws}        => (continue());
 <INITIAL> "/*"        => (YYBEGIN(COMMENT); continue());
-<INITIAL> "\""        => (StringBuilder.init();YYBEGIN(STRING); continue());
+<INITIAL> "\""        => (StringBuilder.init(); YYBEGIN(STRING); continue());
 <INITIAL> ","	      => (Tokens.COMMA(yypos,yypos+1));
 <INITIAL> "("         => (Tokens.LPAREN(yypos, yypos+1));
 <INITIAL> ")"         => (Tokens.RPAREN(yypos, yypos+1));
@@ -140,9 +140,8 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 <COMMENT> .           => (continue());
 	  
 <STRING> \"           => (YYBEGIN(INITIAL);
-		          StringBuilder.getString(yypos);
-			 continue()); 
-		       
+		          StringBuilder.getString(yypos));
+			  
 <STRING> \\           => (YYBEGIN(ESCAPE);
 		       	 continue());
 
