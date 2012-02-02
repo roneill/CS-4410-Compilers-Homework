@@ -7,35 +7,7 @@ val commentStack: int list ref = ref []
 val charList: char list ref = ref [];
 val lineStart = ref 0;    
 
-fun err(p1) = ErrorMsg.error p1
-
-(* Strings can span multiple lines, save
-   the position to know where the string started *)	      
-fun saveLinePosition () = lineStart := !lineNum
-
-(* Build a string from characters instead using of string concatenation *)			  
-fun appendToCharList s =
-    case Char.fromString(s)
-     of SOME c => (charList := c :: !charList)
-      | NONE => () (* Should never get here *)
-
-(* Converts a list of characters into a string token *)		
-fun createString yypos  =
-    let val s = implode(rev(!charList))
-    in
-	charList := []; (* Reset charList *)
-	Tokens.STRING(s,yypos,yypos+String.size(s))
-    end
-
-fun pushCommentStartLine () =
-     commentStack := !lineNum :: !commentStack;
-
-fun popCommentStartLine () =
-    commentStack := tl(!commentStack);
-
-(* Helper function to convert a string to an integer *)    
-fun getInt s =
-    getOpt(Int.fromString(s),0);        
+fun err(p1) = ErrorMsg.error p1        
 			   
 fun eof() =
     (if not((!commentStack = [])) then
@@ -49,6 +21,36 @@ fun eof() =
 			     Int.toString(!lineStart))
      else ();
      let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end)
+
+(* Strings can span multiple lines, save
+   the position to know where the string started *)	      
+fun saveLinePosition () = lineStart := !lineNum
+
+(* Build a string from characters instead using of string concatenation *)			  
+fun appendToCharList s =
+    case Char.fromString(s)
+     of SOME c => (charList := c :: !charList)
+      | NONE => ErrorMsg.impossible ("Could not convert " ^ s ^ " to char.")
+
+(* Converts a list of characters into a string token *)		
+fun createString yypos  =
+    let val s = implode(rev(!charList))
+    in
+	charList := []; (* Reset charList *)
+	Tokens.STRING(s,yypos,yypos+String.size(s))
+    end
+
+(* Helper methods for nested comments  *)
+    
+fun pushCommentStartLine () =
+     commentStack := !lineNum :: !commentStack;
+
+fun popCommentStartLine () =
+    commentStack := tl(!commentStack);
+
+(* Helper function to convert a string to an integer *)    
+fun getInt s =
+    getOpt(Int.fromString(s),0);
     
 structure KeywordMap = BinaryMapFn(struct
         type ord_key = string
@@ -157,8 +159,11 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 
 <STRING> {printable}  => (appendToCharList(yytext);
 		       	 continue());
-		      
-<STRING> . | \n       => (err yypos ("illegal character inside string " ^ yytext);
+
+<STRING> \n           => (err yypos ("illegal newline inside string ");
+			  continue());
+    
+<STRING> .            => (err yypos ("illegal character inside string " ^ yytext);
 			  continue());
 
 <ESCAPE> {validEsc}   => (appendToCharList("\\" ^ yytext); 
