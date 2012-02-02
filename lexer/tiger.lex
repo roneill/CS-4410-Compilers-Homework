@@ -4,43 +4,49 @@ type lexresult = Tokens.token
 val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 val commentStack: int list ref = ref []
-fun err(p1) = ErrorMsg.error p1
-
-structure StringBuilder  = struct
-type clr = char list ref;
-val charList: clr = ref [];
+val charList: char list ref = ref [];
 val lineStart = ref 0;    
 
-fun init () = lineStart := !lineNum
-    
-fun appendCharString s =
+fun err(p1) = ErrorMsg.error p1
+
+(* Strings can span multiple lines, save
+   the position to know where the string started *)	      
+fun saveLinePosition () = lineStart := !lineNum
+
+(* Build a string from characters instead using of string concatenation *)			  
+fun appendToCharList s =
     case Char.fromString(s)
      of SOME c => (charList := c :: !charList)
       | NONE => () (* Should never get here *)
 
-fun getString yypos  =
+(* Converts a list of characters into a string token *)		
+fun createString yypos  =
     let val s = implode(rev(!charList))
     in
 	charList := []; (* Reset charList *)
 	Tokens.STRING(s,yypos,yypos+String.size(s))
     end
 
-fun empty () = !charList = [];    
-    
-end
+fun pushCommentStartLine () =
+     commentStack := !lineNum :: !commentStack;
 
-(* Handle line start *)
+fun popCommentStartLine () =
+    commentStack := tl(!commentStack);
+
+(* Helper function to convert a string to an integer *)    
+fun getInt s =
+    getOpt(Int.fromString(s),0);        
 			   
 fun eof() =
-    (if not((!commentStack) = []) then
+    (if not((!commentStack = [])) then
 	 let val line = hd(!commentStack)
 	 in
 	     err (hd(!linePos))  ("Found EOF in comment beginning at line " ^
 				  Int.toString(line))
 	 end
-     else if not((StringBuilder.empty())) then
+     else if not((!charList = [])) then
 	 err (hd(!linePos)) ("Found EOF inside of string beginning at line " ^
-			     Int.toString(!StringBuilder.lineStart))
+			     Int.toString(!lineStart))
      else ();
      let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end)
     
@@ -49,8 +55,8 @@ structure KeywordMap = BinaryMapFn(struct
         val compare = String.compare
     end)
 
-(* Lookup table for keywords *)		       
-
+(* Lookup table for keywords *)
+		       
 val keywords  = foldr KeywordMap.insert' KeywordMap.empty [
     ("while", Tokens.WHILE),
     ("for", Tokens.FOR),
@@ -70,13 +76,12 @@ val keywords  = foldr KeywordMap.insert' KeywordMap.empty [
     ("of", Tokens.OF),
     ("nil", Tokens.NIL)];
 
+(* Determines if a matched identifier is also a keyword and returns the
+   appropriate token *)    
 fun keywordMap(yytext, yypos) =
     case KeywordMap.find(keywords, yytext)
      of SOME keyword => keyword(yypos, yypos + String.size(yytext))
       | NONE => Tokens.ID(yytext, yypos, yypos + String.size(yytext));
-
-fun getInt s =
-    getOpt(Int.fromString(s),0);    
 			 
 %%
 %s COMMENT STRING ESCAPE FORMAT;
@@ -94,8 +99,12 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 			  linePos := yypos :: !linePos;
 			  continue());
 <INITIAL> {ws}        => (continue());
-<INITIAL> "/*"        => (YYBEGIN(COMMENT); continue());
-<INITIAL> "\""        => (StringBuilder.init(); YYBEGIN(STRING); continue());
+<INITIAL> "/*"        => (YYBEGIN(COMMENT);
+			  pushCommentStartLine();
+			  continue());
+<INITIAL> "\""        => (saveLinePosition();
+			  YYBEGIN(STRING);
+			  continue());
 <INITIAL> ","	      => (Tokens.COMMA(yypos,yypos+1));
 <INITIAL> "("         => (Tokens.LPAREN(yypos, yypos+1));
 <INITIAL> ")"         => (Tokens.RPAREN(yypos, yypos+1));
@@ -130,28 +139,29 @@ validEsc=n|t|\\|\"|{ctrlEsc}|{decEsc};
 		          linePos := yypos :: !linePos;
 		          continue());
 		       
-<COMMENT> "*/"        => (if (!commentStack)=[] then YYBEGIN(INITIAL)
-			  else commentStack := tl(!commentStack);
+<COMMENT> "*/"        => (popCommentStartLine();
+			  if (!commentStack)=[] then YYBEGIN(INITIAL)
+			  else ();
 		          continue());
 		       
-<COMMENT> "/*"        => (commentStack := !lineNum :: !commentStack;
+<COMMENT> "/*"        => (pushCommentStartLine();
 		          continue());
 		       
 <COMMENT> .           => (continue());
 	  
 <STRING> \"           => (YYBEGIN(INITIAL);
-		          StringBuilder.getString(yypos));
+		          createString(yypos));
 			  
 <STRING> \\           => (YYBEGIN(ESCAPE);
 		       	 continue());
 
-<STRING> {printable}  => (StringBuilder.appendCharString(yytext);
+<STRING> {printable}  => (appendToCharList(yytext);
 		       	 continue());
 		      
 <STRING> . | \n       => (err yypos ("illegal character inside string " ^ yytext);
 			  continue());
 
-<ESCAPE> {validEsc}   => (StringBuilder.appendCharString("\\" ^ yytext); 
+<ESCAPE> {validEsc}   => (appendToCharList("\\" ^ yytext); 
                           YYBEGIN(STRING);
 			  continue());
 
