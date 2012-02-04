@@ -4,7 +4,7 @@
       |   "nil"
       |   "(" <seqexp> ";" <exp> ")"
       |   INT
-      |   "(" ")" *
+      |   "(" ")"
       |   STRING
       |   "-" <exp>
       |   <fun-exp>
@@ -92,5 +92,3 @@
 
 <type-id> ::= ID
 
-
-* Valueless
