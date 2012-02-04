@@ -1,5 +1,8 @@
 type pos = int
-type lexresult = Tokens.token
+type svalue = Tokens.svalue
+type ('a,'b) token = ('a,'b) Tokens.token
+type lexresult = (svalue, pos) token
+
  
 val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
@@ -59,7 +62,8 @@ structure KeywordMap = BinaryMapFn(struct
 
 (* Lookup table for keywords *)
 		       
-val keywords  = foldr KeywordMap.insert' KeywordMap.empty [
+val empty: (int * int -> (svalue,int) token) KeywordMap.map = KeywordMap.empty;
+val keywords  = foldr KeywordMap.insert' empty [
     ("while", Tokens.WHILE),
     ("for", Tokens.FOR),
     ("to", Tokens.TO),
@@ -86,6 +90,7 @@ fun keywordMap(yytext, yypos) =
       | NONE => Tokens.ID(yytext, yypos, yypos + String.size(yytext));
 			 
 %%
+%header (functor TigerLexFun(structure Tokens: Tiger_TOKENS));
 %s COMMENT STRING ESCAPE FORMAT;
 id=[a-zA-Z][a-zA-Z0-9_]*;
 int=[0-9]+;
