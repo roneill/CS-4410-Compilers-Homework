@@ -12,13 +12,23 @@
   | FUNCTION | VAR | TYPE 
 
 %nonterm  exp | program
+	| let_exp
+	| seq_exp
 	| aexp 
 	| comp_exp | bool_exp
-	| decs | dec | var_dec
+	| decs | dec | var_dec | type_dec | ty | tyfields | fun_dec
 	| cond_exp
 	| while_exp
 	| for_exp
 	| lvalue
+	| assign_exp
+	| array_exp
+	| rec_exp
+	| rec_seq
+	| fun_exp
+	| exp_list
+	
+
 
 %pos int
 %verbose
@@ -26,9 +36,9 @@
 %eop EOF
 %noshift EOF
 
-%right IF THEN ELSE ASSIGN WHILE DO FOR TO LBRACE 
-%nonassoc EQ NEQ LT LE GT GE DOT 
-%left PLUS MINUS OR RBRACE
+%right IF THEN ELSE ASSIGN WHILE DO FOR TO LBRACE LPAREN LBRACK TYPE LET VAR OF 
+%nonassoc EQ NEQ LT LE GT GE DOT COLON
+%left PLUS MINUS OR RBRACE RPAREN RBRACK SEMICOLON END COMMA
 %left TIMES DIVIDE AND
 
 %name Tiger
@@ -47,6 +57,8 @@
 program	: exp			         ( )
 				          
 exp: INT			         ( )
+   | LPAREN seq_exp RPAREN               ( )
+   | let_exp                             ( )
    | aexp			         ( )
    | comp_exp			         ( )
    | bool_exp			         ( )
@@ -55,6 +67,16 @@ exp: INT			         ( )
    | while_exp                           ( )
    | for_exp                             ( )
    | lvalue                              ( )
+   | assign_exp                          ( )
+   | array_exp                           ( )
+   | rec_exp                             ( )
+   | fun_exp                             ( )
+   | BREAK                               ( )
+
+seq_exp : exp                            ( )
+	| exp SEMICOLON seq_exp          ( )
+
+let_exp : LET decs IN seq_exp END        ( )
 
 aexp: exp PLUS exp		         ( )
     | exp MINUS exp		         ( )
@@ -74,9 +96,24 @@ bool_exp: exp OR exp		         ( )
 decs: dec			         ( )
     | dec decs			         ( )				    
 				          
-dec: var_dec			         ( )		    
+dec: var_dec			         ( )
+   | type_dec                            ( )
+   | fun_dec                             ( )
+
+type_dec: TYPE ID EQ ty                  ( )
+
+ty: ID                                   ( )
+  | LBRACE tyfields RBRACE               ( )
+  | ARRAY OF ID                          ( )
+
+tyfields: ID COLON ID                    ( )
+	| ID COLON ID COMMA tyfields     ( )		    
 				          
-var_dec: VAR lvalue ASSIGN exp	         ( )
+var_dec: VAR ID ASSIGN exp	         ( )
+       | VAR ID COLON ID ASSIGN exp      ( )
+
+fun_dec: FUNCTION ID LPAREN tyfields RPAREN EQ exp ( )
+       | FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp ( )
 
 cond_exp: IF exp THEN exp ELSE exp       ( )
 	| IF exp THEN exp                ( )
@@ -88,3 +125,18 @@ for_exp: FOR ID ASSIGN exp TO exp DO exp ( )
 lvalue: ID                               ( )
       | lvalue DOT ID                    ( )
       | lvalue LBRACK exp RBRACK         ( )
+
+assign_exp: lvalue ASSIGN exp            ( )
+
+array_exp: ID LBRACK exp RBRACK OF exp   ( )
+
+rec_exp: ID LBRACE rec_seq RBRACE        ( )
+
+rec_seq: ID EQ exp                       ( )
+       | ID EQ exp COMMA rec_seq         ( )
+
+fun_exp: ID LPAREN RPAREN                ( )
+       | ID LPAREN exp_list RPAREN       ( )
+
+exp_list: exp                            ( )
+	| exp COMMA exp_list             ( )

@@ -4,6 +4,6 @@ errormsg.sml
 parsetest.sml
 $/ml-yacc-lib.cm
 ../lexer/tiger.lex
-tiger-test.grm
+tiger.grm
 $/smlnj-lib.cm
 $/basis.cm
