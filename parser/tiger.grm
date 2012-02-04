@@ -12,6 +12,13 @@
   | FUNCTION | VAR | TYPE 
 
 %nonterm  exp | program
+	| aexp 
+	| comp_exp | bool_exp
+	| decs | dec | var_dec
+	| cond_exp
+	| while_exp
+	| for_exp
+	| lvalue
 
 %pos int
 %verbose
@@ -19,10 +26,15 @@
 %eop EOF
 %noshift EOF
 
+%right IF THEN ELSE ASSIGN WHILE DO FOR TO LBRACE 
+%nonassoc EQ NEQ LT LE GT GE DOT 
+%left PLUS MINUS OR RBRACE
+%left TIMES DIVIDE AND
+
 %name Tiger
 
 %keyword WHILE FOR TO BREAK LET IN END FUNCTION VAR TYPE ARRAY IF THEN ELSE 
-	DO OF NIL
+	 DO OF NIL
 
 %prefer THEN ELSE LPAREN
 
@@ -32,7 +44,47 @@
 
 %%
 
-program	: exp				()
+program	: exp			         ( )
+				          
+exp: INT			         ( )
+   | aexp			         ( )
+   | comp_exp			         ( )
+   | bool_exp			         ( )
+   | decs			         ( )
+   | cond_exp			         ( )
+   | while_exp                           ( )
+   | for_exp                             ( )
+   | lvalue                              ( )
 
-	
-exp: 			()
+aexp: exp PLUS exp		         ( )
+    | exp MINUS exp		         ( )
+    | exp TIMES exp		         ( )
+    | exp DIVIDE exp		         ( )
+				          
+comp_exp: exp EQ exp		         ( )
+	| exp NEQ exp		         ( )
+	| exp LT exp		         ( )
+	| exp GT exp		         ( )
+	| exp GE exp		         ( )
+	| exp LE exp		         ( )				    
+				          
+bool_exp: exp OR exp		         ( )
+	| exp AND exp		         ( )				    
+				          
+decs: dec			         ( )
+    | dec decs			         ( )				    
+				          
+dec: var_dec			         ( )		    
+				          
+var_dec: VAR lvalue ASSIGN exp	         ( )
+
+cond_exp: IF exp THEN exp ELSE exp       ( )
+	| IF exp THEN exp                ( )
+
+while_exp: WHILE exp DO exp              ( )
+
+for_exp: FOR ID ASSIGN exp TO exp DO exp ( )
+
+lvalue: ID                               ( )
+      | lvalue DOT ID                    ( )
+      | lvalue LBRACK exp RBRACK         ( )

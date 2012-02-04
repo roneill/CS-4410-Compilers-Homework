@@ -1,0 +1,96 @@
+<program> ::= <exp>
+
+<exp> ::= <lvalue>
+      |   "nil"
+      |   "(" <seqexp> ";" <exp> ")"
+      |   INT
+      |   "(" ")" *
+      |   STRING
+      |   "-" <exp>
+      |   <fun-exp>
+      |   <arith-exp>
+      |   <rec-exp>
+      |   <array-exp>
+      |   <assign-exp>
+      |   <cond-exp>
+      |   <comp-exp>  
+      |   <while-exp>
+      |   <for-exp>
+      |   "break"
+      |   <let-exp>
+      |   "(" <exp> ")"
+      |   <decs>
+
+<decs> ::= <dec>
+       |   <dec> <decs>
+
+<dec> ::= <type-dec>
+      |   <var-dec>
+      |   <fun-dec>
+
+<type-dec> ::= "type" ID "=" <ty>
+
+<ty> ::= ID
+     |   "{" <tyfields> "}"
+     |   "array of" ID
+
+<tyfields> ::=  ID ":" ID
+           |   ID ":" ID "," <tyfields>
+
+<var-dec> ::= "var" ID ":=" <exp>
+          |   "var" ID ":" ID ":=" <exp>
+
+<fun-dec> ::= "function" ID "(" <tyfields> ")" "=" <exp>
+          |   "function" ID "(" <tyfields> ")" ":" ID  "=" <exp>
+
+<let-exp> ::= "let" <dec-seq> "in" <exp-list> "end"
+
+<for-exp> ::= "for" <assign-exp> "to" <exp> "do" <exp>
+
+<while-exp> ::= "while" <exp> "do" <exp>
+
+<cond-exp>  ::= "if" <exp> "then" <exp>
+            |   "if" <exp> "then" <exp> "else"
+
+<assign-exp> ::= <lvalue> ":=" <exp>
+
+<array-exp> ::= ID "[" <exp> "]" "of" <exp>
+
+
+<rec-exp> ::= ID "{" <rec-seq> "}"
+
+<rec-seq> ::= ID "=" <exp>
+	  |   ID "=" <exp>, <rec-seq>
+
+<arith-exp> ::= <exp> "+" <exp>
+      	    |	<exp> "-" <exp>
+	    |   <exp> "/" <exp>
+	    |   <exp> "*" <exp>
+
+<comp-exp> ::= <exp> "=" <exp>
+	   |   <exp> "<>" <exp>
+	   |   <exp> "<" <exp>
+	   |   <exp> ">" <exp>
+	   |   <exp> ">=" <exp>
+	   |   <exp> "<=" <exp>
+
+<bool-exp> ::= <exp> "|" <exp>
+	   |   <exp> "&" <exp>
+
+<lvalue> ::= ID
+	 |   <lvalue> "." ID
+	 |   <lvalue> "[" <exp> "]"
+
+<seqexp> ::= <exp>
+         |   <exp> ";" <seqexp>
+
+<exp-list> ::= <exp>
+           |   <exp> "," <exp-list>
+
+<fun-exp> ::= ID "(" ")"
+      	  |	  ID "(" <exp-list> ")"
+
+<type-id> ::= ID
+
+
+* Valueless
