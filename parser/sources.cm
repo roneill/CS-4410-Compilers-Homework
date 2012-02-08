@@ -3,7 +3,7 @@ Group is
 errormsg.sml
 parsetest.sml
 ../lexer/tiger.lex
-toy.grm
+tiger.grm
 absyn.sml
 prabsyn.sml
 symbol.sml
