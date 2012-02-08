@@ -2,8 +2,13 @@ Group is
 
 errormsg.sml
 parsetest.sml
-$/ml-yacc-lib.cm
 ../lexer/tiger.lex
-tiger.grm
+toy.grm
+absyn.sml
+prabsyn.sml
+symbol.sml
+table.sig
+table.sml
+$/ml-yacc-lib.cm
 $/smlnj-lib.cm
 $/basis.cm

@@ -9,7 +9,7 @@
   | AND | OR | ASSIGN
   | ARRAY | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF 
   | BREAK | NIL
-  | FUNCTION | VAR | TYPE | UNARY
+  | FUNCTION | VAR | TYPE | UMINUS
 
 %nonterm  exp | program
 	| let_exp
@@ -43,7 +43,7 @@
 %nonassoc EQ NEQ LT LE GT GE
 %left PLUS MINUS
 %left TIMES DIVIDE
-%left UNARY
+%right UMINUS
 
 %name Tiger
 
@@ -64,7 +64,7 @@ exp: INT			         ( )
    | NIL                                 ( )
    | BREAK                               ( )
    | STRING                              ( )
-   | MINUS exp  %prec UNARY              ( )
+   | MINUS exp  %prec UMINUS              ( )
    | fun_exp                             ( ) 
    | op_exp                              ( )
    | rec_exp                             ( )
