@@ -1,6 +1,14 @@
 #!/bin/bash
 
+echo "" > output.txt
+
 for i in ../testcases/*
 do
-	echo "Parse.parse \"$i\";" | sml sources.cm
+	echo "Parse.parse \"$i\";" | sml sources.cm >> output.txt
 done
+
+count=`grep "val it = () : unit" results.txt | wc -l`
+
+fileCount=`ls -1 ../testcases | wc -l`
+
+echo "$count / $fileCount tests passed."
