@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for i in ../testcases/*
+do
+	echo "Parse.parse \"$i\";" | sml sources.cm
+done
