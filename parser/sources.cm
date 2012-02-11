@@ -1,7 +1,7 @@
 Group is
 
 errormsg.sml
-parsetest.sml
+parse.sml
 ../lexer/tiger.lex
 tiger.grm
 absyn.sml

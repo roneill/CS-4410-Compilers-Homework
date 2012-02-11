@@ -28,14 +28,13 @@ structure S = Symbol
 	| cond_exp of A.exp
 	| while_exp of A.exp
 	| for_exp of A.exp
-	| lvalue_exp of A.exp
+	| lvalue_exp of A.var
 	| assign_exp of A.exp
 	| array_exp of A.exp
 	| rec_exp of A.exp
 	| rec_seq of (S.symbol * A.exp * pos) list
 	| fun_exp of A.exp
 	| params of A.exp list
-	| lvalue_r
 
 %pos int
 %verbose
@@ -77,7 +76,7 @@ exp: INT			         (A.IntExp(INT))
    | for_exp                             (for_exp)
    | LPAREN exp RPAREN                   (exp)
    | LPAREN seq_exp RPAREN               (A.SeqExp(seq_exp))
-   | lvalue_exp                          (lvalue_exp)
+   | lvalue_exp                          (A.VarExp(lvalue_exp))
    | assign_exp                          (assign_exp)
    | array_exp                           (array_exp)
    | fun_exp                             (fun_exp)
@@ -107,15 +106,14 @@ while_exp: WHILE exp DO exp              (A.WhileExp{test=exp1, body=exp2, pos=W
 for_exp: FOR ID ASSIGN exp TO exp DO exp (A.ForExp{var=S.symbol(ID), escape=ref true, lo=exp1, hi=exp2, body=exp3, pos=FORleft})
 
 seq_exp : exp SEMICOLON exp              ((exp1, exp1left)::(exp2, exp2left)::nil)
-	| exp SEMICOLON seq_exp          ((exp, expleft)::seq_exp)	      
-	      
-lvalue_exp: ID lvalue_r                  (A.SimpleVar(S.symbol(ID)))
+	| exp SEMICOLON seq_exp          ((exp, expleft)::seq_exp)
 
-lvalue_r: DOT lvalue_exp                 (A.FieldVar() )
-	| LBRACK exp RBRACK lvalue_r     ( )
-	|                                ( )
+lvalue_exp: ID                           (A.SimpleVar(S.symbol(ID), IDleft))
+	  | ID LBRACK exp RBRACK         (A.SubscriptVar(A.SimpleVar(S.symbol(ID), IDleft), exp, IDleft))
+	  | lvalue_exp DOT ID            (A.FieldVar(lvalue_exp, S.symbol(ID), lvalue_expleft))
+	  | lvalue_exp LBRACK exp RBRACK (A.SubscriptVar(lvalue_exp, exp, lvalue_expleft))
 
-assign_exp: lvalue_exp ASSIGN exp        ( )
+assign_exp: lvalue_exp ASSIGN exp        (A.AssignExp{var=lvalue_exp, exp=exp, pos=lvalue_expleft})
 
 array_exp: ID LBRACK exp RBRACK OF exp   (A.ArrayExp{typ=S.symbol(ID), size=exp1, init=exp2, pos=IDleft})
 	      
