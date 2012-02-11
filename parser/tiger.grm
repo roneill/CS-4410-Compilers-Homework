@@ -1,3 +1,4 @@
+structure A = Absyn
 %%
 %term
     EOF 
@@ -26,10 +27,9 @@
 	| rec_exp
 	| rec_seq
 	| fun_exp
-	| exp_list
+	| params
 	| op_exp
-	
-
+	| lvalue_r
 
 %pos int
 %verbose
@@ -37,7 +37,6 @@
 %eop EOF
 %noshift EOF
 
-%nonassoc ASSIGN THEN ELSE DO OF
 %left OR
 %left AND
 %nonassoc EQ NEQ LT LE GT GE
@@ -101,21 +100,23 @@ while_exp: WHILE exp DO exp              ( )
 for_exp: FOR ID ASSIGN exp TO exp DO exp ( )
 
 seq_exp : exp                            ( )
-	| exp SEMICOLON seq_exp          ( )
+	| exp SEMICOLON seq_exp          ( )	      
 	      
-lvalue_exp: ID                           ( )
-	  | lvalue_exp DOT ID            ( )
-	  | lvalue_exp LBRACK exp RBRACK ( )
+lvalue_exp: ID lvalue_r                  ( )
+
+lvalue_r: DOT lvalue_exp                 ( )
+	| LBRACK exp RBRACK lvalue_r     ( )
+	|                                ( )
 
 assign_exp: lvalue_exp ASSIGN exp        ( )
 
 array_exp: ID LBRACK exp RBRACK OF exp   ( )
 	      
-fun_exp: ID LPAREN RPAREN                ( )
-       | ID LPAREN exp_list RPAREN       ( )
+fun_exp:  ID LPAREN params RPAREN         ( )
 
-exp_list: exp                            ( )
-	| exp COMMA exp_list             ( )
+params:                                  ( )
+	| exp                            ( )
+	| exp COMMA params               ( )
 
 rec_exp: ID LBRACE rec_seq RBRACE        ( )
 
@@ -137,8 +138,9 @@ ty: ID                                   ( )
   | LBRACE tyfields RBRACE               ( )
   | ARRAY OF ID                          ( )
 
-tyfields: ID COLON ID                    ( )
-	| ID COLON ID COMMA tyfields     ( )		    
+tyfields:                                ( )
+  | ID COLON ID                          ( )
+  | ID COLON ID COMMA tyfields           ( )		    
 				          
 var_dec: VAR ID ASSIGN exp	         ( )
        | VAR ID COLON ID ASSIGN exp      ( )
