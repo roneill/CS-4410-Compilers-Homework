@@ -37,7 +37,7 @@
 %eop EOF
 %noshift EOF
 
-%nonassoc ASSIGN
+%nonassoc ASSIGN THEN ELSE DO OF
 %left OR
 %left AND
 %nonassoc EQ NEQ LT LE GT GE
@@ -64,42 +64,65 @@ exp: INT			         ( )
    | NIL                                 ( )
    | BREAK                               ( )
    | STRING                              ( )
-   | MINUS exp  %prec UMINUS              ( )
-   | fun_exp                             ( ) 
-   | op_exp                              ( )
-   | rec_exp                             ( )
-   | LPAREN seq_exp RPAREN               ( )
-   | assign_exp                          ( )  
-   | cond_exp			         ( )   
-   | let_exp                             ( )
+   | arith_exp                           ( )
+   | comp_exp                            ( )
+   | bool_exp                            ( )
+   | cond_exp                            ( )
    | while_exp                           ( )
    | for_exp                             ( )
+   | LPAREN seq_exp RPAREN               ( ) 
    | lvalue_exp                          ( )
+   | assign_exp                          ( )
    | array_exp                           ( )
-
-seq_exp : exp                            ( )
-	| exp SEMICOLON seq_exp          ( )
-
-let_exp : LET decs IN seq_exp END        ( )
-
-op_exp : arith_exp                       ( )
-       | comp_exp                        ( )
-       | bool_exp                        ( )
-
+   | fun_exp                             ( )
+   | rec_exp                             ( )
+   | let_exp                             ( )
+					 
 arith_exp: exp PLUS exp		         ( )
 	 | exp MINUS exp                 ( )
 	 | exp TIMES exp		 ( )
 	 | exp DIVIDE exp		 ( )
-				          
+
 comp_exp: exp EQ exp		         ( )
 	| exp NEQ exp		         ( )
 	| exp LT exp		         ( )
 	| exp GT exp		         ( )
 	| exp GE exp		         ( )
 	| exp LE exp		         ( )
-      
+
 bool_exp: exp OR exp		         ( )
-	| exp AND exp		         ( )
+	| exp AND exp		         ( )	  
+
+cond_exp: IF exp THEN exp ELSE exp       ( )
+	| IF exp THEN exp                ( )
+
+while_exp: WHILE exp DO exp              ( )
+		 
+for_exp: FOR ID ASSIGN exp TO exp DO exp ( )
+
+seq_exp : exp                            ( )
+	| exp SEMICOLON seq_exp          ( )
+	      
+lvalue_exp: ID                           ( )
+	  | lvalue_exp DOT ID            ( )
+	  | lvalue_exp LBRACK exp RBRACK ( )
+
+assign_exp: lvalue_exp ASSIGN exp        ( )
+
+array_exp: ID LBRACK exp RBRACK OF exp   ( )
+	      
+fun_exp: ID LPAREN RPAREN                ( )
+       | ID LPAREN exp_list RPAREN       ( )
+
+exp_list: exp                            ( )
+	| exp COMMA exp_list             ( )
+
+rec_exp: ID LBRACE rec_seq RBRACE        ( )
+
+rec_seq: ID EQ exp                       ( )
+       | ID EQ exp COMMA rec_seq         ( )
+
+let_exp : LET decs IN seq_exp END        ( )				         
 	          
 decs: dec			         ( )
     | dec decs			         ( )
@@ -123,28 +146,4 @@ var_dec: VAR ID ASSIGN exp	         ( )
 fun_dec: FUNCTION ID LPAREN tyfields RPAREN EQ exp ( )
        | FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp ( )
 
-cond_exp: IF exp THEN exp ELSE exp       ( )
-	| IF exp THEN exp                ( )
 
-while_exp: WHILE exp DO exp              ( )
-
-for_exp: FOR ID ASSIGN exp TO exp DO exp ( )
-
-lvalue_exp: ID                           ( )
-	  | lvalue_exp DOT ID                ( )
-	  | lvalue_exp LBRACK exp RBRACK     ( )
-
-assign_exp: lvalue_exp ASSIGN exp            ( )
-
-array_exp: ID LBRACK exp RBRACK OF exp   ( )
-
-rec_exp: ID LBRACE rec_seq RBRACE        ( )
-
-rec_seq: ID EQ exp                       ( )
-       | ID EQ exp COMMA rec_seq         ( )
-
-fun_exp: ID LPAREN RPAREN                ( )
-       | ID LPAREN exp_list RPAREN       ( )
-
-exp_list: exp                            ( )
-	| exp COMMA exp_list             ( )
