@@ -21,10 +21,10 @@ structure S = Symbol
 	| decs of A.dec list
 	| dec of A.dec
 	| var_dec of A.dec
-	| type_dec of A.dec
+	| type_dec of {name:Absyn.symbol, pos:pos, ty:Absyn.ty}
 	| ty of A.ty
 	| tyfields of  A.field list
-	| fun_dec of A.dec
+	| fun_dec of A.fundec
 	| cond_exp of A.exp
 	| while_exp of A.exp
 	| for_exp of A.exp
@@ -135,7 +135,7 @@ let_exp : LET decs IN seq_exp END        (A.LetExp{decs=decs, body=A.SeqExp(seq_
 decs: dec			         (dec::nil)
     | dec decs			         (dec::decs)
 				          
-dec: var_dec			         (A.VarDec(var_dec))
+dec: var_dec			         (var_dec)
    | type_dec                            (A.TypeDec(type_dec::nil))
    | fun_dec                             (A.FunctionDec(fun_dec::nil))
 
@@ -152,7 +152,7 @@ tyfields:                                (nil)
 var_dec: VAR ID ASSIGN exp	         (A.VarDec{name=S.symbol(ID), escape=ref true, typ=NONE, init=exp, pos=VARleft})
        | VAR ID COLON ID ASSIGN exp      (A.VarDec{name=S.symbol(ID1), escape=ref true, typ=SOME(S.symbol(ID2), ID2left), init=exp, pos=VARleft})
 
-fun_dec: FUNCTION ID LPAREN tyfields RPAREN EQ exp ({name=S.symbol(ID), escape=ref true, typ=NONE, init=exp, pos=FUNCTIONleft})
-       | FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp ({name=S.symbol(ID), escape=ref true, typ=SOME(S.symbol(ID)), init=exp, pos=FUNCTIONleft})
+fun_dec: FUNCTION ID LPAREN tyfields RPAREN EQ exp ({name=S.symbol(ID), params=tyfields, result=NONE, body=exp, pos=FUNCTIONleft})
+       | FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp ({name=S.symbol(ID1), params=tyfields, result=SOME(S.symbol(ID2), ID2left), body=exp, pos=FUNCTIONleft})
 
 
