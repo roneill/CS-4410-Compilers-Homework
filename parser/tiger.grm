@@ -22,9 +22,11 @@ structure S = Symbol
 	| dec of A.dec
 	| var_dec of A.dec
 	| type_dec of {name:Absyn.symbol, pos:pos, ty:Absyn.ty}
+	| type_decs of {name:Absyn.symbol, pos:pos, ty:Absyn.ty} list
 	| ty of A.ty
 	| tyfields of  A.field list
 	| fun_dec of A.fundec
+	| fun_decs of A.fundec list
 	| cond_exp of A.exp
 	| while_exp of A.exp
 	| for_exp of A.exp
@@ -141,8 +143,14 @@ decs: dec			         (dec::nil)
     | dec decs			         (dec::decs)
 				          
 dec: var_dec			         (var_dec)
-   | type_dec                            (A.TypeDec(type_dec::nil))
-   | fun_dec                             (A.FunctionDec(fun_dec::nil))
+   | type_decs                           (A.TypeDec(type_decs))
+   | fun_decs                            (A.FunctionDec(fun_decs))
+
+type_decs: type_dec                      (type_dec::nil)
+	 | type_dec type_decs            (type_dec::type_decs)
+
+fun_decs: fun_dec                        (fun_dec::nil)
+	| fun_dec fun_decs               (fun_dec::fun_decs)
 
 type_dec: TYPE ID EQ ty                  ({name=S.symbol(ID), ty=ty, pos=TYPEleft})
 

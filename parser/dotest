@@ -4,14 +4,11 @@ echo "CM.make \"sources.cm\";" > output.sml
 
 for i in ../testcases/*
 do
-	echo "Parse.parse \"$i\";" >> output.sml
+    echo "TextIO.output (TextIO.stdOut, \"Parseing $i...............\n\");" >> output.sml
+    echo "PrintAbsyn.print (TextIO.stdOut, Parse.parse \"$i\");" >> output.sml
 done
 echo "OS.Process.exit(OS.Process.success);" >> output.sml
 
 sml output.sml > output.txt
-
-count=`grep "error" output.txt | wc -l`
-
-fileCount=`ls -1 ../testcases | wc -l`
-
-echo "$count errors out of $fileCount tests."
+echo "Failed testcases: "
+grep "error:" output.txt
