@@ -7,8 +7,8 @@ do
 	echo "Parse.parse \"$i\";" | sml sources.cm >> output.txt
 done
 
-count=`grep "val it = () : unit" output.txt | wc -l`
+count=`grep "error" output.txt | wc -l`
 
 fileCount=`ls -1 ../testcases | wc -l`
 
-echo "$count / $fileCount tests passed."
+echo "$count errors out of $fileCount tests."

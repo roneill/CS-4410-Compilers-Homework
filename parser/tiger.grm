@@ -35,6 +35,7 @@ structure S = Symbol
 	| rec_seq of (S.symbol * A.exp * pos) list
 	| fun_exp of A.exp
 	| params of A.exp list
+	| let_exp_seq of (A.exp * pos) list
 
 %pos int
 %verbose
@@ -82,6 +83,7 @@ exp: INT			         (A.IntExp(INT))
    | fun_exp                             (fun_exp)
    | rec_exp                             (rec_exp)
    | let_exp                             (let_exp)
+   | MINUS exp  %prec UMINUS             (A.OpExp{left=A.IntExp(0), oper=A.MinusOp, right=exp, pos=MINUSleft})
 					 
 arith_exp: exp PLUS exp		         (A.OpExp{left=exp1, oper=A.PlusOp, right=exp2, pos=exp1left})
 	 | exp MINUS exp                 (A.OpExp{left=exp1, oper=A.MinusOp, right=exp2, pos=exp1left})
@@ -105,7 +107,8 @@ while_exp: WHILE exp DO exp              (A.WhileExp{test=exp1, body=exp2, pos=W
 		 
 for_exp: FOR ID ASSIGN exp TO exp DO exp (A.ForExp{var=S.symbol(ID), escape=ref true, lo=exp1, hi=exp2, body=exp3, pos=FORleft})
 
-seq_exp : exp SEMICOLON exp              ((exp1, exp1left)::(exp2, exp2left)::nil)
+seq_exp :                                (nil)
+	| exp SEMICOLON exp              ((exp1, exp1left)::(exp2, exp2left)::nil)
 	| exp SEMICOLON seq_exp          ((exp, expleft)::seq_exp)
 
 lvalue_exp: ID                           (A.SimpleVar(S.symbol(ID), IDleft))
@@ -125,11 +128,15 @@ params:                                  (nil)
 
 rec_exp: ID LBRACE rec_seq RBRACE        (A.RecordExp{fields=rec_seq, typ=S.symbol(ID), pos=IDleft})
 
-rec_seq: ID EQ exp                       ((S.symbol(ID),exp,IDleft)::nil)
+rec_seq:                                 (nil)
+       | ID EQ exp                       ((S.symbol(ID),exp,IDleft)::nil)
        | ID EQ exp COMMA rec_seq         ((S.symbol(ID),exp,IDleft)::rec_seq)
 
-let_exp : LET decs IN seq_exp END        (A.LetExp{decs=decs, body=A.SeqExp(seq_exp), pos=LETleft})				         
-	          
+let_exp : LET decs IN let_exp_seq END    (A.LetExp{decs=decs, body=A.SeqExp(let_exp_seq), pos=LETleft})				         
+
+let_exp_seq: exp	                 ((exp,expleft)::nil)
+	   | exp SEMICOLON let_exp_seq   ((exp,expleft)::let_exp_seq)
+	      
 decs: dec			         (dec::nil)
     | dec decs			         (dec::decs)
 				          
