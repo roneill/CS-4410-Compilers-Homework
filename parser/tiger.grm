@@ -38,6 +38,7 @@ structure S = Symbol
 	| fun_exp of A.exp
 	| params of A.exp list
 	| let_exp_seq of (A.exp * pos) list
+	| error
 
 %pos int
 %verbose
@@ -63,6 +64,8 @@ structure S = Symbol
 %value INT (1)
 %value STRING ("")
 
+%change EQ -> ASSIGN | ASSIGN -> EQ | SEMICOLON ELSE -> ELSE | -> IN INT END
+
 %%
 
 program	: exp			         (exp)
@@ -86,7 +89,18 @@ exp: INT			         (A.IntExp(INT))
    | rec_exp                             (rec_exp)
    | let_exp                             (let_exp)
    | MINUS exp  %prec UMINUS             (A.OpExp{left=A.IntExp(0), oper=A.MinusOp, right=exp, pos=MINUSleft})
-					 
+   (* Error case: just return a NilExp here. We don't care about the AST if there are syntax errors*)
+   | LPAREN error RPAREN                 (A.NilExp)
+   | error SEMICOLON exp                 (exp)
+(* These operator expressions cause shift/reduce conflicts with the following:
+     - cond_exp 
+     - while_exp 
+     - for_exp
+     - assign_exp
+     - array_exp
+ 
+  The parser shifts in these situations, which is intentional behavior, so that
+  the expression fully evaluated. *)
 arith_exp: exp PLUS exp		         (A.OpExp{left=exp1, oper=A.PlusOp, right=exp2, pos=exp1left})
 	 | exp MINUS exp                 (A.OpExp{left=exp1, oper=A.MinusOp, right=exp2, pos=exp1left})
 	 | exp TIMES exp		 (A.OpExp{left=exp1, oper=A.TimesOp, right=exp2, pos=exp1left})
@@ -102,6 +116,8 @@ comp_exp: exp EQ exp		         (A.OpExp{left=exp1, oper=A.EqOp, right=exp2, pos=
 bool_exp: exp OR exp		         (A.IfExp{test=exp1, then'=A.IntExp(1), else'=SOME exp2, pos=exp1left})
 	| exp AND exp		         (A.IfExp{test=exp1, then'=exp2, else'= SOME(A.IntExp(0)), pos=exp1left})
 
+(* Shift/reduce conflict due to dangling else. We want to shift in this case so
+   that ELSE binds with the most recent IF *)
 cond_exp: IF exp THEN exp ELSE exp       (A.IfExp{test=exp1, then'=exp2,else'=SOME exp3, pos=IFleft})
 	| IF exp THEN exp                (A.IfExp{test=exp1, then'=exp2,else'=NONE, pos=IFleft})
 
@@ -113,6 +129,8 @@ seq_exp :                                (nil)
 	| exp SEMICOLON exp              ((exp1, exp1left)::(exp2, exp2left)::nil)
 	| exp SEMICOLON seq_exp          ((exp, expleft)::seq_exp)
 
+(* There is a shift/reduce conflict between these productions and the array_exp.
+The conflict is resolved with the addition of the second rule from the top of lvalue_exp. *)
 lvalue_exp: ID                           (A.SimpleVar(S.symbol(ID), IDleft))
 	  | ID LBRACK exp RBRACK         (A.SubscriptVar(A.SimpleVar(S.symbol(ID), IDleft), exp, IDleft))
 	  | lvalue_exp DOT ID            (A.FieldVar(lvalue_exp, S.symbol(ID), lvalue_expleft))
@@ -136,7 +154,8 @@ rec_seq:                                 (nil)
 
 let_exp : LET decs IN let_exp_seq END    (A.LetExp{decs=decs, body=A.SeqExp(let_exp_seq), pos=LETleft})				         
 
-let_exp_seq: exp	                 ((exp,expleft)::nil)
+let_exp_seq:                             (nil) 
+	   | exp	                 ((exp,expleft)::nil)
 	   | exp SEMICOLON let_exp_seq   ((exp,expleft)::let_exp_seq)
 	      
 decs: dec			         (dec::nil)
@@ -146,9 +165,11 @@ dec: var_dec			         (var_dec)
    | type_decs                           (A.TypeDec(type_decs))
    | fun_decs                            (A.FunctionDec(fun_decs))
 
+(* shift/reduce conflict here. We always want to shift to cons consecutive type declarations. *) 
 type_decs: type_dec                      (type_dec::nil)
 	 | type_dec type_decs            (type_dec::type_decs)
 
+(* shift/reduce conflict here. We always want to shift to cons consecutive function declarations. *) 
 fun_decs: fun_dec                        (fun_dec::nil)
 	| fun_dec fun_decs               (fun_dec::fun_decs)
 

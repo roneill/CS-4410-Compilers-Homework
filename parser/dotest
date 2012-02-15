@@ -4,7 +4,7 @@ echo "CM.make \"sources.cm\";" > output.sml
 
 for i in ../testcases/*
 do
-    echo "TextIO.output (TextIO.stdOut, \"Parseing $i...............\n\");" >> output.sml
+    echo "TextIO.output (TextIO.stdOut, \"Parsing $i...............\n\");" >> output.sml
     echo "PrintAbsyn.print (TextIO.stdOut, Parse.parse \"$i\");" >> output.sml
 done
 echo "OS.Process.exit(OS.Process.success);" >> output.sml
