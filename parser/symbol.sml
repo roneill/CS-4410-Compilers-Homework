@@ -6,6 +6,7 @@ sig
   type 'a table
   val empty : 'a table
   val enter : 'a table * symbol * 'a -> 'a table
+  val enter' : (symbol * 'a) * 'a table -> 'a table
   val look  : 'a table * symbol -> 'a option
 end
 
@@ -39,5 +40,6 @@ struct
   type 'a table= 'a Table.table
   val empty = Table.empty
   val enter = Table.enter
+  val enter' = Table.enter'
   val look = Table.look
 end

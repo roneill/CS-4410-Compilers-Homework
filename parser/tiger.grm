@@ -89,7 +89,7 @@ exp: INT			         (A.IntExp(INT))
    | rec_exp                             (rec_exp)
    | let_exp                             (let_exp)
    | MINUS exp  %prec UMINUS             (A.OpExp{left=A.IntExp(0), oper=A.MinusOp, right=exp, pos=MINUSleft})
-   (* Error case: just return a NilExp here. We don't care about the AST if there are syntax errors*)
+(* Error case: just return a NilExp here. We don't care about the AST if there are syntax errors*)
    | LPAREN error RPAREN                 (A.NilExp)
    | error SEMICOLON exp                 (exp)
 (* These operator expressions cause shift/reduce conflicts with the following:
