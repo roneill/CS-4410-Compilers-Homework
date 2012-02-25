@@ -1,24 +1,26 @@
 structure A = Absyn
 structure S = Symbol
 structure Ty = Types
+structure Error = ErrorMsg	       
 
 signature ENV =
 sig
    (* Don't know why we need this yet
-    type access *) 
-    type ty
-    type enventry
+    type access  
+    type ty *)
 
-    val base_tenv: ty S.table
+    datatype enventry = VarEntry of {ty: Ty.ty}
+		      | FunEntry of {formals: Ty.ty list, result: Ty.ty}
+    val base_tenv: Ty.ty S.table
     val base_venv: enventry S.table
 end
 
 structure Env :> ENV =
 struct
-  
-  type ty = Ty.ty
-  datatype enventry = ValEntry of {ty: ty}
-		      | FunEntry of {formals: ty list, result: ty}
+
+  datatype enventry = VarEntry of {ty: Ty.ty}
+		      | FunEntry of {formals: Ty.ty list, result: Ty.ty}
+       
   val base_tenv = foldr S.enter' S.empty [ (S.symbol("int"), Ty.INT),
 					   (S.symbol("string"), Ty.STRING) ]
 
@@ -35,8 +37,136 @@ struct
 		    (S.symbol("exit"), FunEntry {formals=[Ty.INT], result=Ty.UNIT}) ]
 end
 
-structure Semant =
+structure Translate = struct
+type exp = unit
+end
+
+structure Semant :sig val transProg : A.exp -> unit end =
 struct 
-    type venv = Env.enventry S.table
-    type tenv = ty S.table
+    
+type venv = Env.enventry Symbol.table
+type tenv = Ty.ty Symbol.table
+type expty = {exp:Translate.exp, ty: Ty.ty}
+
+fun checkInt ({exp, ty}, pos) =
+    if ty = Types.INT then ()
+    else Error.error(pos) "exp was not an int"
+
+fun checkUnit ({exp, ty}, pos) =
+    if ty = Types.UNIT then ()
+    else Error.error(pos) "exp was not a unit"
+
+fun actual_ty typ =
+    case typ of
+	(Ty.NAME (id, ref(SOME(typ')))) => actual_ty typ'
+      | anyTy => anyTy;
+	 
+fun transExp (venv, tenv) =
+    let fun trexp (A.OpExp{left, oper=A.PlusOp, right, pos}) =
+	    (checkInt(trexp left, pos);
+	     checkInt(trexp right, pos);
+	     {exp=(), ty=Types.INT})
+	    | trexp (A.OpExp{left, oper=A.MinusOp, right, pos}) =
+	    (checkInt(trexp left, pos);
+	     checkInt(trexp right, pos);
+	     {exp=(), ty=Types.INT})
+	    | trexp (A.OpExp{left, oper=A.TimesOp, right, pos}) =
+	      (checkInt(trexp left, pos);
+	       checkInt(trexp right, pos);
+	       {exp=(), ty=Types.INT})
+	    | trexp (A.OpExp{left, oper=A.DivideOp, right, pos}) =
+	      (checkInt(trexp left, pos);
+	       checkInt(trexp right, pos);
+	       {exp=(), ty=Types.INT})
+	    | trexp (A.OpExp{left, oper=A.EqOp, right, pos}) =
+	      (checkInt(trexp left, pos);
+	       checkInt(trexp right, pos);
+	       {exp=(), ty=Types.INT})
+	    | trexp (A.OpExp{left, oper=A.NeqOp, right, pos}) =
+	      (checkInt(trexp left, pos);
+	       checkInt(trexp right, pos);
+	       {exp=(), ty=Types.INT})
+	    | trexp (A.OpExp{left, oper=A.LtOp, right, pos}) =
+	      (checkInt(trexp left, pos);
+	       checkInt(trexp right, pos);
+	       {exp=(), ty=Types.INT})
+	    | trexp (A.OpExp{left, oper=A.LeOp, right, pos}) =
+	      (checkInt(trexp left, pos);
+	       checkInt(trexp right, pos);
+	       {exp=(), ty=Types.INT})
+	    | trexp (A.OpExp{left, oper=A.GtOp, right, pos}) =
+	      (checkInt(trexp left, pos);
+	       checkInt(trexp right, pos);
+	       {exp=(), ty=Types.INT})
+	    | trexp (A.OpExp{left, oper=A.GeOp, right, pos}) =
+	      (checkInt(trexp left, pos);
+	       checkInt(trexp right, pos);
+	       {exp=(), ty=Types.INT})
+	    | trexp (A.IntExp i) = {exp=(), ty=Types.INT}
+	    | trexp (A.StringExp(s, pos)) = {exp=(), ty=Types.STRING}
+	    | trexp (A.NilExp) = {exp=(), ty=Types.NIL}
+	    | trexp (A.BreakExp pos) = {exp=(), ty=Types.UNIT }
+	    | trexp (A.WhileExp{test, body, pos}) =
+	      (checkInt(trexp(test), pos);
+	       checkUnit(trexp(body), pos);
+	       {exp=(), ty=Types.UNIT })
+	    | trexp (A.ForExp{var, escape,
+			      lo, hi, body, pos}) =
+	      (checkInt(trexp(lo), pos);
+	       checkInt(trexp(hi), pos);
+	       (*val exptyBody = let
+		     val venv'=S.enter(venv, var, VarEntry Ty.INT)
+		 in
+		     transExp(venv',tenv) body
+		 end;
+		     checkUnit(exptyBody, pos);*)
+	       {exp=(), ty=Types.UNIT })
+	    | trexp (A.IfExp {test, then', else'=NONE, pos}) =
+	      (checkInt (trexp(test), pos);
+	       checkUnit (trexp(then'),pos);
+	       {exp=(), ty=Types.UNIT })
+	    | trexp (A.IfExp {test, then', else'=SOME elseBody, pos}) =
+	      (checkInt (trexp(test), pos);
+	       let
+		   val {exp=thenExp, ty=thenTy} = trexp(then');
+		   val {exp=elseExp, ty=elseTy} = trexp(elseBody);
+	       in
+		   if (thenTy = elseTy) then ()
+		   else Error.error pos "the types of the then clause and else clause do not match";
+		   {exp=(), ty=thenTy }
+		   
+	       end)
+	    | trexp (A.SeqExp(exps)) =
+	      let fun checkExps nil = {exp=(), ty=Types.UNIT }
+		    | checkExps ((exp, pos)::nil) = trexp(exp)
+		    | checkExps ((exp, pos)::tail) = (trexp(exp); checkExps(tail))
+	      in
+		  checkExps(exps)
+	      end
+	      
+	and trvar (A.SimpleVar(id, pos)) =
+	    (case S.look(venv, id)
+	      of SOME (Env.VarEntry{ty}) => {exp=(), ty=actual_ty ty}
+	       | NONE => (Error.error pos ("undefined variable " ^ S.name id);
+			  {exp=(), ty=Types.INT}))
+	  (*| trvar (A.FieldVar(v, id, pos)) =
+	    (case S.look(venv, v)*)
+	      
+    in
+	trexp
+    end
+
+	   (* | trexp (A.RecordExp{fields, tid,  pos}) =
+	      let
+		  fun checkFields [] = ()
+		    | checkFields fields : (symbol * exp * pos) list =
+		      let head = hd(fields)
+		      in
+			  	      
+	      (checkType(tid);
+	       checkFields(fields);
+	       {exp=(), ty=Types.RECORD S.symbol}) *)
+
+fun transProg ast = ((transExp(Env.base_venv, Env.base_tenv) ast); ())
+    
 end
