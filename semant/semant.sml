@@ -114,13 +114,12 @@ fun transExp (venv, tenv) =
 			      lo, hi, body, pos}) =
 	      (checkInt(trexp(lo), pos);
 	       checkInt(trexp(hi), pos);
-	       (*val exptyBody = let
-		     val venv'=S.enter(venv, var, VarEntry Ty.INT)
-		 in
-		     transExp(venv',tenv) body
-		 end;
-		     checkUnit(exptyBody, pos);*)
-	       {exp=(), ty=Types.UNIT })
+	       let
+		   val venv'=S.enter(venv, var, Env.VarEntry{ty=Ty.INT})
+	       in
+		   (checkUnit((transExp(venv', tenv) body), pos);
+		   {exp=(), ty=Types.UNIT })
+	       end)
 	    | trexp (A.IfExp {test, then', else'=NONE, pos}) =
 	      (checkInt (trexp(test), pos);
 	       checkUnit (trexp(then'),pos);
@@ -143,30 +142,65 @@ fun transExp (venv, tenv) =
 	      in
 		  checkExps(exps)
 	      end
+	    | trexp (A.ArrayExp{typ, size, init, pos}) =
+	      (case S.look(tenv, typ)
+	       of SOME (Ty.ARRAY(ty, unique)) =>
+		  (checkInt(trexp(size), pos);
+		   if (ty = (#ty (trexp(init))))
+		   then ()
+		   else (Error.error pos "wrong initial value type");
+		   {exp=(), ty=ty })
+		| NONE => (Error.error pos "Array type not defined";
+			   {exp=(), ty=Ty.UNIT }))
+	    | trexp (A.CallExp{func, args, pos}) =
+	      (case S.look(venv, func)
+		   of SOME (Env.FunEntry{formals, result}) =>
+		      (let fun checkFormals (nil, nil) = ()
+			     | checkFormals (nil, _) = (Error.error pos "Function has more arguments than declaration")
+			     | checkFormals (_, nil) = (Error.error pos "Function has less arguments than declaration")
+			     | checkFormals (formal::t1, arg::t2) = (if (formal = #ty (trexp arg))
+								  then ()
+								  else checkFormals (t1, t2))
+		       in
+			   checkFormals (formals, args)
+		       end;
+		       {exp=(), ty=result})
+		    | NONE => (Error.error pos "function name not declared"; {exp=(), ty=Ty.UNIT}))
+	    | trexp (A.RecordExp{fields, typ, pos}) =
+	      (case S.look(tenv, typ)
+		of SOME (Ty.RECORD(recFields, unique)) =>
+		   (let fun lookupID (id, nil) = (Error.error pos "Element not found"; NONE)
+			  | lookupID (id, ((recID, ty)::tail)) = if (id = recID) then SOME ty
+								 else lookupID(id, tail)
+			and loopFields nil = ()
+			  | loopFields ((symbol, exp, pos)::tail) =
+			    case lookupID(symbol, recFields)
+			     of SOME ty => if (ty = #ty(trexp exp)) then ()
+					   else loopFields(tail)
+			      | NONE => (Error.error pos "Record field not declared")
+		    in
+			loopFields(fields)
+		    end;
+		   {exp=(), ty=(Ty.RECORD(recFields, unique))})
+		 | NONE => (Error.error pos "record type not declared";{exp=(), ty=Ty.UNIT}))
 	      
 	and trvar (A.SimpleVar(id, pos)) =
 	    (case S.look(venv, id)
 	      of SOME (Env.VarEntry{ty}) => {exp=(), ty=actual_ty ty}
 	       | NONE => (Error.error pos ("undefined variable " ^ S.name id);
 			  {exp=(), ty=Types.INT}))
-	  (*| trvar (A.FieldVar(v, id, pos)) =
-	    (case S.look(venv, v)*)
-	      
+	 (* | trvar (A.FieldVar(v, id, pos)) =
+	    (checkRecord *)
+
+(* We have to ensure that var in fieldvar *)
+	     
     in
 	trexp
     end
+    
 
-	   (* | trexp (A.RecordExp{fields, tid,  pos}) =
-	      let
-		  fun checkFields [] = ()
-		    | checkFields fields : (symbol * exp * pos) list =
-		      let head = hd(fields)
-		      in
-			  	      
-	      (checkType(tid);
-	       checkFields(fields);
-	       {exp=(), ty=Types.RECORD S.symbol}) *)
-
+(fold and (map (lambda (x y) (= x y)) list))
+    
 fun transProg ast = ((transExp(Env.base_venv, Env.base_tenv) ast); ())
     
 end
