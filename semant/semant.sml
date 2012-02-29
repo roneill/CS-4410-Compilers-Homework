@@ -64,18 +64,38 @@ fun actual_ty typ =
 
 fun getType (nil, id, pos) = (Error.error(pos) "field not found in record"; Ty.INT)
   | getType ((name,ty)::tail, id, pos) = if (id = name) then ty else getType(tail, id, pos) 
-    
-    (*just copied from w*)
-fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) = (*TODO: VarDec with types*)
+
+fun stringTy (Ty.RECORD _) = "RECORD"
+  | stringTy Ty.NIL = "NIL"
+  | stringTy Ty.INT = "INT"
+  | stringTy Ty.STRING ="STRING"
+  | stringTy (Ty.ARRAY _) ="ARRAY"
+  | stringTy (Ty.NAME _) = "NAME"
+  | stringTy Ty.UNIT = "UNIT"	     
+
+fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) = 
     let val {exp, ty} = transExp(venv, tenv) init
     in
 	{tenv=tenv, venv=S.enter(venv, name, Env.VarEntry{ty=ty})}
     end
+  | transDec (venv, tenv, A.VarDec{name, escape, typ=SOME typ , init, pos}) =
+    let
+	val varTy = transTy(tenv, A.NameTy(typ))
+	val {exp, ty} = transExp(venv, tenv) init
+    in
+	if (ty = varTy) then ()
+	else Error.error pos "var type and initializer type do not match";
+	{tenv=tenv, venv=S.enter(venv, name, Env.VarEntry{ty=ty})}
+    end
   | transDec (venv, tenv, A.TypeDec[{name, ty,pos}]) =
     {venv=venv, tenv=S.enter(tenv, name, transTy(tenv,ty))}
-  | transDec(venv, tenv, A.FunctionDec[{name,params,body,pos,result=SOME(rt, rpos)}]) =
-    (* TODO: lists of functions, recursive functions, functions with no result, undeclared identifiers(etc),type check body*)
-    let val SOME(result_ty) = S.look(tenv, rt)
+  | transDec(venv, tenv, A.FunctionDec[{name,params,body,pos,result}]) =
+    (* TODO: lists of functions, recursive functions, undeclared identifiers(etc), type check body*)
+    let val result_ty = case result
+			 of SOME(rt, pos) => (case S.look(tenv, rt)
+						  of SOME ty => ty
+						   | NONE => (Error.error pos "return type undeclared"; Ty.INT))
+			  | NONE => Ty.UNIT
 	fun transparam{name, escape, typ, pos} =
 	    case S.look(tenv, typ)
 	     of SOME t => {name=name, ty=t}
@@ -105,7 +125,7 @@ and transDecs (venv, tenv, decs) =
     end
 and transTy (tenv, A.NameTy(symbol,pos)) =
     (case S.look(tenv,symbol)
-     of SOME ty => ty
+     of SOME ty =>  ty
       | NONE => (Error.error pos "type TODO not defined"; Ty.INT) (*TODO*))
   | transTy (tenv, A.RecordTy(fields)) =
     let
@@ -116,9 +136,8 @@ and transTy (tenv, A.NameTy(symbol,pos)) =
     end
   | transTy (tenv, A.ArrayTy(symbol,pos)) =
     (case S.look(tenv,symbol)
-     of SOME (Ty.ARRAY (ty,unique)) => (Ty.ARRAY (ty,unique))
-      | SOME _ => (Error.impossible "Array type is not an Array in tenv") 
-      | NONE => (Error.error pos "type TODO not defined"; Ty.INT) (*TODO*))
+     of SOME ty => Ty.ARRAY(ty, ref ())
+      | NONE => (Error.error pos "type not defined"; Ty.INT) (*TODO*))
     
 and transExp (venv, tenv) =
     let fun trexp (A.VarExp var) = trvar var
@@ -258,9 +277,10 @@ and transExp (venv, tenv) =
 		  if (ty = (#ty (trexp(init))))
 		  then ()
 		  else (Error.error pos "wrong initial value type");
-		  {exp=(), ty=ty })
+		  {exp=(), ty=Ty.ARRAY(ty, unique) })
+	       | SOME x => (Error.impossible (stringTy(x)); {exp=(), ty=Ty.INT })
 	       | NONE => (Error.error pos "Array type not defined";
-			  {exp=(), ty=Ty.UNIT }))
+			  {exp=(), ty=Ty.INT }))
 	    
 	and trvar (A.SimpleVar(id, pos)) =
 	    (case S.look(venv, id)
