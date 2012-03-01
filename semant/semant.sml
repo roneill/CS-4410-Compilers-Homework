@@ -89,10 +89,10 @@ fun checkUnit ({exp, ty}, pos) =
     if Ty.lteq(ty, Types.UNIT) then ()
     else Error.error(pos) "exp was not a unit"
 	 
-fun checkCompatible ({exp=lexp, ty=lty},{exp=rexp, ty=rty}, pos) =
-    if Ty.compatible(lty, rty) then ()
+fun checkComparable ({exp=lexp, ty=lty},{exp=rexp, ty=rty}, pos) =
+    if Ty.lteq(lty, rty) orelse Ty.lteq(rty, lty) then ()
     else Error.error(pos) ("The types "^(stringTy lty)^" and "^
-			   (stringTy rty)^" are not compatible")
+			   (stringTy rty)^" are not comparable")
 
 (*TODO use this in Ty.compatible???*)
 fun actual_ty typ =
@@ -180,14 +180,14 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
   | transDec(venv, tenv, A.FunctionDec(fundecs)) =
     let
 	fun getResultTy (result) = case result
-				    of SOME(rt, pos) =>
+				    of SOME(rt, pos) => (* function has return value *)
 				       (case S.look(tenv, rt)
 					 of SOME ty => ty
 					  | NONE =>
 					    (Error.error pos
 						"return type undeclared";
 					     Ty.INT))
-				     | NONE => Ty.UNIT
+				     | NONE => Ty.UNIT  (* procedure returns no value *)
 	fun transparam {name, escape, typ, pos} =
 	    case S.look(tenv, typ)
 	     of SOME t => {name=name, ty=t}
@@ -269,7 +269,7 @@ and transExp (venv, tenv) =
 					     ((stringTy formal)^
 					      " wrong argument type "^
 					      (stringTy (#ty (trexp arg))))))
-			| checkFormals (_) = Error.impossible ""
+			| checkFormals (_) = Error.impossible "the number of arguements don't match, but we should have checked for this"
 		  in
 		      if (length(formals) = length(args)) then
 			  checkFormals (formals, args)
@@ -297,10 +297,10 @@ and transExp (venv, tenv) =
 	     checkInt(trexp right, pos);
 	     {exp=(), ty=Types.INT})
 	  | trexp (A.OpExp{left, oper=A.EqOp, right, pos}) =
-	    (checkCompatible(trexp left, trexp right, pos);
+	    (checkComparable(trexp left, trexp right, pos);
 	     {exp=(), ty=Types.INT})
 	  | trexp (A.OpExp{left, oper=A.NeqOp, right, pos}) =
-	    (checkCompatible(trexp left, trexp right, pos);
+	    (checkComparable(trexp left, trexp right, pos);
 	     {exp=(), ty=Types.INT})
 	  | trexp (A.OpExp{left, oper=A.LtOp, right, pos}) =
 	    (checkInt(trexp left, pos);
@@ -420,8 +420,7 @@ and transExp (venv, tenv) =
 		 (case actual_ty ty
 		   of (Ty.ARRAY(ty, unique)) =>
 		      (checkInt(trexp(size), pos);
-		       if ((actual_ty ty) = (actual_ty (#ty (trexp(init)))))
-		       then ()
+		       if ((actual_ty ty) = (actual_ty (#ty (trexp(init))))) then ()
 		       else (Error.error pos ("wrong initial value type of "
 					      ^(stringTy (#ty (trexp(init))))));
 		       {exp=(), ty=Ty.ARRAY(ty, unique) })
