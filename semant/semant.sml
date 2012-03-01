@@ -48,24 +48,29 @@ type venv = Env.enventry Symbol.table
 type tenv = Ty.ty Symbol.table
 type expty = {exp:Translate.exp, ty: Ty.ty}
 
+(*dummy symbol inserted into the tenv upon entering a loop, used for checking break statements.
+  Tiger does not allow identifiers starting with underscores so this will not cause conflicts 
+  with user defined types.*)
+val in_loop = S.symbol("__in_loop")
+
+fun checkInLoop (tenv, pos) =
+    case S.look(tenv, in_loop) 
+      of SOME _ => ()
+       | NONE => (Error.error pos "break encountered outside of loop")
+
 fun checkInt ({exp, ty}, pos) =
-    if ty = Types.INT then ()
+    if Ty.lteq(ty, Types.INT) then ()
     else Error.error(pos) "exp was not an int"
 
 fun checkUnit ({exp, ty}, pos) =
-    if ty = Types.UNIT then ()
+    if Ty.lteq(ty, Types.UNIT) then ()
     else Error.error(pos) "exp was not a unit"
 	 
 fun checkCompatible ({exp=lexp, ty=lty},{exp=rexp, ty=rty}, pos) =
     if Ty.compatible(lty, rty) then ()
     else Error.error(pos) "types are not compatible"
 
-fun checkLT (lty, rty, pos) =
-    if Ty.lessthan(lty, rty) then ()
-    else Error.error(pos) "type not expected"
-
-	 
-(*TODO use this in Ty.compatible*)
+(*TODO use this in Ty.compatible???*)
 fun actual_ty typ =
     case typ of
 	(Ty.NAME (id, ref(SOME(typ')))) => actual_ty typ'
@@ -95,6 +100,7 @@ fun stringTy (Ty.RECORD _) = "RECORD"
   | stringTy Ty.UNIT = "UNIT"
   | stringTy Ty.TOP = "TOP"
   | stringTy Ty.BOTTOM = "BOTTOM"
+  | stringTy Ty.IMMUTABLE_INT = "IMMUTABLE_INT"
 
 fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) = 
     let val {exp, ty} = transExp(venv, tenv) init
@@ -108,7 +114,7 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	val varTy = transTy(tenv, A.NameTy(typ))
 	val {exp, ty} = transExp(venv, tenv) init
     in
-	if (Ty.lessthan ((actual_ty ty),(actual_ty varTy))) then ()
+	if (Ty.lteq ((actual_ty ty),(actual_ty varTy))) then ()
 	else Error.error pos ("var type " ^ (stringTy varTy)  ^ " and initializer " ^ (stringTy ty)  ^ " type do not match");
 	{tenv=tenv, venv=S.enter(venv, name, Env.VarEntry{ty=ty})}
     end
@@ -298,13 +304,13 @@ and transExp (venv, tenv) =
 		val expType = #ty (trexp(exp))
 	    in
 		(* this may not be right *)
-		if(Ty.lessthan (expType,varType)) then ()
+		if(Ty.lteq(expType,varType)) then ()
 		else (Error.error pos "cannot assign variable to this type");
 		{exp=(), ty=Ty.UNIT}
 	    end
 	  | trexp (A.IfExp {test, then', else'=NONE, pos}) =
 	    (checkInt (trexp(test), pos);
-	     checkLT(#ty (trexp(then')), Ty.UNIT,pos);
+	     checkUnit(trexp(then'), pos);
 	     {exp=(), ty=Types.UNIT })
 	  | trexp (A.IfExp {test, then', else'=SOME elseBody, pos}) =
 	    (checkInt (trexp(test), pos);
@@ -318,20 +324,26 @@ and transExp (venv, tenv) =
 		 
 	     end)
 	  | trexp (A.WhileExp{test, body, pos}) =
-	    (checkInt(trexp(test), pos);
-	     checkLT(#ty (trexp(body)), Ty.UNIT, pos);
-	     {exp=(), ty=Types.UNIT })
+	    let
+		val tenv'=S.enter(tenv, in_loop, Ty.TOP)
+	    in 
+		checkInt(trexp(test), pos);
+		checkUnit(transExp(venv,tenv') body, pos);
+		{exp=(), ty=Types.UNIT }
+	    end
 	  | trexp (A.ForExp{var, escape,
 			    lo, hi, body, pos}) =
 	    (checkInt(trexp(lo), pos);
 	     checkInt(trexp(hi), pos);
 	     let
-		 val venv'=S.enter(venv, var, Env.VarEntry{ty=Ty.INT})
+		 val tenv'=S.enter(tenv, in_loop, Ty.TOP)
+		 val venv'=S.enter(venv, var, Env.VarEntry{ty=Ty.IMMUTABLE_INT})
 	     in
-		 (checkUnit((transExp(venv', tenv) body), pos);
+		 (checkUnit((transExp(venv', tenv') body), pos);
 		  {exp=(), ty=Types.UNIT })
 	     end)
-	  | trexp (A.BreakExp pos) = {exp=(), ty=Types.BOTTOM }
+	  | trexp (A.BreakExp pos) = (checkInLoop(tenv,pos);
+				      {exp=(), ty=Types.BOTTOM})
 	  | trexp (A.LetExp{decs, body,pos}) =
 	    let val {venv=venv', tenv=tenv'} = transDecs(venv,tenv,decs)
 	    in

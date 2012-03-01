@@ -7,6 +7,7 @@ struct
             RECORD of (Symbol.symbol * ty) list * unique
           | NIL
           | INT
+	  | IMMUTABLE_INT (* used for the counter of a for loop *)
           | STRING
           | ARRAY of ty * unique
 	  | NAME of Symbol.symbol * ty option ref
@@ -14,19 +15,16 @@ struct
 	  | BOTTOM
 	  | TOP 
 
-  (* The following relations define a partially ordered latice on our type system *)
-  fun glb (RECORD _, NIL) = NIL
-    | glb (NIL, RECORD _) = NIL
-    | glb (r1 as RECORD(r,u) , r2 as RECORD (r',u')) = if (u=u') then r1 else NIL
-    | glb (TOP, a) = a
-    | glb (a, TOP) = a
-    | glb (a, b) = if (a=b) then a else BOTTOM
-					
-  fun lub (a, b) = if (a=b) then a else TOP
-
-  fun lessthan (a, b) = (glb(a,b) = a)
-		      
-  fun compatible (a, b)  = lessthan(b, a) orelse lessthan(a, b)
+  (* The following relations define a partially ordered relation in our type system *)
+  fun lteq (NIL, RECORD _) = true
+    | lteq (TOP, TOP) = true
+    | lteq (BOTTOM, _) = true
+    | lteq (IMMUTABLE_INT, INT) = true
+    | lteq (RECORD(r,u),RECORD (r',u')) = (u=u') 
+    | lteq (ARRAY(ty,u),ARRAY (ty',u')) = (u=u') 
+    | lteq (a, b) = (a=b)
+  		      
+  fun compatible (a, b)  = lteq(b, a) orelse lteq(a, b)
 
 end
 
