@@ -63,8 +63,19 @@ fun actual_ty typ =
     (*TODO: Is it ok for a variable to have UNIT type?*)
 
 fun getType (nil, id, pos) = (Error.error(pos) "field not found in record"; Ty.INT)
-  | getType ((name,ty)::tail, id, pos) = if (id = name) then ty else getType(tail, id, pos) 
+  | getType ((name,ty)::tail, id, pos) = if (id = name) then ty else getType(tail, id, pos)								     
 
+fun checkDuplicateDeclarations (names) = 
+    let
+	fun checkDuplicates(nil, checkedNames) = ()
+	  | checkDuplicates(((name, pos)::tail), checkedNames) =
+	    case S.look(checkedNames, name)
+	     of SOME dName => (Error.error pos "duplicate declaration found" )
+	      | NONE => checkDuplicates(tail, S.enter(checkedNames, name, ref ()))
+    in
+	checkDuplicates(names, S.empty)
+    end	
+								     
 fun stringTy (Ty.RECORD _) = "RECORD"
   | stringTy Ty.NIL = "NIL"
   | stringTy Ty.INT = "INT"
@@ -104,26 +115,19 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 			  of SOME _ => Error.error pos ("cycle detected")
 			   | NONE => checkForCycles'(getOpt(!body,Ty.INT), S.enter(visited, name, ref ())))
 		      | _ => ()
-		  
+			     
 	    in
 		case S.look (tenv, name)
 		 of SOME ty => checkForCycles' (ty,S.empty)
 		  | NONE => Error.impossible "Cyclic type checking error"
-	fun checkDuplicateDeclarations (typeNames) = 
-	    let
-		fun checkDuplicates(name, nil) = ()
-		  | checkDuplicates(name, ((n, pos)::tail))
-		    case S.look(checkedNames, name)
-		     of SOME dName => (Error.error pos "Duplicate" )
-		      | NONE => checkDuplicates(head, tail)
 	    end
     in
 	map checkTypeBody typedecs;
 	map (checkForCycles tenv') typedecs;
-	checkDuplicateDeclarations(map (fn x => (#name x, #pos x)) typedecs)
+	checkDuplicateDeclarations(map (fn x => (#name x, #pos x)) typedecs);
 	{venv=venv, tenv=tenv'}
     end
-    (* TODO: lists of functions, recursive functions, what is etc?*)
+  (* TODO: lists of functions, recursive functions, what is etc?*)
   | transDec(venv, tenv, A.FunctionDec(fundecs)) =
     let
 	fun getResultTy (result) = case result
@@ -157,6 +161,7 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	    end
     in
 	map checkFunBody fundecs;
+	checkDuplicateDeclarations(map (fn x => (#name x, #pos x)) fundecs);
 	{venv=venv', tenv=tenv}
     end
 
@@ -282,7 +287,7 @@ and transExp (venv, tenv) =
 		(* this may not be right *)
 		if(varType = expType) then ()
 		else (Error.error pos "cannot assign variable to this type");
-		{exp=(), ty=Types.UNIT}
+		{exp=(), ty=Ty.UNIT}
 	    end
 	  | trexp (A.IfExp {test, then', else'=NONE, pos}) =
 	    (checkInt (trexp(test), pos);
