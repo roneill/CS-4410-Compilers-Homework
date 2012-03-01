@@ -55,7 +55,17 @@ fun checkInt ({exp, ty}, pos) =
 fun checkUnit ({exp, ty}, pos) =
     if ty = Types.UNIT then ()
     else Error.error(pos) "exp was not a unit"
+	 
+fun checkCompatible ({exp=lexp, ty=lty},{exp=rexp, ty=rty}, pos) =
+    if Ty.compatible(lty, rty) then ()
+    else Error.error(pos) "types are not compatible"
 
+fun checkLT (lty, rty, pos) =
+    if Ty.lessthan(lty, rty) then ()
+    else Error.error(pos) "type not expected"
+
+	 
+(*TODO use this in Ty.compatible*)
 fun actual_ty typ =
     case typ of
 	(Ty.NAME (id, ref(SOME(typ')))) => actual_ty typ'
@@ -82,11 +92,15 @@ fun stringTy (Ty.RECORD _) = "RECORD"
   | stringTy Ty.STRING ="STRING"
   | stringTy (Ty.ARRAY _) ="ARRAY"
   | stringTy (Ty.NAME (name, ty)) = ("NAME: " ^ (S.name name)) 
-  | stringTy Ty.UNIT = "UNIT"	     
+  | stringTy Ty.UNIT = "UNIT"
+  | stringTy Ty.TOP = "TOP"
+  | stringTy Ty.BOTTOM = "BOTTOM"
 
 fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) = 
     let val {exp, ty} = transExp(venv, tenv) init
     in
+	if (ty = Ty.NIL) then (Error.error pos "Cannot assign expression to nil")
+	else ();
 	{tenv=tenv, venv=S.enter(venv, name, Env.VarEntry{ty=ty})}
     end
   | transDec (venv, tenv, A.VarDec{name, escape, typ=SOME typ , init, pos}) =
@@ -94,7 +108,7 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	val varTy = transTy(tenv, A.NameTy(typ))
 	val {exp, ty} = transExp(venv, tenv) init
     in
-	if ((actual_ty ty) = (actual_ty varTy)) then ()
+	if (Ty.lessthan ((actual_ty ty),(actual_ty varTy))) then ()
 	else Error.error pos ("var type " ^ (stringTy varTy)  ^ " and initializer " ^ (stringTy ty)  ^ " type do not match");
 	{tenv=tenv, venv=S.enter(venv, name, Env.VarEntry{ty=ty})}
     end
@@ -156,8 +170,8 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 		val venv'' =  foldl enterparam venv' params'
 		val {exp=bodyexp, ty=bodyty} = transExp(venv'', tenv) body
 	    in
-		if (bodyty = result_ty) then ()
-		else (Error.error pos "Return type of body does not match declaration")
+		if (actual_ty bodyty = actual_ty result_ty) then ()
+		else (Error.error pos ((stringTy bodyty)^"Return type of body does not match declaration"))
 	    end
     in
 	map checkFunBody fundecs;
@@ -199,9 +213,9 @@ and transExp (venv, tenv) =
 		 (*TODO: use high order functions*)
 		 (let fun checkFormals (nil, nil) = ()
 			| checkFormals (formal::t1, arg::t2) =
-			  (if (formal = #ty (trexp arg))
+			  (if ((actual_ty formal) = (actual_ty (#ty (trexp arg))))
 			   then checkFormals (t1, t2)
-			   else (Error.error pos "wrong argument type"))
+			   else (Error.error pos ((stringTy formal)^" wrong argument type "^(stringTy (#ty (trexp arg))))))
 		  in
 		      if (length(formals) = length(args)) then
 			  checkFormals (formals, args)
@@ -211,6 +225,7 @@ and transExp (venv, tenv) =
 		  {exp=(), ty=result})
 	       | NONE => (Error.error pos "function name not declared"; {exp=(), ty=Ty.UNIT})
 	    | _ => {exp=(), ty=Ty.UNIT}) (* get rid of *)
+	  (* Consider using a case statement*)
 	  | trexp (A.OpExp{left, oper=A.PlusOp, right, pos}) =
 	    (checkInt(trexp left, pos);
 	     checkInt(trexp right, pos);
@@ -228,13 +243,11 @@ and transExp (venv, tenv) =
 	     checkInt(trexp right, pos);
 	     {exp=(), ty=Types.INT})
 	  | trexp (A.OpExp{left, oper=A.EqOp, right, pos}) =
-	    (checkInt(trexp left, pos);
-	     checkInt(trexp right, pos);
-	     {exp=(), ty=Types.INT})
+	    (checkCompatible(trexp left, trexp right, pos);
+	    {exp=(), ty=Types.INT})
 	  | trexp (A.OpExp{left, oper=A.NeqOp, right, pos}) =
-	    (checkInt(trexp left, pos);
-	     checkInt(trexp right, pos);
-	     {exp=(), ty=Types.INT})
+	    (checkCompatible(trexp left, trexp right, pos);
+	    {exp=(), ty=Types.INT})
 	  | trexp (A.OpExp{left, oper=A.LtOp, right, pos}) =
 	    (checkInt(trexp left, pos);
 	     checkInt(trexp right, pos);
@@ -285,13 +298,13 @@ and transExp (venv, tenv) =
 		val expType = #ty (trexp(exp))
 	    in
 		(* this may not be right *)
-		if(varType = expType) then ()
+		if(Ty.lessthan (expType,varType)) then ()
 		else (Error.error pos "cannot assign variable to this type");
 		{exp=(), ty=Ty.UNIT}
 	    end
 	  | trexp (A.IfExp {test, then', else'=NONE, pos}) =
 	    (checkInt (trexp(test), pos);
-	     checkUnit (trexp(then'),pos);
+	     checkLT(#ty (trexp(then')), Ty.UNIT,pos);
 	     {exp=(), ty=Types.UNIT })
 	  | trexp (A.IfExp {test, then', else'=SOME elseBody, pos}) =
 	    (checkInt (trexp(test), pos);
@@ -299,14 +312,14 @@ and transExp (venv, tenv) =
 		 val {exp=thenExp, ty=thenTy} = trexp(then');
 		 val {exp=elseExp, ty=elseTy} = trexp(elseBody);
 	     in
-		 if (thenTy = elseTy) then ()
+		 if (Ty.compatible(thenTy, elseTy)) then ()
 		 else Error.error pos "the types of the then clause and else clause do not match";
 		 {exp=(), ty=thenTy }
 		 
 	     end)
 	  | trexp (A.WhileExp{test, body, pos}) =
 	    (checkInt(trexp(test), pos);
-	     checkUnit(trexp(body), pos);
+	     checkLT(#ty (trexp(body)), Ty.UNIT, pos);
 	     {exp=(), ty=Types.UNIT })
 	  | trexp (A.ForExp{var, escape,
 			    lo, hi, body, pos}) =
@@ -318,7 +331,7 @@ and transExp (venv, tenv) =
 		 (checkUnit((transExp(venv', tenv) body), pos);
 		  {exp=(), ty=Types.UNIT })
 	     end)
-	  | trexp (A.BreakExp pos) = {exp=(), ty=Types.UNIT }
+	  | trexp (A.BreakExp pos) = {exp=(), ty=Types.BOTTOM }
 	  | trexp (A.LetExp{decs, body,pos}) =
 	    let val {venv=venv', tenv=tenv'} = transDecs(venv,tenv,decs)
 	    in
