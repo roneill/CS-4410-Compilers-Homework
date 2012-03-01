@@ -42,6 +42,7 @@ and oper = PlusOp | MinusOp | TimesOp | DivideOp
 
 withtype field = {name: symbol, escape: bool ref, 
 		  typ: symbol, pos: pos}
+		 
    and   fundec = {name: symbol,
 		   params: field list,
 		   result: (symbol * pos) option,
