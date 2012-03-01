@@ -92,11 +92,35 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	fun enterTypeHeader ({name, ty, pos}, tenv) = S.enter(tenv, name, Ty.NAME(name,ref NONE))
 	val tenv' = foldl enterTypeHeader tenv typedecs
 	fun checkTypeBody ({name, ty, pos}) =
-	    case S.look(tenv', name) of
-		SOME (Ty.NAME (name, body)) => body := SOME (transTy(tenv', ty))
+	    case S.look(tenv', name)
+	     of SOME (Ty.NAME (name, body)) => body := SOME (transTy(tenv', ty))
 	      | _ => Error.impossible "Looking up type header failed"
+	fun checkForCycles tenv {name, ty, pos} =
+	    let 
+		fun checkForCycles' (ty, visited) =
+		    case ty
+		     of (Ty.NAME (name, body)) =>
+			(case S.look (visited, name)
+			  of SOME _ => Error.error pos ("cycle detected")
+			   | NONE => checkForCycles'(getOpt(!body,Ty.INT), S.enter(visited, name, ref ())))
+		      | _ => ()
+		  
+	    in
+		case S.look (tenv, name)
+		 of SOME ty => checkForCycles' (ty,S.empty)
+		  | NONE => Error.impossible "Cyclic type checking error"
+	fun checkDuplicateDeclarations (typeNames) = 
+	    let
+		fun checkDuplicates(name, nil) = ()
+		  | checkDuplicates(name, ((n, pos)::tail))
+		    case S.look(checkedNames, name)
+		     of SOME dName => (Error.error pos "Duplicate" )
+		      | NONE => checkDuplicates(head, tail)
+	    end
     in
 	map checkTypeBody typedecs;
+	map (checkForCycles tenv') typedecs;
+	checkDuplicateDeclarations(map (fn x => (#name x, #pos x)) typedecs)
 	{venv=venv, tenv=tenv'}
     end
     (* TODO: lists of functions, recursive functions, what is etc?*)
