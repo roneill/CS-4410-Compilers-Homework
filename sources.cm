@@ -11,7 +11,7 @@ Group is
 ./parser/table.sml
 ./semant/semant.sml
 ./semant/types.sml
-(*./semant/typecheck.sml*)
+./semant/typecheck.sml
 $/ml-yacc-lib.cm
 $/smlnj-lib.cm
 $/basis.cm

@@ -40,7 +40,7 @@ struct
 	  print (!fileName);
 	  look(!linePos,!lineNum);
 	  print ":";
-	  print msg;
+	  print ("Error: " ^ msg);
 	  print "\n"
       end
 
