@@ -23,8 +23,6 @@ struct
     | lteq (RECORD(r,u),RECORD (r',u')) = (u=u') 
     | lteq (ARRAY(ty,u),ARRAY (ty',u')) = (u=u') 
     | lteq (a, b) = (a=b)
-  		      
-  fun compatible (a, b)  = lteq(b, a) orelse lteq(a, b)
 
 end
 

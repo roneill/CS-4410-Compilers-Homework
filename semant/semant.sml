@@ -5,12 +5,8 @@ structure Error = ErrorMsg
 
 signature ENV =
 sig
-    (* Don't know why we need this yet
-type access  
-type ty *)
-
     datatype enventry = VarEntry of {ty: Ty.ty}
-		      | FunEntry of {formals: Ty.ty list, result: Ty.ty}
+		      | FunEntry of {formals: Ty.ty list, result: Ty.ty} 
     val base_tenv: Ty.ty S.table
     val base_venv: enventry S.table
 end
@@ -65,11 +61,13 @@ type expty = {exp:Translate.exp, ty: Ty.ty}
  * so this will not cause conflicts with user defined types.*)
 val in_loop = S.symbol("__in_loop")
 
+(* Check for proper nesting of break statements *)	      
 fun checkInLoop (tenv, pos) =
     case S.look(tenv, in_loop) 
      of SOME _ => ()
       | NONE => (Error.error pos "break encountered outside of loop")
 
+(* Convert Ty to String *)		
 fun stringTy (Ty.RECORD _) = "RECORD"
   | stringTy Ty.NIL = "NIL"
   | stringTy Ty.INT = "INT"
@@ -80,11 +78,13 @@ fun stringTy (Ty.RECORD _) = "RECORD"
   | stringTy Ty.TOP = "TOP"
   | stringTy Ty.BOTTOM = "BOTTOM"
   | stringTy Ty.IMMUTABLE_INT = "IMMUTABLE_INT"		 
-				
+
+(* Check to see if an expression evaluates to an int *)				
 fun checkInt ({exp, ty}, pos) =
     if Ty.lteq(ty, Types.INT) then ()
     else Error.error(pos) "exp was not an int"
 
+(* Check to see if an expression evaluates to an unit *)	 
 fun checkUnit ({exp, ty}, pos) =
     if Ty.lteq(ty, Types.UNIT) then ()
     else Error.error(pos) "exp was not a unit"
@@ -94,20 +94,21 @@ fun checkComparable ({exp=lexp, ty=lty},{exp=rexp, ty=rty}, pos) =
     else Error.error(pos) ("The types "^(stringTy lty)^" and "^
 			   (stringTy rty)^" are not comparable")
 
-(*TODO use this in Ty.compatible???*)
+(* Find the underlying type of a name *)	 
 fun actual_ty typ =
     case typ of
 	(Ty.NAME (id, ref(SOME(typ')))) => actual_ty typ'
       | anyTy => anyTy;
-(*TODO: Is it ok for a variable to have UNIT type?*)
 
+(* Get the type of a field *)    
 fun getType (nil, id, pos) = (Error.error(pos)
 					 ("field: \""^
 					  (S.name id)^
 					  "\" not found in record"); Ty.INT)
   | getType ((name,ty)::tail, id, pos) = if (id = name) then ty
-					 else getType(tail, id, pos)								     
+					 else getType(tail, id, pos)
 
+(* Check for duplicate declarations in mutually recursive types or functions *)
 fun checkDuplicateDeclarations (names) = 
     let
 	fun checkDuplicates(nil, checkedNames) = ()
@@ -135,11 +136,11 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	val {exp, ty} = transExp(venv, tenv) init
     in
 	if (Ty.lteq ((actual_ty ty),(actual_ty varTy))) then ()
-	else Error.error pos ("The types of the expression ("^
+	else Error.error pos ("The types of the expression: "^
 			      (stringTy (actual_ty varTy))^
-			      ") and initializer ("^
+			      " and initializer "^
 			      (stringTy (actual_ty ty))^
-			      ") type do not match");
+			      " type do not match");
 	{tenv=tenv, venv=S.enter(venv, name, Env.VarEntry{ty=ty})}
     end
   | transDec (venv, tenv, A.TypeDec(typedecs)) =
@@ -151,6 +152,8 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	    case S.look(tenv', name)
 	     of SOME (Ty.NAME (name, body)) => body := SOME (transTy(tenv', ty))
 	      | _ => Error.impossible "Looking up type header failed"
+
+	(* Check for cycles in mutually recursive type declarations *)	     
 	fun checkForCycles tenv {name, ty, pos} =
 	    let 
 		fun checkForCycles' (ty, visited) =
@@ -176,7 +179,6 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	checkDuplicateDeclarations(map (fn x => (#name x, #pos x)) typedecs);
 	{venv=venv, tenv=tenv'}
     end
-  (* TODO: lists of functions, recursive functions, what is etc?*)
   | transDec(venv, tenv, A.FunctionDec(fundecs)) =
     let
 	fun getResultTy (result) = case result
@@ -223,7 +225,7 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	checkDuplicateDeclarations(map (fn x => (#name x, #pos x)) fundecs);
 	{venv=venv', tenv=tenv}
     end
-
+    
 and transDecs (venv, tenv, decs) =
     let
 	fun transDec' (dec, {venv,tenv}) =
@@ -231,12 +233,13 @@ and transDecs (venv, tenv, decs) =
     in
 	foldl transDec' {venv=venv,tenv=tenv} decs
     end
+    
 and transTy (tenv, A.NameTy(symbol,pos)) =
     (case S.look(tenv,symbol)
       of SOME ty =>  ty
        | NONE => (Error.error pos ("type "^
 				   (S.name symbol)^
-				   " not defined"); Ty.INT) (*TODO*))
+				   " not defined"); Ty.INT))
   | transTy (tenv, A.RecordTy(fields)) =
     let
 	val flds = map (fn x => (#name x,
@@ -249,7 +252,7 @@ and transTy (tenv, A.NameTy(symbol,pos)) =
   | transTy (tenv, A.ArrayTy(symbol,pos)) =
     (case S.look(tenv,symbol)
       of SOME ty => Ty.ARRAY(ty, ref ())
-       | NONE => (Error.error pos "type not defined"; Ty.INT) (*TODO*))
+       | NONE => (Error.error pos "type not defined"; Ty.INT))
     
 and transExp (venv, tenv) =
     let fun trexp (A.VarExp var) = trvar var
@@ -259,7 +262,6 @@ and transExp (venv, tenv) =
 	  | trexp (A.CallExp{func, args, pos}) =
 	    (case S.look(venv, func)
 	      of SOME (Env.FunEntry{formals, result}) =>
-		 (*TODO: use high order functions*)
 		 (let fun checkFormals (nil, nil) = ()
 			| checkFormals (formal::t1, arg::t2) =
 			  (if ((actual_ty formal) = (actual_ty
@@ -277,9 +279,10 @@ and transExp (venv, tenv) =
 			  (Error.error pos "Wrong number of arguments")
 		  end;
 		  {exp=(), ty=result})
-	       | _ => (Error.error pos "function name not declared";
+	       | _ => (Error.error pos ("function name: "^
+					(S.name func)^
+					" not declared");
 			  {exp=(), ty=Ty.UNIT}))
-	  (* Consider using a case statement*)
 	  | trexp (A.OpExp{left, oper=A.PlusOp, right, pos}) =
 	    (checkInt(trexp left, pos);
 	     checkInt(trexp right, pos);
@@ -323,7 +326,6 @@ and transExp (venv, tenv) =
 	      of SOME ty =>
 		 (case actual_ty ty
 		   of (Ty.RECORD(recFields, unique)) =>
-		      (* make this better *)
 		      (let fun lookupID (id, nil) =
 			       (Error.error pos "element not found"; NONE)
 			     | lookupID (id, ((recID, ty)::tail)) =
@@ -361,7 +363,6 @@ and transExp (venv, tenv) =
 		val varType = #ty (trvar(var))
 		val expType = #ty (trexp(exp))
 	    in
-		(* this may not be right *)
 		if(Ty.lteq(expType,varType)) then ()
 		else (Error.error pos ("cannot assign expression of type: "^
 				       (stringTy expType)^
@@ -379,7 +380,7 @@ and transExp (venv, tenv) =
 		 val {exp=thenExp, ty=thenTy} = trexp(then');
 		 val {exp=elseExp, ty=elseTy} = trexp(elseBody);
 	     in
-		 if (Ty.compatible(thenTy, elseTy)) then ()
+		 if (Ty.lteq(thenTy, elseTy) orelse Ty.lteq(elseTy,thenTy)) then ()
 		 else Error.error pos ("the type of the then clause: "^
 				       (stringTy thenTy)^
 				       " and else clause:"^
@@ -428,13 +429,11 @@ and transExp (venv, tenv) =
 			    {exp=(), ty=Ty.INT }))
 	       | NONE => (Error.error pos "Array type not defined";
 			  {exp=(), ty=Ty.INT }))
-	    
 	and trvar (A.SimpleVar(id, pos)) =
 	    (case S.look(venv, id)
 	      of SOME (Env.VarEntry{ty}) => {exp=(), ty=actual_ty ty}
-	       | NONE => (Error.error pos ("undefined variable " ^ S.name id);
-			  {exp=(), ty=Types.INT})
-	       | _ => {exp=(), ty=Types.INT}) (* for testing purposes*)
+	       | _ => (Error.error pos ("undefined variable: " ^ S.name id);
+			  {exp=(), ty=Types.INT}))
 	  | trvar (A.FieldVar(var, id, pos)) =
 	    let
 		val {exp=varExp, ty=varTy} = trvar(var)
