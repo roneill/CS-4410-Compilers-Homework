@@ -1,7 +1,7 @@
 structure A = Absyn
 structure S = Symbol
 structure Ty = Types
-structure Error = ErrorMsg	       
+structure Error = ErrorMsg
 
 signature ENV =
 sig
@@ -43,10 +43,6 @@ val base_venv = foldr S.enter' S.empty
 			 FunEntry {formals=[Ty.INT], result=Ty.INT}),
 			(S.symbol("exit"),
 			 FunEntry {formals=[Ty.INT], result=Ty.UNIT}) ]
-end
-
-structure Translate = struct
-type exp = unit
 end
 
 structure Semant :sig val transProg : A.exp -> unit end =
@@ -415,7 +411,6 @@ and transExp (venv, tenv) =
 	    in
 		transExp(venv', tenv') body
 	    end
-	  (* rewrite *)
 	  | trexp (A.ArrayExp{typ, size, init, pos}) =
 	    (case S.look(tenv, typ)
 	      of SOME ty =>

@@ -12,6 +12,11 @@ Group is
 ./semant/semant.sml
 ./semant/types.sml
 ./semant/typecheck.sml
+./semant/translate.sml
+./semant/temp.sig
+./semant/temp.sml
+./semant/frame.sig
+./semant/mipsframe.sml
 $/ml-yacc-lib.cm
 $/smlnj-lib.cm
 $/basis.cm
