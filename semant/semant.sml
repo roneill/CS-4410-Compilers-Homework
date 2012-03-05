@@ -45,6 +45,10 @@ val base_venv = foldr S.enter' S.empty
 			 FunEntry {formals=[Ty.INT], result=Ty.UNIT}) ]
 end
 
+structure Translate = struct
+type exp = unit
+end
+
 structure Semant :sig val transProg : A.exp -> unit end =
 struct 
 
@@ -292,7 +296,7 @@ and transExp (venv, tenv) =
 		     checkInt(trexp right, pos);
 		     {exp=(), ty=Types.INT})
 		fun checkCompat() =
-		    (checkCompatible(trexp left, trexp right, pos);
+		    (checkComparable(trexp left, trexp right, pos);
 		     {exp=(), ty=Types.INT})
 	    in
 		case oper
