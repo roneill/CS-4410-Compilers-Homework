@@ -111,7 +111,7 @@ fun getType (nil, id, pos) = (Error.error(pos)
 (* Check for duplicate declarations in mutually recursive types or functions *)
 fun checkDuplicateDeclarations (names) = 
     let
-	fun checkDuplicate s(nil, checkedNames) = ()
+	fun checkDuplicates(nil, checkedNames) = ()
 	  | checkDuplicates(((name, pos)::tail), checkedNames) =
 	    case S.look(checkedNames, name)
 	     of SOME dName => (Error.error pos ("duplicate declaration: "
@@ -383,7 +383,7 @@ and transExp (venv, tenv) =
 		 if (Ty.lteq(thenTy, elseTy) orelse Ty.lteq(elseTy,thenTy)) then ()
 		 else Error.error pos ("the type of the then clause: "^
 				       (stringTy thenTy)^
-				       " and else clause:"^
+				       " and else clause: "^
 				       (stringTy elseTy)^ " do not match");
 		 {exp=(), ty=Ty.join(thenTy,elseTy) }
 		 
