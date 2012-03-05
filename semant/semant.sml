@@ -385,7 +385,7 @@ and transExp (venv, tenv) =
 				       (stringTy thenTy)^
 				       " and else clause:"^
 				       (stringTy elseTy)^ " do not match");
-		 {exp=(), ty=thenTy }
+		 {exp=(), ty=Ty.join(thenTy,elseTy) }
 		 
 	     end)
 	  | trexp (A.WhileExp{test, body, pos}) =
