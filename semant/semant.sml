@@ -153,16 +153,15 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	fun checkForCycles (tenv, {name, ty, pos}::tail) =
 	    let 
 		(* Only check cycles of NAMEs. Only stop when anyother type is found *)
-		(* visited is a table of name's that we've visited *)
 		fun hasCycle (Ty.NAME (name, body), visited) =
+		    (* visited is a table of name's that we've visited *)
 		    (case S.look (visited, name)
 		      of SOME _ =>
 			 (Error.error pos
 				      ("cycle in mutually recursive type definition");
 			  true)
 		       | NONE => hasCycle(getOpt(!body,Ty.BOTTOM),
-					  S.enter(visited,
-						  name, ref ())))    
+					  S.enter(visited, name, ref ())))    
 		  | hasCycle (_,_) = (false)
 			     
 	    in
