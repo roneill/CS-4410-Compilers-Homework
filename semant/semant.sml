@@ -256,68 +256,58 @@ and transExp (venv, tenv) =
 	  | trexp (A.NilExp) = {exp=(), ty=Types.NIL}			       
 	  | trexp (A.IntExp i) = {exp=(), ty=Types.INT}
 	  | trexp (A.StringExp(s, pos)) = {exp=(), ty=Types.STRING}
-	  | trexp (A.CallExp{func, args, pos}) =
+	  | trexp (A.CallExp{func, args, pos}) = 
 	    (case S.look(venv, func)
 	      of SOME (Env.FunEntry{formals, result}) =>
-		 (let fun checkFormals (nil, nil) = ()
-			| checkFormals (formal::t1, arg::t2) =
-			  (if ((actual_ty formal) = (actual_ty
-							 (#ty (trexp arg))))
-			   then checkFormals (t1, t2)
-			   else (Error.error pos
-					     ((stringTy formal)^
-					      " wrong argument type "^
-					      (stringTy (#ty (trexp arg))))))
-			| checkFormals (_) = Error.impossible ""
-		  in
-		      if (length(formals) = length(args)) then
-			  checkFormals (formals, args)
-		      else
-			  (Error.error pos "Wrong number of arguments")
-		  end;
-		  {exp=(), ty=result})
+		 let
+		     fun compareArgs (formal, arg) =
+			 let
+			     val actualFormal = actual_ty formal
+			     val actualArg = actual_ty arg
+			 in
+			     if actualFormal = actualArg then ()
+			     else (Error.error pos
+					       ((stringTy actualFormal)^
+						" wrong argument type "^
+						(stringTy actualArg)))
+			 end
+		     val argTypes = map (fn arg => (#ty (trexp arg))) args
+		     val pairs = ListPair.zipEq(formals, argTypes)
+			 handle UnequalLengths =>
+				(Error.error pos
+					     ((S.name func)^
+					      " has incorrect number of arguments");
+				 [])
+		 in
+		     map compareArgs pairs;
+		     {exp=(), ty=result}
+		 end
 	       | _ => (Error.error pos ("function name: "^
 					(S.name func)^
 					" not declared");
-			  {exp=(), ty=Ty.UNIT}))
-	  | trexp (A.OpExp{left, oper=A.PlusOp, right, pos}) =
-	    (checkInt(trexp left, pos);
-	     checkInt(trexp right, pos);
-	     {exp=(), ty=Types.INT})
-	  | trexp (A.OpExp{left, oper=A.MinusOp, right, pos}) =
-	    (checkInt(trexp left, pos);
-	     checkInt(trexp right, pos);
-	     {exp=(), ty=Types.INT})
-	  | trexp (A.OpExp{left, oper=A.TimesOp, right, pos}) =
-	    (checkInt(trexp left, pos);
-	     checkInt(trexp right, pos);
-	     {exp=(), ty=Types.INT})
-	  | trexp (A.OpExp{left, oper=A.DivideOp, right, pos}) =
-	    (checkInt(trexp left, pos);
-	     checkInt(trexp right, pos);
-	     {exp=(), ty=Types.INT})
-	  | trexp (A.OpExp{left, oper=A.EqOp, right, pos}) =
-	    (checkCompatible(trexp left, trexp right, pos);
-	     {exp=(), ty=Types.INT})
-	  | trexp (A.OpExp{left, oper=A.NeqOp, right, pos}) =
-	    (checkCompatible(trexp left, trexp right, pos);
-	     {exp=(), ty=Types.INT})
-	  | trexp (A.OpExp{left, oper=A.LtOp, right, pos}) =
-	    (checkInt(trexp left, pos);
-	     checkInt(trexp right, pos);
-	     {exp=(), ty=Types.INT})
-	  | trexp (A.OpExp{left, oper=A.LeOp, right, pos}) =
-	    (checkInt(trexp left, pos);
-	     checkInt(trexp right, pos);
-	     {exp=(), ty=Types.INT})
-	  | trexp (A.OpExp{left, oper=A.GtOp, right, pos}) =
-	    (checkInt(trexp left, pos);
-	     checkInt(trexp right, pos);
-	     {exp=(), ty=Types.INT})
-	  | trexp (A.OpExp{left, oper=A.GeOp, right, pos}) =
-	    (checkInt(trexp left, pos);
-	     checkInt(trexp right, pos);
-	     {exp=(), ty=Types.INT})
+		       {exp=(), ty=Ty.UNIT}))
+	  | trexp (A.OpExp{left, oper, right, pos}) = 
+	    let
+		fun checkArithmetic() =
+		    (checkInt(trexp left, pos);
+		     checkInt(trexp right, pos);
+		     {exp=(), ty=Types.INT})
+		fun checkCompat() =
+		    (checkCompatible(trexp left, trexp right, pos);
+		     {exp=(), ty=Types.INT})
+	    in
+		case oper
+		 of A.PlusOp => checkArithmetic()
+		  | A.MinusOp => checkArithmetic()
+		  | A.TimesOp =>  checkArithmetic()
+		  | A.DivideOp => checkArithmetic()
+		  | A.EqOp => checkCompat()
+		  | A.NeqOp => checkCompat()
+		  | A.LtOp => checkArithmetic()
+		  | A.LeOp => checkArithmetic()
+		  | A.GtOp => checkArithmetic()
+		  | A.GeOp => checkArithmetic()
+	    end
 	  | trexp (A.RecordExp{fields, typ, pos}) =
 	    (case S.look(tenv, typ)
 	      of SOME ty =>
