@@ -15,7 +15,8 @@ struct
 	  | BOTTOM
 	  | TOP 
 
-  (* The following relations define a partially ordered relation in our type system *)
+  (* The following define a partially ordered relation in our type system. These
+   * relations partially implement a Lattice structure (meet is not implemented) *)
   
   fun join (NIL, RECORD a) = RECORD a 
     | join (RECORD a, NIL) = RECORD a

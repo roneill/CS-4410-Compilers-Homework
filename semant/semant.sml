@@ -9,6 +9,7 @@ sig
 		      | FunEntry of {formals: Ty.ty list, result: Ty.ty} 
     val base_tenv: Ty.ty S.table
     val base_venv: enventry S.table
+    val in_loop: int ref
 end
 
 structure Env :> ENV =
@@ -43,6 +44,7 @@ val base_venv = foldr S.enter' S.empty
 			 FunEntry {formals=[Ty.INT], result=Ty.INT}),
 			(S.symbol("exit"),
 			 FunEntry {formals=[Ty.INT], result=Ty.UNIT}) ]
+val in_loop = ref 0
 end
 
 structure Translate = struct
@@ -56,16 +58,10 @@ type venv = Env.enventry Symbol.table
 type tenv = Ty.ty Symbol.table
 type expty = {exp:Translate.exp, ty: Ty.ty}
 
-(* dummy symbol inserted into the tenv upon entering a loop, used for checking
- * break statements.Tiger does not allow identifiers starting with underscores
- * so this will not cause conflicts with user defined types.*)
-val in_loop = S.symbol("__in_loop")
-
 (* Check for proper nesting of break statements *)	      
-fun checkInLoop (tenv, pos) =
-    case S.look(tenv, in_loop) 
-     of SOME _ => ()
-      | NONE => (Error.error pos "break encountered outside of loop")
+fun checkInLoop (pos) =
+    if !Env.in_loop > 0 then ()
+    else Error.error pos "break encountered outside of loop"
 
 (* Convert Ty to String *)		
 fun stringTy (Ty.RECORD _) = "RECORD"
@@ -389,25 +385,24 @@ and transExp (venv, tenv) =
 		 
 	     end)
 	  | trexp (A.WhileExp{test, body, pos}) =
-	    let
-		val tenv'=S.enter(tenv, in_loop, Ty.TOP)
-	    in 
-		checkInt(trexp(test), pos);
-		checkUnit(transExp(venv,tenv') body, pos);
-		{exp=(), ty=Types.UNIT }
-	    end
+	    (checkInt(trexp(test), pos);
+	     Env.in_loop := !Env.in_loop + 1;
+	     checkUnit(transExp(venv,tenv) body, pos);
+	     Env.in_loop := !Env.in_loop - 1;
+	     {exp=(), ty=Types.UNIT })
 	  | trexp (A.ForExp{var, escape,
 			    lo, hi, body, pos}) =
 	    (checkInt(trexp(lo), pos);
 	     checkInt(trexp(hi), pos);
 	     let
-		 val tenv'=S.enter(tenv, in_loop, Ty.TOP)
 		 val venv'=S.enter(venv, var, Env.VarEntry{ty=Ty.IMMUTABLE_INT})
 	     in
-		 (checkUnit((transExp(venv', tenv') body), pos);
-		  {exp=(), ty=Types.UNIT })
+		 Env.in_loop := !Env.in_loop + 1;
+		 checkUnit((transExp(venv', tenv) body), pos);
+		 Env.in_loop := !Env.in_loop - 1;
+		 {exp=(), ty=Types.UNIT }
 	     end)
-	  | trexp (A.BreakExp pos) = (checkInLoop(tenv,pos);
+	  | trexp (A.BreakExp pos) = (checkInLoop(pos);
 				      {exp=(), ty=Types.BOTTOM})
 	  | trexp (A.LetExp{decs, body,pos}) =
 	    let val {venv=venv', tenv=tenv'} = transDecs(venv,tenv,decs)
