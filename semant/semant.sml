@@ -104,14 +104,14 @@ fun actual_ty typ =
 fun getType (nil, id, pos) = (Error.error(pos)
 					 ("field: \""^
 					  (S.name id)^
-					  "\" not found in record"); Ty.INT)
+					  "\" not found in record"); Ty.BOTTOM)
   | getType ((name,ty)::tail, id, pos) = if (id = name) then ty
 					 else getType(tail, id, pos)
 
 (* Check for duplicate declarations in mutually recursive types or functions *)
 fun checkDuplicateDeclarations (names) = 
     let
-	fun checkDuplicates(nil, checkedNames) = ()
+	fun checkDuplicate s(nil, checkedNames) = ()
 	  | checkDuplicates(((name, pos)::tail), checkedNames) =
 	    case S.look(checkedNames, name)
 	     of SOME dName => (Error.error pos ("duplicate declaration: "
@@ -163,7 +163,7 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 			  of SOME _ =>
 			     Error.error pos
 				("cycle in mutually recursive type definition")
-			   | NONE => checkForCycles'(getOpt(!body,Ty.INT),
+			   | NONE => checkForCycles'(getOpt(!body,Ty.BOTTOM),
 						     S.enter(visited,
 							     name, ref ())))
 		      | _ => ()
@@ -188,7 +188,7 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 					  | NONE =>
 					    (Error.error pos
 						"return type undeclared";
-					     Ty.INT))
+					     Ty.BOTTOM))
 				     | NONE => Ty.UNIT  (* procedure returns no value *)
 	fun transparam {name, escape, typ, pos} =
 	    case S.look(tenv, typ)
@@ -196,7 +196,7 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	      | NONE => (Error.error pos ("parameter type "^
 					  (S.name typ)^
 					  " undeclared");
-			 {name=name, ty=Ty.INT})
+			 {name=name, ty=Ty.BOTTOM})
 	fun enterFunHeader ({name,params,body,pos,result}, venv) =
 	    let val result_ty = getResultTy result
 		val params' = map transparam params
@@ -426,14 +426,14 @@ and transExp (venv, tenv) =
 					      ^(stringTy (#ty (trexp(init))))));
 		       {exp=(), ty=Ty.ARRAY(ty, unique) })
 		    | _ => (Error.error pos ((S.name typ)^" is not array type");
-			    {exp=(), ty=Ty.INT }))
+			    {exp=(), ty=Ty.BOTTOM }))
 	       | NONE => (Error.error pos "Array type not defined";
-			  {exp=(), ty=Ty.INT }))
+			  {exp=(), ty=Ty.BOTTOM }))
 	and trvar (A.SimpleVar(id, pos)) =
 	    (case S.look(venv, id)
 	      of SOME (Env.VarEntry{ty}) => {exp=(), ty=actual_ty ty}
 	       | _ => (Error.error pos ("undefined variable: " ^ S.name id);
-			  {exp=(), ty=Types.INT}))
+		       {exp=(), ty=Types.BOTTOM}))
 	  | trvar (A.FieldVar(var, id, pos)) =
 	    let
 		val {exp=varExp, ty=varTy} = trvar(var)
@@ -444,7 +444,7 @@ and transExp (venv, tenv) =
 		   | _ => (Error.error pos
 				       ("Attempt access field of a non-record "^
 					(stringTy varTy));
-			   {exp=(), ty=Ty.INT}))
+			   {exp=(), ty=Ty.BOTTOM}))
 	    end
 	  | trvar (A.SubscriptVar(var, exp, pos)) =
 	    let
@@ -455,7 +455,7 @@ and transExp (venv, tenv) =
 		  of Ty.ARRAY (ty, unique) => {exp=(), ty=ty}
 		   | _ => (Error.error pos ("Attempt to index a non-array "^
 					    stringTy varTy);
-			   {exp=(), ty=Ty.INT}))
+			   {exp=(), ty=Ty.BOTTOM}))
 	    end
     in
 	trexp

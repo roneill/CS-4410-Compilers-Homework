@@ -16,13 +16,16 @@ struct
 	  | TOP 
 
   (* The following relations define a partially ordered relation in our type system *)
-  fun lteq (NIL, RECORD _) = true
-    | lteq (TOP, TOP) = true
-    | lteq (BOTTOM, _) = true
-    | lteq (IMMUTABLE_INT, INT) = true
-    | lteq (RECORD(r,u),RECORD (r',u')) = (u=u') 
-    | lteq (ARRAY(ty,u),ARRAY (ty',u')) = (u=u') 
-    | lteq (a, b) = (a=b)
+  
+  fun join (NIL, RECORD a) = RECORD a 
+    | join (RECORD a, NIL) = RECORD a
+    | join (a, BOTTOM) = a
+    | join (BOTTOM, a) = a
+    | join (IMMUTABLE_INT, INT) = INT
+    | join (INT, IMMUTABLE_INT) = INT
+    | join (a,b) = if (a=b) then a else TOP
+					
+  fun lteq (a, b) = (join(a,b) = b)
 
 end
 
