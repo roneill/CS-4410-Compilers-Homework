@@ -84,12 +84,11 @@ fun checkInt ({exp, ty}, pos) =
 fun checkUnit ({exp, ty}, pos) =
     if Ty.lteq(ty, Types.UNIT) then ()
     else Error.error(pos) "exp was not a unit"
-
-(* Check to see if two types are compatible *)	 
-fun checkCompatible ({exp=lexp, ty=lty},{exp=rexp, ty=rty}, pos) =
-    if Ty.compatible(lty, rty) then ()
+	 
+fun checkComparable ({exp=lexp, ty=lty},{exp=rexp, ty=rty}, pos) =
+    if Ty.lteq(lty, rty) orelse Ty.lteq(rty, lty) then ()
     else Error.error(pos) ("The types "^(stringTy lty)^" and "^
-			   (stringTy rty)^" are not compatible")
+			   (stringTy rty)^" are not comparable")
 
 (* Find the underlying type of a name *)	 
 fun actual_ty typ =
@@ -179,14 +178,14 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
   | transDec(venv, tenv, A.FunctionDec(fundecs)) =
     let
 	fun getResultTy (result) = case result
-				    of SOME(rt, pos) =>
+				    of SOME(rt, pos) => (* function has return value *)
 				       (case S.look(tenv, rt)
 					 of SOME ty => ty
 					  | NONE =>
 					    (Error.error pos
 						"return type undeclared";
 					     Ty.INT))
-				     | NONE => Ty.UNIT
+				     | NONE => Ty.UNIT  (* procedure returns no value *)
 	fun transparam {name, escape, typ, pos} =
 	    case S.look(tenv, typ)
 	     of SOME t => {name=name, ty=t}
@@ -367,7 +366,7 @@ and transExp (venv, tenv) =
 		 val {exp=thenExp, ty=thenTy} = trexp(then');
 		 val {exp=elseExp, ty=elseTy} = trexp(elseBody);
 	     in
-		 if (Ty.compatible(thenTy, elseTy)) then ()
+		 if (Ty.lteq(thenTy, elseTy) orelse Ty.lteq(elseTy,thenTy)) then ()
 		 else Error.error pos ("the type of the then clause: "^
 				       (stringTy thenTy)^
 				       " and else clause:"^
@@ -407,8 +406,7 @@ and transExp (venv, tenv) =
 		 (case actual_ty ty
 		   of (Ty.ARRAY(ty, unique)) =>
 		      (checkInt(trexp(size), pos);
-		       if ((actual_ty ty) = (actual_ty (#ty (trexp(init)))))
-		       then ()
+		       if ((actual_ty ty) = (actual_ty (#ty (trexp(init))))) then ()
 		       else (Error.error pos ("wrong initial value type of "
 					      ^(stringTy (#ty (trexp(init))))));
 		       {exp=(), ty=Ty.ARRAY(ty, unique) })
