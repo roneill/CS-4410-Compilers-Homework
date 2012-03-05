@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "CM.make \"sources.cm\";" > output.sml
+
+for i in ./testcases/*
+do
+    echo "TextIO.output (TextIO.stdOut, \"Typechecking $i\n\");" >> output.sml
+    echo "TypeCheck.typecheck \"$i\";" >> output.sml
+done
+echo "OS.Process.exit(OS.Process.success);" >> output.sml
+
+sml output.sml > output.txt
+echo "Failed testcases: "
+grep "error:" output.txt

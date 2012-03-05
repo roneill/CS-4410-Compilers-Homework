@@ -149,29 +149,32 @@ fun transDec (venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	     of SOME (Ty.NAME (name, body)) => body := SOME (transTy(tenv', ty))
 	      | _ => Error.impossible "Looking up type header failed"
 
-	(* Check for cycles in mutually recursive type declarations *)	     
-	fun checkForCycles tenv {name, ty, pos} =
+	(* Check for cycles in recursive type name declarations *)	     
+	fun checkForCycles (tenv, {name, ty, pos}::tail) =
 	    let 
-		fun checkForCycles' (ty, visited) =
-		    case ty
-		     of (Ty.NAME (name, body)) =>
-			(case S.look (visited, name)
-			  of SOME _ =>
-			     Error.error pos
-				("cycle in mutually recursive type definition")
-			   | NONE => checkForCycles'(getOpt(!body,Ty.BOTTOM),
-						     S.enter(visited,
-							     name, ref ())))
-		      | _ => ()
+		(* Only check cycles of NAMEs. Only stop when anyother type is found *)
+		(* visited is a table of name's that we've visited *)
+		fun hasCycle (Ty.NAME (name, body), visited) =
+		    (case S.look (visited, name)
+		      of SOME _ =>
+			 (Error.error pos
+				      ("cycle in mutually recursive type definition");
+			  true)
+		       | NONE => hasCycle(getOpt(!body,Ty.BOTTOM),
+					  S.enter(visited,
+						  name, ref ())))    
+		  | hasCycle (_,_) = (false)
 			     
 	    in
 		case S.look (tenv, name)
-		 of SOME ty => checkForCycles' (ty,S.empty)
+		 of SOME ty => if (hasCycle (ty,S.empty)) then () 
+			       else checkForCycles(tenv, tail)
 		  | NONE => Error.impossible "Cyclic type checking error"
 	    end
+	  | checkForCycles (tenv, nil) = () 
     in
 	map checkTypeBody typedecs;
-	map (checkForCycles tenv') typedecs;
+	checkForCycles(tenv', typedecs);
 	checkDuplicateDeclarations(map (fn x => (#name x, #pos x)) typedecs);
 	{venv=venv, tenv=tenv'}
     end
