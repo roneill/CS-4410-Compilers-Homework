@@ -22,7 +22,6 @@ Standard ML of New Jersey v110.73 [built: Fri Jan  6 14:01:08 2012]
 [attempting to load plugin $/mlyacc-tool.cm]
 [library $/mlyacc-tool.cm is stable]
 [plugin $/mlyacc-tool.cm loaded successfully]
-[parsing (sources.cm):./semant/semant.sml]
 [library $/ml-yacc-lib.cm is stable]
 [library $SMLNJ-LIB/Util/smlnj-lib.cm is stable]
 [library $SMLNJ-ML-YACC-LIB/ml-yacc-lib.cm is stable]
@@ -32,8 +31,7 @@ Standard ML of New Jersey v110.73 [built: Fri Jan  6 14:01:08 2012]
 [loading (sources.cm):./semant/types.sml]
 [loading (sources.cm):./parser/absyn.sml]
 [loading (sources.cm):./parser/errormsg.sml]
-[compiling (sources.cm):./semant/semant.sml]
-[code: 46252, data: 1372, env: 802 bytes]
+[loading (sources.cm):./semant/semant.sml]
 [loading (sources.cm):./parser/prabsyn.sml]
 [loading (sources.cm):parser/tiger.grm.sig]
 [loading (sources.cm):parser/tiger.grm.sml]
@@ -58,7 +56,7 @@ val it = () : unit
 val it = () : unit
 Typechecking ./testcases/test-break-outside.tig
 val it = () : unit
-./testcases/test-break-outside.tig:9.3:Error: break encountered outside of loop
+./testcases/test-break-outside.tig:11.3:Error: break encountered outside of loop
 val it = () : unit
 Typechecking ./testcases/test1.tig
 val it = () : unit
