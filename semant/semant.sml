@@ -1,12 +1,15 @@
 structure A = Absyn
 structure S = Symbol
 structure Ty = Types
+structure Tr = Translate
 structure Error = ErrorMsg
 
 signature ENV =
 sig
-    datatype enventry = VarEntry of {ty: Ty.ty}
-		      | FunEntry of {formals: Ty.ty list, result: Ty.ty} 
+    datatype enventry = VarEntry of {access: Tr.access, ty: Ty.ty}
+		      | FunEntry of {level: Tr.level,
+				     label: Temp.Label,
+				     formals: Ty.ty list, result: Ty.ty} 
     val base_tenv: Ty.ty S.table
     val base_venv: enventry S.table
 end
@@ -14,8 +17,10 @@ end
 structure Env :> ENV =
 struct
 
-datatype enventry = VarEntry of {ty: Ty.ty}
-		  | FunEntry of {formals: Ty.ty list, result: Ty.ty}
+datatype enventry = VarEntry of {access: Tr.access, ty: Ty.ty}
+		  | FunEntry of {level: Tr.level,
+				 label: Temp.Label,
+				 formals: Ty.ty list, result: Ty.ty} 
 				
 val base_tenv = foldr S.enter' S.empty [ (S.symbol("int"), Ty.INT),
 					 (S.symbol("string"), Ty.STRING) ]

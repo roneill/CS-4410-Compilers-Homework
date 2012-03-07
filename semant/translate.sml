@@ -15,7 +15,7 @@ end
 structure Translate : TRANSLATE =
 struct
 type exp = unit
-type level = unit
+type level = int
 type access = unit
 	   
 val outermost = ()
