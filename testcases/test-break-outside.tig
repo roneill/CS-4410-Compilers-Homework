@@ -1,0 +1,12 @@
+/* error: break is outside of a for loop */
+let
+var x := 0
+function f (n: int) =
+	 for i:=0 to n do
+	     (break; /*This break is ok */
+	     for j:=0 to n do	   
+	         (x := x + 1;
+		 break)) /* This break is ok */	 
+in 
+	 break; /* This break causes an error */
+end
