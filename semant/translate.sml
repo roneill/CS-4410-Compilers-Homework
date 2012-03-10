@@ -1,3 +1,4 @@
+structure Frame = MipsFrame
 
 signature TRANSLATE =
 sig
@@ -15,7 +16,7 @@ end
 structure Translate : TRANSLATE =
 struct
 type exp = unit
-datatype level = LEVEL of {frame: Frame, parent: level}
+datatype level = LEVEL of {frame: Frame.frame, parent: level}
 	       | TOP
 type access = level * Frame.access
 
@@ -23,26 +24,29 @@ val outermost = TOP
 
 fun newLevel {parent=parent, name=name, formals=formals} = 
     let
-	val frame = Frame.newFrame(name,true::formals)
+	val frame = Frame.newFrame{name=name,formals=true::formals}
     in
 	LEVEL {frame=frame, parent=parent}
     end
 
 fun formals level =
     case level
-     of LEVEL {frame, parent} = 
+     of LEVEL {frame, parent} => 
 	let
-	    formals = Frame.formals(frame)
+	    val formals = Frame.formals(frame)
 	in
 	    map (fn formal => (level, formal)) formals
 	end
-      | TOP = [] (* TODO: Does TOP have formals? Report Error? *)
+      | TOP => [] (* TODO: Does TOP have formals? Report Error? *)
 
 fun allocLocal lev esc = 
-    let
-	val frame=(#frame lev)
-	val access=Frame.allocLocal frame esc
-    in
-	(lev, access)
-    end
+    case lev
+     of LEVEL {frame, parent} => 
+	let
+	    val access=Frame.allocLocal frame esc
+	in
+	    (lev, access)
+	end
+      | TOP =>
+	ErrorMsg.impossible "Tried to allocLocal at the outermost level"
 end

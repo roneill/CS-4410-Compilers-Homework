@@ -28,27 +28,55 @@ val base_tenv = foldr S.enter' S.empty [ (S.symbol("int"), Ty.INT),
 
 val base_venv = foldr S.enter' S.empty 
 		      [ (S.symbol("print"),
-			 FunEntry {formals=[Ty.STRING], result=Ty.UNIT }),
+			 FunEntry {level=Tr.outermost,
+				   label=Temp.newlabel(),
+				   formals=[Ty.STRING], 
+				   result=Ty.UNIT }),
 			(S.symbol("flush"),
-			 FunEntry {formals=[], result=Ty.UNIT}),
+			 FunEntry {level=Tr.outermost,
+				   label=Temp.newlabel(), 
+				   formals=[], 
+				   result=Ty.UNIT}),
 			(S.symbol("getchar"),
-			 FunEntry {formals=[], result=Ty.STRING}),
+			 FunEntry {level=Tr.outermost,
+				   label=Temp.newlabel(),
+				   formals=[], 
+				   result=Ty.STRING}),
 			(S.symbol("ord"),
-			 FunEntry {formals=[Ty.STRING], result=Ty.INT}),
+			 FunEntry {level=Tr.outermost, 
+				   label=Temp.newlabel(),
+				   formals=[Ty.STRING], 
+				   result=Ty.INT}),
 			(S.symbol("chr"),
-			 FunEntry {formals=[Ty.INT], result=Ty.STRING}),
+			 FunEntry {level=Tr.outermost, 
+				   label=Temp.newlabel(),
+				   formals=[Ty.INT], 
+				   result=Ty.STRING}),
 			(S.symbol("size"),
-			 FunEntry {formals=[Ty.STRING], result=Ty.INT}),
+			 FunEntry {level=Tr.outermost, 
+				   label=Temp.newlabel(),
+				   formals=[Ty.STRING], 
+				   result=Ty.INT}),
 			(S.symbol("substring"),
-			 FunEntry {formals=[Ty.STRING, Ty.INT, Ty.INT],
+			 FunEntry {level=Tr.outermost,
+				   label=Temp.newlabel(), 
+				   formals=[Ty.STRING, Ty.INT, Ty.INT],
 				   result=Ty.STRING}),
 			(S.symbol("concat"),
-			 FunEntry {formals=[Ty.STRING, Ty.STRING],
+			 FunEntry {level=Tr.outermost,
+				   label=Temp.newlabel(), 
+				   formals=[Ty.STRING, Ty.STRING],
 				   result=Ty.STRING}),
 			(S.symbol("not"),
-			 FunEntry {formals=[Ty.INT], result=Ty.INT}),
+			 FunEntry {level=Tr.outermost, 
+				   label=Temp.newlabel(),
+				   formals=[Ty.INT], 
+				   result=Ty.INT}),
 			(S.symbol("exit"),
-			 FunEntry {formals=[Ty.INT], result=Ty.UNIT}) ]
+			 FunEntry {level=Tr.outermost,
+				   label=Temp.newlabel(), 
+				   formals=[Ty.INT], 
+				   result=Ty.UNIT}) ]
 val in_loop = ref 0
 end
 
@@ -192,7 +220,7 @@ fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 						"return type undeclared";
 					     Ty.BOTTOM))
 				     | NONE => Ty.UNIT  (* procedure returns no value *)
-	fun transparam {name, escape, typ, pos} =
+	fun transparam {name, escape, typ, pos}  =
 	    case S.look(tenv, typ)
 	     of SOME t => {name=name, ty=t}
 	      | NONE => (Error.error pos ("parameter type "^
@@ -201,26 +229,44 @@ fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 			 {name=name, ty=Ty.BOTTOM})
 	fun enterFunHeader ({name,params,body,pos,result}, venv) =
 	    let 
-		val formals = map (fn x => true) params
-		val level' = Tr.newLevel(parent=level, 
+		val formals = map (fn x => true) params (* TODO: implement findEscape *)
+		val level' = Tr.newLevel{parent=level, 
 					 name=Temp.newlabel(), 
-					 formals=formals)
+					 formals=formals}
 		val result_ty = getResultTy result
 		val params' = map transparam params
 	    in
 		S.enter(venv, name, Env.FunEntry{level=level', 
+						 label=Temp.newlabel(),
 						 formals= map #ty params',
 						 result=result_ty})
 	    end
 	val venv' = foldl enterFunHeader venv fundecs
-	fun checkFunBody ({name,params,body,pos,result}) =
+	fun checkFunBody ({name=funName,params,body,pos,result}) =
 	    let
 		val result_ty = getResultTy result
-		fun enterparam ({name, ty}, venv) =
-		    S.enter(venv, name, Env.VarEntry{ty=ty})
-		val params' = map transparam params
+		(* we need to get accesses (Translate.access) for each of the params.
+		 * Look up the formals (access list) of the function from the venv *)
+		val level = case S.look(venv',funName) 
+			     of SOME (Env.FunEntry {level, label, formals, result}) => 
+				level
+			      | _ => Error.impossible 
+					    "checkFunBody did not find function header"
+		val formals = Tr.formals level
+		val params_access = ListPair.zip(params,formals)
+		val params' = map (fn (p,a) => 
+				      let
+					  val param = transparam p
+					  val name = #name param
+					  val ty = #ty param
+				      in
+					{name=name,ty=ty,access=a}
+				      end )
+				  params_access
+		fun enterparam ({name=varName, ty, access}, venv) = 
+		    S.enter(venv, varName, Env.VarEntry{access=access,ty=ty})
 		val venv'' =  foldl enterparam venv' params'
-		val {exp=bodyexp, ty=bodyty} = transExp(venv'', tenv) body
+		val {exp=bodyexp, ty=bodyty} = transExp(level,venv'', tenv) body
 	    in
 		if (actual_ty bodyty = actual_ty result_ty) then ()
 		else (Error.error pos ("return type of body: "^
@@ -269,7 +315,7 @@ and transExp (level, venv, tenv) =
 	  | trexp (A.StringExp(s, pos)) = {exp=(), ty=Types.STRING}
 	  | trexp (A.CallExp{func, args, pos}) = 
 	    (case S.look(venv, func)
-	      of SOME (Env.FunEntry{formals, result}) =>
+	      of SOME (Env.FunEntry{level, label, formals, result}) =>
 		 let
 		     fun compareArgs (formal, arg) =
 			 let
@@ -397,7 +443,9 @@ and transExp (level, venv, tenv) =
 	    (checkInt(trexp(lo), pos);
 	     checkInt(trexp(hi), pos);
 	     let
-		 val venv'=S.enter(venv, var, Env.VarEntry{ty=Ty.IMMUTABLE_INT})
+		 val access = Tr.allocLocal level true (*TODO: change this after findEscape*)
+		 val venv' = S.enter(venv, var, Env.VarEntry{access=access,
+							     ty=Ty.IMMUTABLE_INT})
 	     in
 		 Env.in_loop := !Env.in_loop + 1;
 		 checkUnit((transExp(level, venv', tenv) body), pos);
@@ -409,7 +457,7 @@ and transExp (level, venv, tenv) =
 	  | trexp (A.LetExp{decs, body,pos}) =
 	    let val {venv=venv', tenv=tenv'} = transDecs(level, venv,tenv,decs)
 	    in
-		transExp(level,venv', tenv') body
+		transExp(level, venv', tenv') body
 	    end
 	  | trexp (A.ArrayExp{typ, size, init, pos}) =
 	    (case S.look(tenv, typ)
@@ -427,7 +475,7 @@ and transExp (level, venv, tenv) =
 			  {exp=(), ty=Ty.BOTTOM }))
 	and trvar (A.SimpleVar(id, pos)) =
 	    (case S.look(venv, id)
-	      of SOME (Env.VarEntry{ty}) => {exp=(), ty=actual_ty ty}
+	      of SOME (Env.VarEntry{access, ty}) => {exp=(), ty=actual_ty ty}
 	       | _ => (Error.error pos ("undefined variable: " ^ S.name id);
 		       {exp=(), ty=Types.BOTTOM}))
 	  | trvar (A.FieldVar(var, id, pos)) =
@@ -457,6 +505,12 @@ and transExp (level, venv, tenv) =
 	trexp
     end
     
-fun transProg ast = ((transExp(Tr.TOP,Env.base_venv, Env.base_tenv) ast); ())
-		    
+fun transProg ast = 
+    let 
+	val level = Tr.newLevel{parent=Tr.outermost, 
+				name=Temp.newlabel(), 
+				formals=[]}
+    in
+	((transExp(level,Env.base_venv, Env.base_tenv) ast);())
+    end
 end

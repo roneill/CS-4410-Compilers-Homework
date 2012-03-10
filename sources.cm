@@ -17,6 +17,7 @@ Group is
 ./semant/temp.sml
 ./semant/frame.sig
 ./semant/mipsframe.sml
+./semant/findescape.sml
 $/ml-yacc-lib.cm
 $/smlnj-lib.cm
 $/basis.cm

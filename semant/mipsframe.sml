@@ -12,7 +12,8 @@ fun newFrame {name, formals} =
 	    let
 		val i = !argument
 	    in
-		argument := i+1; i * wordsize
+		argument := i+1; 
+		i * wordsize
 	    end
 	val formals' = map (fn escape => if escape
 					 then InFrame (getArgumentOffset())
