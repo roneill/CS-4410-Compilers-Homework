@@ -149,7 +149,7 @@ fun checkDuplicateDeclarations (names) =
     
 fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) = 
     let 
-	val access = Tr.allocLocal(level) true
+	val access = Tr.allocLocal(level) (!escape)
 	val {exp, ty} = transExp(level,venv, tenv) init
     in
 	if (ty = Ty.NIL)
@@ -159,7 +159,7 @@ fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
     end
   | transDec (level, venv, tenv, A.VarDec{name, escape, typ=SOME typ , init, pos}) =
     let
-	val access = Tr.allocLocal(level) true
+	val access = Tr.allocLocal(level) (!escape)
 	val varTy = transTy(tenv, A.NameTy(typ))
 	val {exp, ty} = transExp(level, venv, tenv) init
     in
@@ -229,7 +229,7 @@ fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 			 {name=name, ty=Ty.BOTTOM})
 	fun enterFunHeader ({name,params,body,pos,result}, venv) =
 	    let 
-		val formals = map (fn x => true) params (* TODO: implement findEscape *)
+		val formals = map (fn p => !(#escape p)) params
 		val level' = Tr.newLevel{parent=level, 
 					 name=Temp.newlabel(), 
 					 formals=formals}
@@ -263,9 +263,13 @@ fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 					{name=name,ty=ty,access=a}
 				      end )
 				  params_access
-		fun enterparam ({name=varName, ty, access}, venv) = 
-		    S.enter(venv, varName, Env.VarEntry{access=access,ty=ty})
-		val venv'' =  foldl enterparam venv' params'
+		val venv'' =  foldl (fn ({name=varName, ty, access}, venv) => 
+					S.enter(venv, 
+						varName, 
+						Env.VarEntry{access=access,
+							     ty=ty}))
+				    venv'
+				    params'
 		val {exp=bodyexp, ty=bodyty} = transExp(level,venv'', tenv) body
 	    in
 		if (actual_ty bodyty = actual_ty result_ty) then ()
@@ -281,12 +285,10 @@ fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
     end
     
 and transDecs (level, venv, tenv, decs) =
-    let
-	fun transDec' (dec, {venv,tenv}) =
-	    transDec (level,venv,tenv,dec)
-    in
-	foldl transDec' {venv=venv,tenv=tenv} decs
-    end
+    foldl (fn (dec, {venv,tenv}) => 
+	      transDec (level,venv,tenv,dec))
+	  {venv=venv,tenv=tenv} 
+	  decs
     
 and transTy (tenv, A.NameTy(symbol,pos)) =
     (case S.look(tenv,symbol)
@@ -443,7 +445,7 @@ and transExp (level, venv, tenv) =
 	    (checkInt(trexp(lo), pos);
 	     checkInt(trexp(hi), pos);
 	     let
-		 val access = Tr.allocLocal level true (*TODO: change this after findEscape*)
+		 val access = Tr.allocLocal level (!escape)
 		 val venv' = S.enter(venv, var, Env.VarEntry{access=access,
 							     ty=Ty.IMMUTABLE_INT})
 	     in
@@ -511,6 +513,8 @@ fun transProg ast =
 				name=Temp.newlabel(), 
 				formals=[]}
     in
-	((transExp(level,Env.base_venv, Env.base_tenv) ast);())
+	(FindEscape.findEscape(ast);
+	 transExp(level,Env.base_venv, Env.base_tenv) ast;
+	 ())
     end
 end
