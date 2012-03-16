@@ -3,14 +3,15 @@ structure MipsFrame : FRAME =
 struct
 datatype access = InFrame of int | InReg of Temp.temp
 type frame = {name: Temp.label, frameOffset: int ref, formals: access list}
-val wordsize = 4
+val wordSize = 4
 val maxParamRegsters = 4
+val FP = Temp.newtemp()
 
 fun newFrame {name, formals} =
     let
 	val argumentOffset = ref 0
 	fun getArgumentOffset () = 
-	    (argumentOffset := !argumentOffset + wordsize;
+	    (argumentOffset := !argumentOffset + wordSize;
 	     !argumentOffset)
 	val usedRegisters = ref 0
 
@@ -29,7 +30,7 @@ fun newFrame {name, formals} =
 fun allocLocal (frame:frame) escape =
     let
 	val frameOffset = (#frameOffset frame)
-	val newFrameOffset = !frameOffset - wordsize
+	val newFrameOffset = !frameOffset - wordSize
     in
 	frameOffset := newFrameOffset;
 	if escape
@@ -37,6 +38,10 @@ fun allocLocal (frame:frame) escape =
 	else InFrame (newFrameOffset)
     end
 
-fun name (frame:frame) = (#name frame) 
-fun formals (frame:frame) = (#formals frame) 
+fun name (frame:frame) = (#name frame)
+fun formals (frame:frame) = (#formals frame)
+
+fun exp (InFrame k) fp = MEM(BINOP(PLUS,fp,CONST(k)))
+  | exp (InReg t) _ = TEMP t
+
 end
