@@ -1,12 +1,15 @@
 
 structure MipsFrame : FRAME =
 struct
+
+structure T=Tree
+	    
 datatype access = InFrame of int | InReg of Temp.temp
 type frame = {name: Temp.label, frameOffset: int ref, formals: access list}
 val wordSize = 4
 val maxParamRegsters = 4
 val FP = Temp.newtemp()
-
+	 
 fun newFrame {name, formals} =
     let
 	val argumentOffset = ref 0
@@ -41,7 +44,8 @@ fun allocLocal (frame:frame) escape =
 fun name (frame:frame) = (#name frame)
 fun formals (frame:frame) = (#formals frame)
 
-fun exp (InFrame k) fp = MEM(BINOP(PLUS,fp,CONST(k)))
-  | exp (InReg t) _ = TEMP t
-
+(* fp is either a TEMP(FP) or a series of MEM and + instructins to fetch the frame pointer *)			    
+fun exp (InFrame k) fp = T.MEM(T.BINOP(T.PLUS,fp,T.CONST(k)))
+  | exp (InReg t) _ = T.TEMP t
+		      
 end

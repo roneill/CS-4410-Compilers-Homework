@@ -85,7 +85,7 @@ struct
 
 type venv = Env.enventry Symbol.table
 type tenv = Ty.ty Symbol.table
-type expty = {exp:Translate.exp, ty: Ty.ty}
+type expty = {exp:Tr.exp, ty: Ty.ty}
 
 (* Check for proper nesting of break statements *)	      
 fun checkInLoop (pos) =
@@ -109,6 +109,10 @@ fun checkInt ({exp, ty}, pos) =
     if Ty.lteq(ty, Types.INT) then ()
     else Error.error(pos) "exp was not an int"
 
+fun checkInt' (ty, pos) =
+    if Ty.lteq(ty, Types.INT) then ()
+    else Error.error(pos) "exp was not an int"
+	 
 (* Check to see if an expression evaluates to an unit *)	 
 fun checkUnit ({exp, ty}, pos) =
     if Ty.lteq(ty, Types.UNIT) then ()
@@ -119,6 +123,11 @@ fun checkComparable ({exp=lexp, ty=lty},{exp=rexp, ty=rty}, pos) =
     else Error.error(pos) ("The types "^(stringTy lty)^" and "^
 			   (stringTy rty)^" are not comparable")
 
+fun checkComparable' (lty,rty, pos) =
+    if Ty.lteq(lty, rty) orelse Ty.lteq(rty, lty) then ()
+    else Error.error(pos) ("The types "^(stringTy lty)^" and "^
+			   (stringTy rty)^" are not comparable")	 
+	 
 (* Find the underlying type of a name *)	 
 fun actual_ty typ =
     case typ of
@@ -347,25 +356,38 @@ and transExp (level, venv, tenv) =
 		       {exp=(), ty=Ty.UNIT}))
 	  | trexp (A.OpExp{left, oper, right, pos}) = 
 	    let
-		fun checkArithmetic() =
-		    (checkInt(trexp left, pos);
-		     checkInt(trexp right, pos);
-		     {exp=(), ty=Types.INT})
-		fun checkCompat() =
+		fun checkArithmetic(translate) =
+		    let
+			val {exp=lexp, ty=lty} = trexp left
+			val {exp=rexp, ty=rty} = trexp right
+		    in
+			(checkInt'(lty, pos);
+			 checkInt'(rty, pos);
+		    end
+		     {exp=(translate(lexp, rexp)), ty=Types.INT})
+		fun checkCompat(translate) =
+		    let
+			val {exp=lexp, ty=lty} = trexp left
+			val {exp=rexp, ty=rty} = trexp right
+		    in
+			(checkComparable(lty, rty, pos);
+			 {exp=(translate(lexp, rexp)), ty=Types.INT})
+		    end
+		    
 		    (checkComparable(trexp left, trexp right, pos);
 		     {exp=(), ty=Types.INT})
 	    in
 		case oper
-		 of A.PlusOp => checkArithmetic()
-		  | A.MinusOp => checkArithmetic()
-		  | A.TimesOp =>  checkArithmetic()
-		  | A.DivideOp => checkArithmetic()
-		  | A.EqOp => checkCompat()
-		  | A.NeqOp => checkCompat()
-		  | A.LtOp => checkArithmetic()
-		  | A.LeOp => checkArithmetic()
-		  | A.GtOp => checkArithmetic()
-		  | A.GeOp => checkArithmetic()
+		 of A.PlusOp => checkArithmetic(Tr.plus)
+		  | A.MinusOp => checkArithmetic(Tr.minus)
+		  | A.TimesOp =>  checkArithmetic(Tr.times)
+		  | A.DivideOp => checkArithmetic(Tr.divide)
+		  | A.EqOp => checkCompat(Tr.eq)
+		  | A.NeqOp => checkCompat(Tr.neq)
+		  | A.LtOp => checkArithmetic(Tr.lt)
+		  | A.LeOp => checkArithmetic(Tr.le)
+		  | A.GtOp => checkArithmetic(Tr.gt)
+		  | A.GeOp => checkArithmetic(Tr.ge)
 	    end
 	  | trexp (A.RecordExp{fields, typ, pos}) =
 	    (case S.look(tenv, typ)
