@@ -321,9 +321,9 @@ and transTy (tenv, A.NameTy(symbol,pos)) =
     
 and transExp (level, venv, tenv) =
     let fun trexp (A.VarExp var) = trvar var
-	  | trexp (A.NilExp) = {exp=(), ty=Types.NIL}			       
-	  | trexp (A.IntExp i) = {exp=(), ty=Types.INT}
-	  | trexp (A.StringExp(s, pos)) = {exp=(), ty=Types.STRING}
+	  | trexp (A.NilExp) = {exp=(Tr.EMPTY()), ty=Types.NIL}			       
+	  | trexp (A.IntExp i) = {exp=(Tr.EMPTY()), ty=Types.INT}
+	  | trexp (A.StringExp(s, pos)) = {exp=(Tr.EMPTY()), ty=Types.STRING}
 	  | trexp (A.CallExp{func, args, pos}) = 
 	    (case S.look(venv, func)
 	      of SOME (Env.FunEntry{level, label, formals, result}) =>
@@ -348,12 +348,12 @@ and transExp (level, venv, tenv) =
 				 [])
 		 in
 		     map compareArgs pairs;
-		     {exp=(), ty=result}
+		     {exp=(Tr.EMPTY()), ty=result}
 		 end
 	       | _ => (Error.error pos ("function name: "^
 					(S.name func)^
 					" not declared");
-		       {exp=(), ty=Ty.UNIT}))
+		       {exp=(Tr.EMPTY()), ty=Ty.UNIT}))
 	  | trexp (A.OpExp{left, oper, right, pos}) = 
 	    let
 		fun checkArithmetic(translate) =
@@ -363,19 +363,17 @@ and transExp (level, venv, tenv) =
 		    in
 			(checkInt'(lty, pos);
 			 checkInt'(rty, pos);
+			 {exp=(translate(lexp, rexp)), ty=Types.INT})
 		    end
-		     {exp=(translate(lexp, rexp)), ty=Types.INT})
+		     
 		fun checkCompat(translate) =
 		    let
 			val {exp=lexp, ty=lty} = trexp left
 			val {exp=rexp, ty=rty} = trexp right
 		    in
-			(checkComparable(lty, rty, pos);
+			(checkComparable'(lty, rty, pos);
 			 {exp=(translate(lexp, rexp)), ty=Types.INT})
 		    end
-		    
-		    (checkComparable(trexp left, trexp right, pos);
-		     {exp=(), ty=Types.INT})
 	    in
 		case oper
 		 of A.PlusOp => checkArithmetic(Tr.plus)
@@ -410,17 +408,17 @@ and transExp (level, venv, tenv) =
 		       in
 			   loopFields(fields)
 		       end;
-		       {exp=(), ty=(Ty.RECORD(recFields, unique))})
+		       {exp=(Tr.EMPTY()), ty=(Ty.RECORD(recFields, unique))})
 		    | _ => (Error.error pos ("identifier: "^
 					     (stringTy ty)^
 					     " was not a record");
-			    {exp=(), ty=Ty.INT}))
+			    {exp=(Tr.EMPTY()), ty=Ty.INT}))
 	       | NONE => (Error.error pos ("record type: "^
 					   (S.name typ)^
 					   " not declared");
-			  {exp=(), ty=Ty.INT}))
+			  {exp=(Tr.EMPTY()), ty=Ty.INT}))
 	  | trexp (A.SeqExp(exps)) =
-	    let fun checkExps nil = {exp=(), ty=Types.UNIT }
+	    let fun checkExps nil = {exp=(Tr.EMPTY()), ty=Types.UNIT }
 		  | checkExps ((exp, pos)::nil) = trexp(exp)
 		  | checkExps ((exp, pos)::tail) = (trexp(exp); checkExps(tail))
 	    in
@@ -436,12 +434,12 @@ and transExp (level, venv, tenv) =
 				       (stringTy expType)^
 				       " to variable of type: "^
 				       (stringTy varType)));
-		{exp=(), ty=Ty.UNIT}
+		{exp=(Tr.EMPTY()), ty=Ty.UNIT}
 	    end
 	  | trexp (A.IfExp {test, then', else'=NONE, pos}) =
 	    (checkInt (trexp(test), pos);
 	     checkUnit(trexp(then'), pos);
-	     {exp=(), ty=Types.UNIT })
+	     {exp=(Tr.EMPTY()), ty=Types.UNIT })
 	  | trexp (A.IfExp {test, then', else'=SOME elseBody, pos}) =
 	    (checkInt (trexp(test), pos);
 	     let
@@ -453,7 +451,7 @@ and transExp (level, venv, tenv) =
 				       (stringTy thenTy)^
 				       " and else clause: "^
 				       (stringTy elseTy)^ " do not match");
-		 {exp=(), ty=Ty.join(thenTy,elseTy) }
+		 {exp=(Tr.EMPTY()), ty=Ty.join(thenTy,elseTy) }
 		 
 	     end)
 	  | trexp (A.WhileExp{test, body, pos}) =
@@ -461,7 +459,7 @@ and transExp (level, venv, tenv) =
 	     Env.in_loop := !Env.in_loop + 1;
 	     checkUnit(trexp body, pos);
 	     Env.in_loop := !Env.in_loop - 1;
-	     {exp=(), ty=Types.UNIT })
+	     {exp=(Tr.EMPTY()), ty=Types.UNIT })
 	  | trexp (A.ForExp{var, escape,
 			    lo, hi, body, pos}) =
 	    (checkInt(trexp(lo), pos);
@@ -474,10 +472,10 @@ and transExp (level, venv, tenv) =
 		 Env.in_loop := !Env.in_loop + 1;
 		 checkUnit((transExp(level, venv', tenv) body), pos);
 		 Env.in_loop := !Env.in_loop - 1;
-		 {exp=(), ty=Types.UNIT }
+		 {exp=(Tr.EMPTY()), ty=Types.UNIT }
 	     end)
 	  | trexp (A.BreakExp pos) = (checkInLoop(pos);
-				      {exp=(), ty=Types.BOTTOM})
+				      {exp=(Tr.EMPTY()), ty=Types.BOTTOM})
 	  | trexp (A.LetExp{decs, body,pos}) =
 	    let val {venv=venv', tenv=tenv'} = transDecs(level, venv,tenv,decs)
 	    in
@@ -492,27 +490,27 @@ and transExp (level, venv, tenv) =
 		       if ((actual_ty ty) = (actual_ty (#ty (trexp(init))))) then ()
 		       else (Error.error pos ("wrong initial value type of "
 					      ^(stringTy (#ty (trexp(init))))));
-		       {exp=(), ty=Ty.ARRAY(ty, unique) })
+		       {exp=(Tr.EMPTY()), ty=Ty.ARRAY(ty, unique) })
 		    | _ => (Error.error pos ((S.name typ)^" is not array type");
-			    {exp=(), ty=Ty.BOTTOM }))
+			    {exp=(Tr.EMPTY()), ty=Ty.BOTTOM }))
 	       | NONE => (Error.error pos "Array type not defined";
-			  {exp=(), ty=Ty.BOTTOM }))
+			  {exp=(Tr.EMPTY()), ty=Ty.BOTTOM }))
 	and trvar (A.SimpleVar(id, pos)) =
 	    (case S.look(venv, id)
-	      of SOME (Env.VarEntry{access, ty}) => {exp=(), ty=actual_ty ty}
+	      of SOME (Env.VarEntry{access, ty}) => {exp=(Tr.EMPTY()), ty=actual_ty ty}
 	       | _ => (Error.error pos ("undefined variable: " ^ S.name id);
-		       {exp=(), ty=Types.BOTTOM}))
+		       {exp=(Tr.EMPTY()), ty=Types.BOTTOM}))
 	  | trvar (A.FieldVar(var, id, pos)) =
 	    let
 		val {exp=varExp, ty=varTy} = trvar(var)
 	    in
 		(case actual_ty varTy
-		  of Ty.RECORD (fields,unique) => {exp=(),
+		  of Ty.RECORD (fields,unique) => {exp=(Tr.EMPTY()),
 						   ty=getType(fields, id, pos)}
 		   | _ => (Error.error pos
 				       ("Attempt access field of a non-record "^
 					(stringTy varTy));
-			   {exp=(), ty=Ty.BOTTOM}))
+			   {exp=(Tr.EMPTY()), ty=Ty.BOTTOM}))
 	    end
 	  | trvar (A.SubscriptVar(var, exp, pos)) =
 	    let
@@ -520,10 +518,10 @@ and transExp (level, venv, tenv) =
 	    in
 		(checkInt(trexp(exp),pos);
 		 case actual_ty varTy
-		  of Ty.ARRAY (ty, unique) => {exp=(), ty=ty}
+		  of Ty.ARRAY (ty, unique) => {exp=(Tr.EMPTY()), ty=ty}
 		   | _ => (Error.error pos ("Attempt to index a non-array "^
 					    stringTy varTy);
-			   {exp=(), ty=Ty.BOTTOM}))
+			   {exp=(Tr.EMPTY()), ty=Ty.BOTTOM}))
 	    end
     in
 	trexp

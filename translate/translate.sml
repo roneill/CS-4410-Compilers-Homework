@@ -11,6 +11,19 @@ sig
     val formals: level -> access list
     val allocLocal: level -> bool -> access
     val simpleVar : access * level -> exp
+    val plus: exp * exp -> exp 
+    val minus: exp * exp -> exp 
+    val times: exp * exp -> exp 
+    val divide: exp * exp -> exp 
+    val eq: exp * exp -> exp 
+    val neq: exp * exp -> exp 
+    val lt: exp * exp -> exp 
+    val le: exp * exp -> exp 
+    val gt: exp * exp -> exp 
+    val ge: exp * exp -> exp
+    val EMPTY: unit -> exp
+
+    val newWhile: exp * exp -> exp
 end
 
 structure Translate : TRANSLATE =
@@ -23,13 +36,14 @@ structure Error = ErrorMsg
 datatype exp = Ex of Tree.exp
 	     | Nx of Tree.stm
 	     | Cx of Temp.label * Temp.label -> Tree.stm
+	     | EMPTY'
 						
 datatype level = LEVEL of {frame: Frame.frame,
 			   parent: level} (* consider making this unique *)
 	       | TOP
 		 
 type access = level * Frame.access
-
+fun EMPTY() = EMPTY'
 val outermost = TOP
 
 fun newLevel {parent=parent, name=name, formals=formals} = 
@@ -102,32 +116,33 @@ fun simpleVar ((varlevel,access), curlevel) =
     end
 
       
-fun sunscriptVar (base:exp, index:exp) =
+fun subscriptVar (base:exp, index:exp) =
     let
 	val base' = unEx base
 	val index' = unEx index
     in
-	Ex (T.MEM (T.BINOP (T.PLUS, T.MEM(base'), T.BINOP (T.MUL, index', Frame.wordSize))))
+	Ex (T.MEM (T.BINOP (T.PLUS, T.MEM(base'), 
+			    T.BINOP (T.MUL, index', T.CONST Frame.wordSize))))
     end
     
 val fieldVar = subscriptVar
 
-(*fun safeArrayVar*)
+(*fun safeArrayVar TODO implement array bounds checking*)
 
 fun arith (lexp, rexp, oper) = 
-    let
-	val lexp' = unEx base
-	val rexp' = unEx index
-    in
-	Ex (BINOP(oper, lexp', rexp'))
-    end	       
-
-fun control (lexp, rexp, oper)
     let
 	val lexp' = unEx lexp
 	val rexp' = unEx rexp
     in
-	Cx (fn (t,f) => CJUMP (oper, lexp', rexp', t,f))
+	Ex (T.BINOP(oper, lexp', rexp'))
+    end	       
+
+fun control (lexp, rexp, oper) =
+    let
+	val lexp' = unEx lexp
+	val rexp' = unEx rexp
+    in
+	Cx (fn (t,f) => T.CJUMP (oper, lexp', rexp', t,f))
     end
     
 fun plus (lexp, rexp) =
@@ -160,15 +175,101 @@ fun gt (lexp, rexp) =
 fun ge (lexp, rexp) =
     control(lexp, rexp, T.GE)
 
-fun ifExp (exp1, exp2, exp3)
+fun ifExp (exp1, exp2, exp3) =
     let
-	val f = unCx exp1
+	val s = unCx exp1
 	val exp2' = unEx exp2
 	val exp3' = unEx exp3
 	val t = Temp.newlabel()
 	val f = Temp.newlabel()
 	val r = Temp.newtemp()
+	val join = Temp.newlabel()
+	fun ifExp' (Nx stm2, Nx stm3) = 
+	    Nx ( seq [s(t,f),
+		      T.LABEL t,
+		      stm2,
+		      T.JUMP (T.NAME join, [join]),
+		      T.LABEL f,
+		      stm3,
+		      T.LABEL join] )
+	  | ifExp' (Cx ctl2, Cx ctl3) =
+	    let 
+		val y = Temp.newlabel()
+		val z = Temp.newlabel()
+	    in
+		Cx (fn (t,f) => seq [s(y,z), 
+				     T.LABEL y,
+				     ctl2(t,f),
+				     T.LABEL z,
+				     ctl3(t,f)])
+	    end (*TODO handle when only one of the exp2 or exp3 is a control *)
     in
+	Ex (T.ESEQ (seq[s(t,f), 
+			T.LABEL t, 
+			T.MOVE (T.TEMP r, exp2'),
+			T.JUMP (T.NAME join, [join]),
+			T.LABEL f,
+			T.MOVE (T.TEMP r, exp3'),
+			T.LABEL join],
+		    T.TEMP r))
     end
-end
 
+fun newString (s) =
+    let 
+	val label = Temp.newlabel()
+    in
+	(* TODO Add Frame.STRING(label,s) to global fragment list;*)
+	 T.NAME label
+    end
+
+fun newRecord (exps) =
+    let
+	val r = Temp.newtemp()
+	fun initFields(exps) =
+	    let
+		val l1 = List.tabulate(length(exps), (fn x => x))
+		val pairs =  ListPair.zip(l1, exps)
+		fun createMove (i, exp) = 	
+		    T.MOVE (T.MEM (T.BINOP (T.PLUS, 
+					    T.TEMP r, 
+					    T.CONST (i * Frame.wordSize))),
+			    exp)
+	    in
+		seq (map createMove pairs)
+	    end
+    in
+	Ex (T.ESEQ
+	    (T.SEQ(T.MOVE (T.TEMP r,
+			   Frame.externalCall("malloc",
+					      [T.CONST (length(exps) * 
+							Frame.wordSize)])),
+		   initFields(exps)),
+	     T.TEMP r))
+    end
+
+fun newArray (len, init) =
+    let
+	val r = Temp.newtemp()
+    in
+	Ex (T.ESEQ   
+	    (T.MOVE (T.TEMP r,
+		     Frame.externalCall("initArray", [len,init])),
+	     T.TEMP r))
+    end
+
+fun newWhile (test, body) = 
+    let
+	val body' = unNx body
+	val test' = unCx test
+	val bod = Temp.newlabel()
+	val t = Temp.newlabel()
+	val bot = Temp.newlabel()
+    in 
+	Nx (seq[T.JUMP (T.NAME t, [t]),
+		T.LABEL bod,
+		body',
+		T.LABEL t,
+		test'(bod,bot),
+		T.LABEL bot])
+    end 
+end

@@ -6,6 +6,8 @@ structure T=Tree
 	    
 datatype access = InFrame of int | InReg of Temp.temp
 type frame = {name: Temp.label, frameOffset: int ref, formals: access list}
+datatype frag = PROC of {body: Tree.stm, frame: frame}
+	      | STRING of Temp.label * string
 val wordSize = 4
 val maxParamRegsters = 4
 val FP = Temp.newtemp()
@@ -47,5 +49,10 @@ fun formals (frame:frame) = (#formals frame)
 (* fp is either a TEMP(FP) or a series of MEM and + instructins to fetch the frame pointer *)			    
 fun exp (InFrame k) fp = T.MEM(T.BINOP(T.PLUS,fp,T.CONST(k)))
   | exp (InReg t) _ = T.TEMP t
-		      
+
+(* This function may require extension for machine specific details *) 
+fun externalCall(s, args) =
+    T.CALL (T.NAME(Temp.namedlabel s), args)
+
 end
+
