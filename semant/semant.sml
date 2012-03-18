@@ -26,57 +26,24 @@ datatype enventry = VarEntry of {access: Tr.access, ty: Ty.ty}
 val base_tenv = foldr S.enter' S.empty [ (S.symbol("int"), Ty.INT),
 					 (S.symbol("string"), Ty.STRING) ]
 
-val base_venv = foldr S.enter' S.empty 
-		      [ (S.symbol("print"),
-			 FunEntry {level=Tr.outermost,
-				   label=Temp.newlabel(),
-				   formals=[Ty.STRING], 
-				   result=Ty.UNIT }),
-			(S.symbol("flush"),
-			 FunEntry {level=Tr.outermost,
-				   label=Temp.newlabel(), 
-				   formals=[], 
-				   result=Ty.UNIT}),
-			(S.symbol("getchar"),
-			 FunEntry {level=Tr.outermost,
-				   label=Temp.newlabel(),
-				   formals=[], 
-				   result=Ty.STRING}),
-			(S.symbol("ord"),
-			 FunEntry {level=Tr.outermost, 
-				   label=Temp.newlabel(),
-				   formals=[Ty.STRING], 
-				   result=Ty.INT}),
-			(S.symbol("chr"),
-			 FunEntry {level=Tr.outermost, 
-				   label=Temp.newlabel(),
-				   formals=[Ty.INT], 
-				   result=Ty.STRING}),
-			(S.symbol("size"),
-			 FunEntry {level=Tr.outermost, 
-				   label=Temp.newlabel(),
-				   formals=[Ty.STRING], 
-				   result=Ty.INT}),
-			(S.symbol("substring"),
-			 FunEntry {level=Tr.outermost,
-				   label=Temp.newlabel(), 
-				   formals=[Ty.STRING, Ty.INT, Ty.INT],
-				   result=Ty.STRING}),
-			(S.symbol("concat"),
-			 FunEntry {level=Tr.outermost,
-				   label=Temp.newlabel(), 
-				   formals=[Ty.STRING, Ty.STRING],
-				   result=Ty.STRING}),
-			(S.symbol("not"),
-			 FunEntry {level=Tr.outermost, 
-				   label=Temp.newlabel(),
-				   formals=[Ty.INT], 
-				   result=Ty.INT}),
-			(S.symbol("exit"),
-			 FunEntry {level=Tr.outermost,
-				   label=Temp.newlabel(), 
-				   formals=[Ty.INT], 
-				   result=Ty.UNIT}) ]
+val stdlib = map (fn (symbol, formals, result) =>
+		     (S.symbol(symbol),
+		      FunEntry {level=Tr.outermost,
+				label=Temp.newlabel(),
+				formals=formals, 
+				result=result }))
+		 [ ("print", [Ty.STRING], Ty.UNIT),
+		   ("flush", [], Ty.UNIT),
+		   ("getchar", [], Ty.STRING),
+		   ("ord", [Ty.STRING], Ty.INT),
+		   ("chr", [Ty.INt], Ty.STRING),
+		   ("size", [Ty.STRING], Ty.INT),
+		   ("substring", [Ty.STRING, Ty.STRING], Ty.STRING),
+		   ("concat", [Ty.INT], Ty.STRING),
+		   ("not", [Ty.INT], Ty.INT) ]
+    
+val base_venv = foldr S.enter' S.empty stdlib
+		
 val in_loop = ref 0
 end
 
@@ -462,6 +429,32 @@ and transExp (level, venv, tenv) =
 	     checkUnit(trexp body, pos);
 	     Env.in_loop := !Env.in_loop - 1;
 	     {exp=(), ty=Types.UNIT })
+	  | trexp (A.ForExp{var, escape,
+			    lo, hi, body, pos}) =
+	    let
+		val vardec = A.VarDec{var,
+				      escape,
+				      (Ty.IMMUTABLE_INT, pos),
+				      lo,
+				      pos}
+		val limit = A.VarDec{S.symbol("limit"),
+				     escape,
+				     (Ty.INT, pos),
+				     hi,
+				     pos}
+		val decs = [vardec, limit]
+		val aexp = A.AssignExp(var,
+				       A.OpExp(A.PlusOp, var,  A.Int(1))
+		val wbody = A.SeqExp([body, aexp])
+		val whileExp = A.WhileExp(A.OpExp(A.LeOp,
+						  var,
+						  A.VarExp(S.symbol("limit"))),
+					  wbody,
+					  pos)
+		val letexp = A.LetExp{decs=decs, body=whileExp, pos=pos}
+	    in
+		trexp(letexp)
+	    end
 	  | trexp (A.ForExp{var, escape,
 			    lo, hi, body, pos}) =
 	    (checkInt(trexp(lo), pos);
