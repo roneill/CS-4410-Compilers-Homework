@@ -23,7 +23,9 @@ sig
     val ge: exp * exp -> exp
     val EMPTY: unit -> exp
 
-    val newWhile: exp * exp -> exp
+    val newLoop: exp * exp -> exp
+    val initLoop: unit -> unit
+    val endLoop: unit -> unit
 end
 
 structure Translate : TRANSLATE =
@@ -45,6 +47,7 @@ datatype level = LEVEL of {frame: Frame.frame,
 type access = level * Frame.access
 fun EMPTY() = EMPTY'
 val outermost = TOP
+val doneStack = ref []
 
 fun newLevel {parent=parent, name=name, formals=formals} = 
     let
@@ -74,9 +77,9 @@ fun allocLocal lev esc =
       | TOP =>
 	Error.impossible "Tried to allocLocal at the outermost level"
 	
-fun seq [] = Error.impossible "Tried to make a SEQ from nothing" 
-  | seq [a] = a 
-  | seq(a::r) = T.SEQ(a,seq r)
+fun seq nil = Error.impossible "Tried to make a SEQ from nothing" 
+  | seq(h::nil) = h 
+  | seq(h::t) = T.SEQ(h,seq t)
 	      
 fun unEx (Ex e) = e
   | unEx (Cx genstm) =
@@ -257,19 +260,40 @@ fun newArray (len, init) =
 	     T.TEMP r))
     end
 
-fun newWhile (test, body) = 
+fun newLoop (test, body) = 
     let
 	val body' = unNx body
 	val test' = unCx test
 	val bod = Temp.newlabel()
 	val t = Temp.newlabel()
-	val bot = Temp.newlabel()
+	val done = hd(!doneStack)
     in 
-	Nx (seq[T.JUMP (T.NAME t, [t]),
-		T.LABEL bod,
-		body',
-		T.LABEL t,
-		test'(bod,bot),
-		T.LABEL bot])
-    end 
+	(doneStack := done::!doneStack;
+	 Nx (seq[T.JUMP (T.NAME t, [t]),
+		 T.LABEL bod,
+		 body',
+		 T.LABEL t,
+		 test'(bod,done),
+		 T.LABEL done]))
+    end
+
+fun initLoop () =
+    let
+	done = Temp.newlabel()
+    in
+	doneStack := done :: !doneStack
+    end
+
+fun endLoop () =
+    case !doneStack 
+     of nil => ErrorMsg.impossible("Calling endLoop when not in loop")
+      | label::tail => doneStack := tail
+
+fun newBreak () =
+    let 
+	val done = hd(doneStack)
+    in
+	Nx ( T.JUMP (T.NAME done,[done]))
+    end
+
 end
