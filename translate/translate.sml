@@ -33,6 +33,8 @@ sig
     val newInt: int -> exp
     val newAssign: exp * exp -> exp
     val NOP: unit -> exp
+    val varDecs: exp list -> exp
+    val newLet: exp * exp -> exp
 end
 
 structure Translate : TRANSLATE =
@@ -324,5 +326,20 @@ fun NOP () =
     in 
 	Nx ( T.MOVE (T.TEMP(t),T.TEMP(t)))
     end
-	
+
+fun varDecs (exps) =
+    let
+	val exps = map unNx exps
+    in
+	Nx (seq(exps))
+    end
+    
+fun newLet (varExps, bodyExp) =
+    let
+	val varExps = unNx varExps
+	val bodyExp = unEx bodyExp
+    in
+	Ex (T.ESEQ(varExps, bodyExp))
+    end
+
 end

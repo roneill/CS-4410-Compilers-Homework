@@ -121,21 +121,27 @@ fun checkDuplicateDeclarations (names) =
 	checkDuplicates(names, S.empty)
     end
     
-fun transDec (level, loopEnd, venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) = 
+fun transDec (level, loopEnd, exps, venv, tenv,
+	      A.VarDec{name, escape, typ=NONE, init, pos}) = 
     let 
 	val access = Tr.allocLocal(level) (!escape)
 	val {exp, ty} = transExp(level, loopEnd, venv, tenv) init
+	val assignExp = Tr.newAssign(Tr.simpleVar(access, level), exp)
     in
 	if (ty = Ty.NIL)
 	then (Error.error pos "Cannot assign expression to nil")
 	else ();
-	{tenv=tenv, venv=S.enter(venv, name, Env.VarEntry{access=access, ty=ty})}
+	{tenv=tenv,
+	 venv=S.enter(venv, name, Env.VarEntry{access=access, ty=ty}),
+	 exps=assignExp::exps}
     end
-  | transDec (level, loopEnd, venv, tenv, A.VarDec{name, escape, typ=SOME typ , init, pos}) =
+  | transDec (level, loopEnd, exps, venv, tenv,
+	      A.VarDec{name, escape, typ=SOME typ , init, pos}) =
     let
 	val access = Tr.allocLocal(level) (!escape)
 	val varTy = transTy(tenv, A.NameTy(typ))
 	val {exp, ty} = transExp(level, loopEnd, venv, tenv) init
+	val assignExp = Tr.newAssign(Tr.simpleVar(access, level), exp)
     in
 	if (Ty.lteq ((actual_ty ty),(actual_ty varTy))) then ()
 	else Error.error pos ("The types of the expression: "^
@@ -143,9 +149,11 @@ fun transDec (level, loopEnd, venv, tenv, A.VarDec{name, escape, typ=NONE, init,
 			      " and initializer "^
 			      (stringTy (actual_ty ty))^
 			      " type do not match");
-	{tenv=tenv, venv=S.enter(venv, name, Env.VarEntry{access=access, ty=ty})}
+	{tenv=tenv,
+	 venv=S.enter(venv, name, Env.VarEntry{access=access, ty=ty}),
+	 exps=assignExp::exps}
     end
-  | transDec (level, loopEnd, venv, tenv, A.TypeDec(typedecs)) =
+  | transDec (level, loopEnd, exps, venv, tenv, A.TypeDec(typedecs)) =
     let
 	fun enterTypeHeader ({name, ty, pos}, tenv) =
 	    S.enter(tenv, name, Ty.NAME(name,ref NONE))
@@ -181,9 +189,9 @@ fun transDec (level, loopEnd, venv, tenv, A.VarDec{name, escape, typ=NONE, init,
 	map checkTypeBody typedecs;
 	checkForCycles(tenv', typedecs);
 	checkDuplicateDeclarations(map (fn x => (#name x, #pos x)) typedecs);
-	{venv=venv, tenv=tenv'}
+	{venv=venv, tenv=tenv', exps=exps}
     end
-  | transDec(level, loopEnd, venv, tenv, A.FunctionDec(fundecs)) =
+  | transDec(level, loopEnd, exps, venv, tenv, A.FunctionDec(fundecs)) =
     let
 	fun getResultTy (result) = case result
 				    of SOME(rt, pos) => (* function has return value *)
@@ -255,13 +263,13 @@ fun transDec (level, loopEnd, venv, tenv, A.VarDec{name, escape, typ=NONE, init,
     in
 	map checkFunBody fundecs;
 	checkDuplicateDeclarations(map (fn x => (#name x, #pos x)) fundecs);
-	{venv=venv', tenv=tenv}
+	{venv=venv', tenv=tenv,  exps=exps}
     end
     
 and transDecs (level, loopEnd, venv, tenv, decs) =
-    foldl (fn (dec, {venv,tenv}) => 
-	      transDec (level, loopEnd, venv,tenv,dec))
-	  {venv=venv,tenv=tenv} 
+    foldl (fn (dec, {venv,tenv, exps}) => 
+	      transDec (level, loopEnd, exps, venv, tenv, dec))
+	  {venv=venv,tenv=tenv, exps=[]}
 	  decs
     
 and transTy (tenv, A.NameTy(symbol,pos)) =
@@ -353,7 +361,7 @@ and transExp (level, loopEnd, venv, tenv) =
 		  | A.GeOp => checkArithmetic(Tr.ge)
 	    end
 	  | trexp (A.RecordExp{fields, typ, pos}) =
-	    (*TODO quagmire*)
+	    (*TODO quagmire ahead*)
 	    (case S.look(tenv, typ)
 	      of SOME ty =>
 		 (case actual_ty ty
@@ -484,9 +492,13 @@ and transExp (level, loopEnd, venv, tenv) =
 	  | trexp (A.BreakExp pos) = (checkInLoop(loopEnd, pos);
 				      {exp=Tr.newBreak(loopEnd), ty=Types.BOTTOM})
 	  | trexp (A.LetExp{decs, body,pos}) =
-	    let val {venv=venv', tenv=tenv'} = transDecs(level, loopEnd, venv,tenv,decs)
+	    let val {venv=venv', tenv=tenv', exps=exps} =
+		    transDecs(level, loopEnd, venv,tenv,decs)
+		val {exp=bodyExp, ty=bodyTy} =
+		    transExp(level,loopEnd, venv', tenv') body
+		val exps = Tr.varDecs(exps)
 	    in
-		transExp(level,loopEnd, venv', tenv') body
+		{exp=Tr.newLet(exps, bodyExp), ty=bodyTy}
 	    end
 	  | trexp (A.ArrayExp{typ, size, init, pos}) =
 	    let
@@ -516,7 +528,7 @@ and transExp (level, loopEnd, venv, tenv) =
 	  | trvar (A.FieldVar(var, id, pos)) =
 	    let
 		val {exp=varExp, ty=varTy} = trvar(var)
-		(* Get the type of a field *)
+		(* Get the type, and index in the list of a field *)
 		fun getField (fields) = getField'(fields, 0)
 		and getField' (nil, index) =
 		    (Error.error(pos) ("field: \""^(S.name id)^
