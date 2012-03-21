@@ -12,7 +12,7 @@ sig
 				     formals: Ty.ty list, result: Ty.ty} 
     val base_tenv: Ty.ty S.table
     val base_venv: enventry S.table
-    val in_loop: int ref
+    val toploopEnd: Temp.label
 end
 
 structure Env :> ENV =
@@ -36,7 +36,7 @@ val stdlib = map (fn (symbol, formals, result) =>
 		   ("flush", [], Ty.UNIT),
 		   ("getchar", [], Ty.STRING),
 		   ("ord", [Ty.STRING], Ty.INT),
-		   ("chr", [Ty.INt], Ty.STRING),
+		   ("chr", [Ty.INT], Ty.STRING),
 		   ("size", [Ty.STRING], Ty.INT),
 		   ("substring", [Ty.STRING, Ty.STRING], Ty.STRING),
 		   ("concat", [Ty.INT], Ty.STRING),
@@ -44,7 +44,8 @@ val stdlib = map (fn (symbol, formals, result) =>
     
 val base_venv = foldr S.enter' S.empty stdlib
 		
-val in_loop = ref 0
+val toploopEnd = Temp.newlabel()
+
 end
 
 structure Semant :sig val transProg : A.exp -> unit end =
@@ -55,9 +56,10 @@ type tenv = Ty.ty Symbol.table
 type expty = {exp:Tr.exp, ty: Ty.ty}
 
 (* Check for proper nesting of break statements *)	      
-fun checkInLoop (pos) =
-    if !Env.in_loop > 0 then ()
-    else Error.error pos "break encountered outside of loop"
+fun checkInLoop (loopEnd, pos) =
+    if  (loopEnd = Env.toploopEnd) 
+    then (Error.error pos "break encountered outside of loop")
+    else ()
 
 (* Convert Ty to String *)		
 fun stringTy (Ty.RECORD _) = "RECORD"
@@ -84,6 +86,10 @@ fun checkInt' (ty, pos) =
 fun checkUnit ({exp, ty}, pos) =
     if Ty.lteq(ty, Types.UNIT) then ()
     else Error.error(pos) "exp was not a unit"
+
+fun checkUnit' (ty, pos) =
+    if Ty.lteq(ty, Types.UNIT) then ()
+    else Error.error(pos) "exp was not a unit"
 	 
 fun checkComparable ({exp=lexp, ty=lty},{exp=rexp, ty=rty}, pos) =
     if Ty.lteq(lty, rty) orelse Ty.lteq(rty, lty) then ()
@@ -101,14 +107,6 @@ fun actual_ty typ =
 	(Ty.NAME (id, ref(SOME(typ')))) => actual_ty typ'
       | anyTy => anyTy;
 
-(* Get the type of a field *)    
-fun getType (nil, id, pos) = (Error.error(pos)
-					 ("field: \""^
-					  (S.name id)^
-					  "\" not found in record"); Ty.BOTTOM)
-  | getType ((name,ty)::tail, id, pos) = if (id = name) then ty
-					 else getType(tail, id, pos)
-
 (* Check for duplicate declarations in mutually recursive types or functions *)
 fun checkDuplicateDeclarations (names) = 
     let
@@ -123,21 +121,21 @@ fun checkDuplicateDeclarations (names) =
 	checkDuplicates(names, S.empty)
     end
     
-fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) = 
+fun transDec (level, loopEnd, venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) = 
     let 
 	val access = Tr.allocLocal(level) (!escape)
-	val {exp, ty} = transExp(level,venv, tenv) init
+	val {exp, ty} = transExp(level, loopEnd, venv, tenv) init
     in
 	if (ty = Ty.NIL)
 	then (Error.error pos "Cannot assign expression to nil")
 	else ();
 	{tenv=tenv, venv=S.enter(venv, name, Env.VarEntry{access=access, ty=ty})}
     end
-  | transDec (level, venv, tenv, A.VarDec{name, escape, typ=SOME typ , init, pos}) =
+  | transDec (level, loopEnd, venv, tenv, A.VarDec{name, escape, typ=SOME typ , init, pos}) =
     let
 	val access = Tr.allocLocal(level) (!escape)
 	val varTy = transTy(tenv, A.NameTy(typ))
-	val {exp, ty} = transExp(level, venv, tenv) init
+	val {exp, ty} = transExp(level, loopEnd, venv, tenv) init
     in
 	if (Ty.lteq ((actual_ty ty),(actual_ty varTy))) then ()
 	else Error.error pos ("The types of the expression: "^
@@ -147,7 +145,7 @@ fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 			      " type do not match");
 	{tenv=tenv, venv=S.enter(venv, name, Env.VarEntry{access=access, ty=ty})}
     end
-  | transDec (level,venv, tenv, A.TypeDec(typedecs)) =
+  | transDec (level, loopEnd, venv, tenv, A.TypeDec(typedecs)) =
     let
 	fun enterTypeHeader ({name, ty, pos}, tenv) =
 	    S.enter(tenv, name, Ty.NAME(name,ref NONE))
@@ -185,7 +183,7 @@ fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	checkDuplicateDeclarations(map (fn x => (#name x, #pos x)) typedecs);
 	{venv=venv, tenv=tenv'}
     end
-  | transDec(level, venv, tenv, A.FunctionDec(fundecs)) =
+  | transDec(level, loopEnd, venv, tenv, A.FunctionDec(fundecs)) =
     let
 	fun getResultTy (result) = case result
 				    of SOME(rt, pos) => (* function has return value *)
@@ -246,7 +244,7 @@ fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 							     ty=ty}))
 				    venv'
 				    params'
-		val {exp=bodyexp, ty=bodyty} = transExp(level,venv'', tenv) body
+		val {exp=bodyexp, ty=bodyty} = transExp(level, loopEnd, venv'', tenv) body
 	    in
 		if (actual_ty bodyty = actual_ty result_ty) then ()
 		else (Error.error pos ("return type of body: "^
@@ -260,9 +258,9 @@ fun transDec (level,venv, tenv, A.VarDec{name, escape, typ=NONE, init, pos}) =
 	{venv=venv', tenv=tenv}
     end
     
-and transDecs (level, venv, tenv, decs) =
+and transDecs (level, loopEnd, venv, tenv, decs) =
     foldl (fn (dec, {venv,tenv}) => 
-	      transDec (level,venv,tenv,dec))
+	      transDec (level, loopEnd, venv,tenv,dec))
 	  {venv=venv,tenv=tenv} 
 	  decs
     
@@ -286,11 +284,11 @@ and transTy (tenv, A.NameTy(symbol,pos)) =
       of SOME ty => Ty.ARRAY(ty, ref ())
        | NONE => (Error.error pos "type not defined"; Ty.INT))
     
-and transExp (level, venv, tenv) =
+and transExp (level, loopEnd, venv, tenv) =
     let fun trexp (A.VarExp var) = trvar var
-	  | trexp (A.NilExp) = {exp=(Tr.EMPTY()), ty=Types.NIL}			       
-	  | trexp (A.IntExp i) = {exp=(Tr.EMPTY()), ty=Types.INT}
-	  | trexp (A.StringExp(s, pos)) = {exp=(Tr.EMPTY()), ty=Types.STRING}
+	  | trexp (A.NilExp) = {exp=(Tr.nil()), ty=Types.NIL}			       
+	  | trexp (A.IntExp i) = {exp=(Tr.newInt(i)), ty=Types.INT}
+	  | trexp (A.StringExp(s, pos)) = {exp=(Tr.newString(s)), ty=Types.STRING}
 	  | trexp (A.CallExp{func, args, pos}) = 
 	    (case S.look(venv, func)
 	      of SOME (Env.FunEntry{level, label, formals, result}) =>
@@ -315,12 +313,12 @@ and transExp (level, venv, tenv) =
 				 [])
 		 in
 		     map compareArgs pairs;
-		     {exp=(Tr.EMPTY()), ty=result}
+		     {exp=(Tr.NOP()), ty=result}
 		 end
 	       | _ => (Error.error pos ("function name: "^
 					(S.name func)^
 					" not declared");
-		       {exp=(Tr.EMPTY()), ty=Ty.UNIT}))
+		       {exp=(Tr.NOP()), ty=Ty.UNIT}))
 	  | trexp (A.OpExp{left, oper, right, pos}) = 
 	    let
 		fun checkArithmetic(translate) =
@@ -355,12 +353,12 @@ and transExp (level, venv, tenv) =
 		  | A.GeOp => checkArithmetic(Tr.ge)
 	    end
 	  | trexp (A.RecordExp{fields, typ, pos}) =
+	    (*TODO quagmire*)
 	    (case S.look(tenv, typ)
 	      of SOME ty =>
 		 (case actual_ty ty
 		   of (Ty.RECORD(recFields, unique)) =>
-		      (let fun lookupID (id, nil) =
-			       (Error.error pos "element not found"; NONE)
+		      (let fun lookupID (id, nil) = NONE
 			     | lookupID (id, ((recID, ty)::tail)) =
 			       if (id = recID) then SOME ty
 			       else lookupID(id, tail)
@@ -375,17 +373,17 @@ and transExp (level, venv, tenv) =
 		       in
 			   loopFields(fields)
 		       end;
-		       {exp=(Tr.EMPTY()), ty=(Ty.RECORD(recFields, unique))})
+		       {exp=(Tr.NOP()), ty=(Ty.RECORD(recFields, unique))})
 		    | _ => (Error.error pos ("identifier: "^
 					     (stringTy ty)^
 					     " was not a record");
-			    {exp=(Tr.EMPTY()), ty=Ty.INT}))
+			    {exp=(Tr.NOP()), ty=Ty.INT}))
 	       | NONE => (Error.error pos ("record type: "^
 					   (S.name typ)^
 					   " not declared");
-			  {exp=(Tr.EMPTY()), ty=Ty.INT}))
+			  {exp=(Tr.NOP()), ty=Ty.INT}))
 	  | trexp (A.SeqExp(exps)) =
-	    let fun checkExps nil = {exp=(Tr.EMPTY()), ty=Types.UNIT }
+	    let fun checkExps nil = {exp=(Tr.NOP()), ty=Types.UNIT }
 		  | checkExps ((exp, pos)::nil) = trexp(exp)
 		  | checkExps ((exp, pos)::tail) = (trexp(exp); checkExps(tail))
 	    in
@@ -393,67 +391,82 @@ and transExp (level, venv, tenv) =
 	    end
 	  | trexp (A.AssignExp{var, exp, pos}) =
 	    let
-		val varType = #ty (trvar(var))
-		val expType = #ty (trexp(exp))
+		val {exp=varExp, ty=varTy} = trvar(var)
+		val {exp=expExp, ty=expTy} = trexp(exp)
 	    in
-		if(Ty.lteq(expType,varType)) then ()
+		if(Ty.lteq(varTy, expTy)) then ()
 		else (Error.error pos ("cannot assign expression of type: "^
-				       (stringTy expType)^
+				       (stringTy expTy)^
 				       " to variable of type: "^
-				       (stringTy varType)));
-		{exp=(Tr.EMPTY()), ty=Ty.UNIT}
+				       (stringTy varTy)));
+		{exp=Tr.newAssign(varExp, expExp), ty=Ty.UNIT}
 	    end
 	  | trexp (A.IfExp {test, then', else'=NONE, pos}) =
-	    (checkInt (trexp(test), pos);
-	     checkUnit(trexp(then'), pos);
-	     {exp=(Tr.EMPTY()), ty=Types.UNIT })
+	    let
+		val {exp=testExp, ty=testTy} = trexp(test)
+		val {exp=thenExp, ty=thenTy} = trexp(then')
+	    in
+		(checkInt'(testTy, pos);
+		 checkUnit'(thenTy, pos);
+		 {exp=(Tr.ifExp(testExp, thenExp, Tr.NOP())), ty=Types.UNIT })
+	    end 
 	  | trexp (A.IfExp {test, then', else'=SOME elseBody, pos}) =
-	    (checkInt (trexp(test), pos);
 	     let
+		 val {exp=testExp, ty=testTy} = trexp(test);
 		 val {exp=thenExp, ty=thenTy} = trexp(then');
 		 val {exp=elseExp, ty=elseTy} = trexp(elseBody);
 	     in
+		 checkInt'(testTy, pos);
 		 if (Ty.lteq(thenTy, elseTy) orelse Ty.lteq(elseTy,thenTy)) then ()
 		 else Error.error pos ("the type of the then clause: "^
 				       (stringTy thenTy)^
 				       " and else clause: "^
 				       (stringTy elseTy)^ " do not match");
-		 {exp=(Tr.EMPTY()), ty=Ty.join(thenTy,elseTy) }
-		 
-	     end)
+		 {exp=Tr.ifExp(testExp, thenExp, elseExp), ty=Ty.join(thenTy,elseTy) }
+	     end
 	  | trexp (A.WhileExp{test, body, pos}) =
-	    (checkInt(trexp(test), pos);
-	     Env.in_loop := !Env.in_loop + 1;
-	     checkUnit(trexp body, pos);
-	     Env.in_loop := !Env.in_loop - 1;
-	     {exp=(Tr.EMPTY()), ty=Types.UNIT })
+	    let 
+		val loopEnd = Temp.newlabel();
+		val {exp=testexp, ty=testty} = transExp(level, loopEnd, venv, tenv) test
+		val {exp=bodyexp, ty=bodyty} = transExp(level, loopEnd, venv, tenv) body
+	    in 
+		checkInt'(testty, pos);
+		checkUnit'(bodyty, pos);
+		{exp=Tr.newLoop(testexp, bodyexp, loopEnd), ty=Types.UNIT}
+	    end 
 	  | trexp (A.ForExp{var, escape,
 			    lo, hi, body, pos}) =
 	    let
-		val vardec = A.VarDec{var,
-				      escape,
-				      (Ty.IMMUTABLE_INT, pos),
-				      lo,
-				      pos}
-		val limit = A.VarDec{S.symbol("limit"),
-				     escape,
-				     (Ty.INT, pos),
-				     hi,
-				     pos}
+		val vardec = A.VarDec{name=var,
+				      escape=escape,
+				      typ=SOME (S.symbol("int"), pos), (* TODO: test this is not assignible *)
+				      init=lo,
+				      pos=pos}
+		val limit = A.VarDec{name=S.symbol("limit"),
+				     escape=escape,
+				     typ=SOME(S.symbol("int"), pos),
+				     init=hi,
+				     pos=pos}
 		val decs = [vardec, limit]
-		val aexp = A.AssignExp(var,
-				       A.OpExp(A.PlusOp, var,  A.Int(1))
-		val wbody = A.SeqExp([body, aexp])
-		val whileExp = A.WhileExp(A.OpExp(A.LeOp,
-						  var,
-						  A.VarExp(S.symbol("limit"))),
-					  wbody,
-					  pos)
+		val aexp = A.AssignExp{var=A.SimpleVar(var,pos),
+				       exp=A.OpExp{oper=A.PlusOp, 
+						   left=(A.VarExp(A.SimpleVar(var,pos))),  
+						   right=A.IntExp(1),
+						   pos=pos},
+				       pos=pos}
+		val wbody = A.SeqExp([(body,pos),(aexp,pos)])
+		val whileExp = A.WhileExp{test=A.OpExp{oper=A.LeOp, 
+						       left=(A.VarExp(A.SimpleVar(var,pos))),
+						       right=A.VarExp(A.SimpleVar
+									  (S.symbol("limit"), pos)),
+						      pos=pos},
+					  body=wbody,
+					  pos=pos}
 		val letexp = A.LetExp{decs=decs, body=whileExp, pos=pos}
 	    in
 		trexp(letexp)
 	    end
-	  | trexp (A.ForExp{var, escape,
+(*	  | trexp (A.ForExp{var, escape,
 			    lo, hi, body, pos}) =
 	    (checkInt(trexp(lo), pos);
 	     checkInt(trexp(hi), pos);
@@ -463,58 +476,79 @@ and transExp (level, venv, tenv) =
 							     ty=Ty.IMMUTABLE_INT})
 	     in
 		 Env.in_loop := !Env.in_loop + 1;
-		 checkUnit((transExp(level, venv', tenv) body), pos);
+		 checkUnit((transExp(level,loopEnd, venv', tenv) body), pos);
 		 Env.in_loop := !Env.in_loop - 1;
-		 {exp=(Tr.EMPTY()), ty=Types.UNIT }
+		 {exp=(Tr.NOP()), ty=Types.UNIT }
 	     end)
-	  | trexp (A.BreakExp pos) = (checkInLoop(pos);
-				      {exp=(Tr.EMPTY()), ty=Types.BOTTOM})
+*)
+	  | trexp (A.BreakExp pos) = (checkInLoop(loopEnd, pos);
+				      {exp=Tr.newBreak(loopEnd), ty=Types.BOTTOM})
 	  | trexp (A.LetExp{decs, body,pos}) =
-	    let val {venv=venv', tenv=tenv'} = transDecs(level, venv,tenv,decs)
+	    let val {venv=venv', tenv=tenv'} = transDecs(level, loopEnd, venv,tenv,decs)
 	    in
-		transExp(level, venv', tenv') body
+		transExp(level,loopEnd, venv', tenv') body
 	    end
 	  | trexp (A.ArrayExp{typ, size, init, pos}) =
+	    let
+		val {exp=sizeExp, ty=sizeTy} = trexp size
+		val {exp=initExp, ty=initTy} = trexp init
+	    in
 	    (case S.look(tenv, typ)
 	      of SOME ty =>
 		 (case actual_ty ty
 		   of (Ty.ARRAY(ty, unique)) =>
-		      (checkInt(trexp(size), pos);
-		       if ((actual_ty ty) = (actual_ty (#ty (trexp(init))))) then ()
+		      (checkInt'(sizeTy, pos);
+		       if ((actual_ty ty) = (actual_ty initTy)) then ()
 		       else (Error.error pos ("wrong initial value type of "
-					      ^(stringTy (#ty (trexp(init))))));
-		       {exp=(Tr.EMPTY()), ty=Ty.ARRAY(ty, unique) })
+					      ^(stringTy initTy)));
+		       {exp=Tr.newArray(sizeExp, initExp), ty=Ty.ARRAY(ty, unique) })
 		    | _ => (Error.error pos ((S.name typ)^" is not array type");
-			    {exp=(Tr.EMPTY()), ty=Ty.BOTTOM }))
+			    {exp=(Tr.NOP()), ty=Ty.BOTTOM }))
 	       | NONE => (Error.error pos "Array type not defined";
-			  {exp=(Tr.EMPTY()), ty=Ty.BOTTOM }))
+			  {exp=(Tr.NOP()), ty=Ty.BOTTOM }))
+	    end
 	and trvar (A.SimpleVar(id, pos)) =
 	    (case S.look(venv, id)
-	      of SOME (Env.VarEntry{access, ty}) => {exp=(Tr.EMPTY()), ty=actual_ty ty}
+	      of SOME (Env.VarEntry{access, ty}) =>
+		 {exp=Tr.simpleVar(access, level), ty=actual_ty ty}
 	       | _ => (Error.error pos ("undefined variable: " ^ S.name id);
-		       {exp=(Tr.EMPTY()), ty=Types.BOTTOM}))
+		       {exp=(Tr.NOP()), ty=Types.BOTTOM}))
 	  | trvar (A.FieldVar(var, id, pos)) =
 	    let
 		val {exp=varExp, ty=varTy} = trvar(var)
+		(* Get the type of a field *)
+		fun getField (fields) = getField'(fields, 0)
+		and getField' (nil, index) =
+		    (Error.error(pos) ("field: \""^(S.name id)^
+				       "\" not found in record"); (Ty.BOTTOM, index))
+		  | getField' ((name,ty)::tail, index) =
+		    if (id = name) then (ty,index)
+		    else getField'(tail, index + 1)
 	    in
 		(case actual_ty varTy
-		  of Ty.RECORD (fields,unique) => {exp=(Tr.EMPTY()),
-						   ty=getType(fields, id, pos)}
+		  of Ty.RECORD (fields,unique) =>
+		    let
+			val (ty, index) = getField(fields)
+		    in
+			{exp=Tr.fieldVar(varExp, Tr.newInt(index)), ty=ty}
+		    end
 		   | _ => (Error.error pos
 				       ("Attempt access field of a non-record "^
 					(stringTy varTy));
-			   {exp=(Tr.EMPTY()), ty=Ty.BOTTOM}))
+			   {exp=(Tr.NOP()), ty=Ty.BOTTOM}))
 	    end
 	  | trvar (A.SubscriptVar(var, exp, pos)) =
 	    let
 		val {exp=varExp, ty=varTy} = trvar(var)
+		val {exp=expExp, ty=expTy} = trexp(exp)
 	    in
-		(checkInt(trexp(exp),pos);
+		(checkInt'(expTy,pos);
 		 case actual_ty varTy
-		  of Ty.ARRAY (ty, unique) => {exp=(Tr.EMPTY()), ty=ty}
+		  of Ty.ARRAY (ty, unique) =>
+		     {exp=Tr.subscriptVar(varExp, expExp), ty=ty}
 		   | _ => (Error.error pos ("Attempt to index a non-array "^
 					    stringTy varTy);
-			   {exp=(Tr.EMPTY()), ty=Ty.BOTTOM}))
+			   {exp=(Tr.NOP()), ty=Ty.BOTTOM}))
 	    end
     in
 	trexp
@@ -527,7 +561,7 @@ fun transProg ast =
 				formals=[]}
     in
 	(FindEscape.findEscape(ast);
-	 transExp(level,Env.base_venv, Env.base_tenv) ast;
+	 transExp(level, Env.toploopEnd, Env.base_venv, Env.base_tenv) ast;
 	 ())
     end
 end

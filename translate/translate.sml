@@ -11,6 +11,8 @@ sig
     val formals: level -> access list
     val allocLocal: level -> bool -> access
     val simpleVar : access * level -> exp
+    val fieldVar: exp * exp -> exp
+    val subscriptVar: exp*exp -> exp 
     val plus: exp * exp -> exp 
     val minus: exp * exp -> exp 
     val times: exp * exp -> exp 
@@ -21,11 +23,16 @@ sig
     val le: exp * exp -> exp 
     val gt: exp * exp -> exp 
     val ge: exp * exp -> exp
-    val EMPTY: unit -> exp
-
-    val newLoop: exp * exp -> exp
-    val initLoop: unit -> unit
-    val endLoop: unit -> unit
+    val ifExp: exp * exp * exp -> exp
+    val newString: string -> exp
+    val newRecord: exp list -> exp
+    val newArray: exp * exp -> exp
+    val newLoop: exp * exp * Temp.label -> exp
+    val newBreak: Temp.label -> exp
+    val nil: unit -> exp
+    val newInt: int -> exp
+    val newAssign: exp * exp -> exp
+    val NOP: unit -> exp
 end
 
 structure Translate : TRANSLATE =
@@ -38,16 +45,15 @@ structure Error = ErrorMsg
 datatype exp = Ex of Tree.exp
 	     | Nx of Tree.stm
 	     | Cx of Temp.label * Temp.label -> Tree.stm
-	     | EMPTY'
 						
 datatype level = LEVEL of {frame: Frame.frame,
 			   parent: level} (* consider making this unique *)
 	       | TOP
 		 
 type access = level * Frame.access
-fun EMPTY() = EMPTY'
+
 val outermost = TOP
-val doneStack = ref []
+val doneStack: Temp.label list ref = ref []
 
 fun newLevel {parent=parent, name=name, formals=formals} = 
     let
@@ -178,6 +184,21 @@ fun gt (lexp, rexp) =
 fun ge (lexp, rexp) =
     control(lexp, rexp, T.GE)
 
+(*
+fun ifThenExp (exp1, exp2) =
+    let
+	val s = unCx exp1
+	val exp2 = unNx exp2
+	val t = Temp.newlabel()
+	val f = Temp.newlabel()
+	val r = Temp.newtemp()
+    in
+	Nx (seq [s(t,f),
+		 T.LABEL t,
+		 exp2,
+		 T.LABEL f] )
+    end
+ *)
 fun ifExp (exp1, exp2, exp3) =
     let
 	val s = unCx exp1
@@ -222,11 +243,12 @@ fun newString (s) =
 	val label = Temp.newlabel()
     in
 	(* TODO Add Frame.STRING(label,s) to global fragment list;*)
-	 T.NAME label
+	 Ex (T.NAME label)
     end
 
 fun newRecord (exps) =
     let
+	val exps' = map unEx exps 
 	val r = Temp.newtemp()
 	fun initFields(exps) =
 	    let
@@ -246,54 +268,61 @@ fun newRecord (exps) =
 			   Frame.externalCall("malloc",
 					      [T.CONST (length(exps) * 
 							Frame.wordSize)])),
-		   initFields(exps)),
+		   initFields(exps')),
 	     T.TEMP r))
     end
 
 fun newArray (len, init) =
     let
 	val r = Temp.newtemp()
+	val len' = unEx len
+	val init' = unEx init
     in
-	Ex (T.ESEQ   
+	Ex (T.ESEQ 
 	    (T.MOVE (T.TEMP r,
-		     Frame.externalCall("initArray", [len,init])),
+		     Frame.externalCall("initArray", [len',init'])),
 	     T.TEMP r))
     end
 
-fun newLoop (test, body) = 
+fun newLoop (test, body, done) = 
     let
-	val body' = unNx body
 	val test' = unCx test
+	val body' = unNx body
 	val bod = Temp.newlabel()
 	val t = Temp.newlabel()
-	val done = hd(!doneStack)
     in 
-	(doneStack := done::!doneStack;
 	 Nx (seq[T.JUMP (T.NAME t, [t]),
 		 T.LABEL bod,
 		 body',
 		 T.LABEL t,
 		 test'(bod,done),
-		 T.LABEL done]))
+		 T.LABEL done])
     end
 
-fun initLoop () =
+fun newBreak (loopEnd) =
+    Nx ( T.JUMP (T.NAME loopEnd,[loopEnd]))
+    
+(* Figure out how nil should be represented in IR *)
+fun nil () = 
+    Ex(T.CONST (0))
+
+fun newInt (i) =
+    Ex (T.CONST(i))
+
+fun newAssign (lExp, rExp) = 
     let
-	done = Temp.newlabel()
+	val lExp = unEx lExp 
+	val rExp = unEx rExp 
     in
-	doneStack := done :: !doneStack
+	Nx (T.MOVE(lExp, rExp))
     end
 
-fun endLoop () =
-    case !doneStack 
-     of nil => ErrorMsg.impossible("Calling endLoop when not in loop")
-      | label::tail => doneStack := tail
-
-fun newBreak () =
-    let 
-	val done = hd(doneStack)
-    in
-	Nx ( T.JUMP (T.NAME done,[done]))
+(* This should get elimimated by an optimization phase *)
+fun NOP () =
+    let
+	val t = Temp.newtemp()
+    in 
+	Nx ( T.MOVE (T.TEMP(t),T.TEMP(t)))
     end
-
+	
 end
