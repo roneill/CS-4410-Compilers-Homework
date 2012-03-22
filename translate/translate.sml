@@ -4,6 +4,10 @@ sig
     type exp
     type level
     type access
+    type fraglist
+    structure Frame: FRAME
+    val procEntryExit: {level: level, body: exp} -> unit
+    val getResult: unit -> Frame.frag list 
 
     val outermost : level
     val newLevel : {parent:level, name:Temp.label,
@@ -35,6 +39,8 @@ sig
     val NOP: unit -> exp
     val varDecs: exp list -> exp
     val newLet: exp * exp -> exp
+    val initResult: unit-> unit
+    val callFun: Temp.label * exp list * level * level -> exp
 end
 
 structure Translate : TRANSLATE =
@@ -53,10 +59,14 @@ datatype level = LEVEL of {frame: Frame.frame,
 	       | TOP
 		 
 type access = level * Frame.access
-
+type fraglist = Frame.frag list
+		
 val outermost = TOP
-val doneStack: Temp.label list ref = ref []
+val result: Frame.frag list ref = ref []
 
+(* Needed to clear result between calls to transProg *)				  
+fun initResult () = result := []
+				  
 fun newLevel {parent=parent, name=name, formals=formals} = 
     let
 	val frame = Frame.newFrame{name=name,formals=true::formals}
@@ -72,7 +82,7 @@ fun formals level =
 	in
 	    map (fn formal => (level, formal)) formals
 	end
-      | TOP => [] (* TODO: Does TOP have formals? Report Error? *)
+      | TOP => (ErrorMsg.impossible "Called formals on TOP")
 
 fun allocLocal lev esc = 
     case lev
@@ -110,23 +120,35 @@ fun unNx (Ex e) = T.EXP e
 		       end
   | unNx (Nx s) = s
 
-fun unCx (Ex e) = (fn (t,f) => T.CJUMP (T.NE, T.CONST 0, e, t,f))
+fun unCx (Ex e) =
+    (case e
+      of T.CONST k => if (k = 0)
+		    then (fn (t,f) => T.JUMP (T.NAME f,[f]))
+		    else (fn (t,f) => T.JUMP (T.NAME t,[t]))
+       | _ => fn (t,f) => T.CJUMP (T.NE, T.CONST 0, e, t,f))
+		   
   | unCx (Cx genstm) = genstm
   | unCx (Nx _) = Error.impossible "Tried to convert statement to control"
-		  
+
+fun chaseStaticLinks (varlevel, curlevel) =
+    if (curlevel = varlevel)
+    then T.TEMP Frame.FP
+    else case curlevel
+	  of LEVEL {frame, parent} => T.MEM (chaseStaticLinks(varlevel, parent))
+	   | TOP => (ErrorMsg.impossible "oops")
+	  
 fun simpleVar ((varlevel,access), curlevel) =
+    Ex(Frame.exp access (chaseStaticLinks(varlevel,curlevel)))
+
+fun callFun (label, args, expLevel, funLevel) =
     let
-	fun chaseStaticLinks (varlevel, curlevel) =
-	    if (curlevel = varlevel)
-	    then T.TEMP Frame.FP
-	    else case curlevel
-		  of LEVEL {frame, parent} => T.MEM (chaseStaticLinks(varlevel, parent))
-		   | TOP => (ErrorMsg.impossible "oops")
+	val args = map unEx args
+	val sl = chaseStaticLinks(expLevel, funLevel)
+	val args = sl::args
     in
-	Ex(Frame.exp access (chaseStaticLinks(varlevel,curlevel)))
+	Ex (T.CALL(T.NAME label, args))
     end
 
-      
 fun subscriptVar (base:exp, index:exp) =
     let
 	val base' = unEx base
@@ -139,7 +161,7 @@ fun subscriptVar (base:exp, index:exp) =
 val fieldVar = subscriptVar
 
 (*fun safeArrayVar TODO implement array bounds checking*)
-
+	      
 fun arith (lexp, rexp, oper) = 
     let
 	val lexp' = unEx lexp
@@ -201,15 +223,17 @@ fun ifThenExp (exp1, exp2) =
 		 T.LABEL f] )
     end
  *)
+
+(*TODO:
+ * This function will still generate redundant IR:
+ * - Make sure NOPS in the then or else clause are optimized (removed then unnecessary jumps are removed)
+ * - Optimize constanst comparisions 0=0 -> 1 *)
 fun ifExp (exp1, exp2, exp3) =
     let
 	val s = unCx exp1
-	val exp2' = unEx exp2
-	val exp3' = unEx exp3
+	val join = Temp.newlabel()
 	val t = Temp.newlabel()
 	val f = Temp.newlabel()
-	val r = Temp.newtemp()
-	val join = Temp.newlabel()
 	fun ifExp' (Nx stm2, Nx stm3) = 
 	    Nx ( seq [s(t,f),
 		      T.LABEL t,
@@ -228,23 +252,39 @@ fun ifExp (exp1, exp2, exp3) =
 				     ctl2(t,f),
 				     T.LABEL z,
 				     ctl3(t,f)])
-	    end (*TODO handle when only one of the exp2 or exp3 is a control *)
-    in
-	Ex (T.ESEQ (seq[s(t,f), 
+	    end
+	  | ifExp' (Cx ctl2, Ex exp3) =
+	    let val ctl3 = unCx (Ex exp3)
+	    in
+		ifExp' (Cx ctl2, Cx ctl3)
+	    end
+	  | ifExp' (Ex exp2, Cx ctl3) =
+	    let val ctl2 = unCx (Ex exp2)
+	    in
+		ifExp' (Cx ctl2, Cx ctl3)
+	    end
+	  | ifExp' (exp2, exp3)  =
+	    let
+		val r = Temp.newtemp()
+		val exp2' = unEx exp2
+		val exp3' = unEx exp3
+	    in 		
+		Ex (T.ESEQ (seq[s(t,f), 
 			T.LABEL t, 
 			T.MOVE (T.TEMP r, exp2'),
-			T.JUMP (T.NAME join, [join]),
 			T.LABEL f,
 			T.MOVE (T.TEMP r, exp3'),
 			T.LABEL join],
 		    T.TEMP r))
-    end
-
+	    end
+    in 
+	ifExp' (exp2, exp3)
+    end 
 fun newString (s) =
     let 
 	val label = Temp.newlabel()
+	val _ = result := Frame.STRING(label, s) :: (!result)
     in
-	(* TODO Add Frame.STRING(label,s) to global fragment list;*)
 	 Ex (T.NAME label)
     end
 
@@ -327,7 +367,8 @@ fun NOP () =
 	Nx ( T.MOVE (T.TEMP(t),T.TEMP(t)))
     end
 
-fun varDecs (exps) =
+fun varDecs [] = NOP()
+  | varDecs exps =
     let
 	val exps = map unNx exps
     in
@@ -342,4 +383,18 @@ fun newLet (varExps, bodyExp) =
 	Ex (T.ESEQ(varExps, bodyExp))
     end
 
+fun getResult () = !result
+
+fun procEntryExit {level=LEVEL l, body=b} =
+    let
+	val bexp = unEx b
+	val bstm = T.MOVE (T.TEMP Frame.RV, bexp)
+	val frame = #frame l
+	val body = Frame.procEntryExit1(frame,bstm)
+	val fragment = Frame.PROC {body=body, frame=frame}
+    in
+	result := fragment::(!result)
+    end
+  | procEntryExit {level=TOP, body=_} =
+    ErrorMsg.impossible ("procEntryExit called with TOP level")    
 end

@@ -4,8 +4,8 @@ echo "CM.make \"sources.cm\";" > output.sml
 
 for i in ./testcases/*
 do
-    echo "TextIO.output (TextIO.stdOut, \"Typechecking $i\n\");" >> output.sml
-    echo "TypeCheck.typecheck \"$i\";" >> output.sml
+    echo "TextIO.output (TextIO.stdOut, \"Compiling $i\n\");" >> output.sml
+    echo "Test.compile \"$i\";" >> output.sml
 done
 echo "OS.Process.exit(OS.Process.success);" >> output.sml
 

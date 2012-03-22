@@ -1,11 +1,11 @@
-
-structure TypeCheck : sig val typecheck : string -> unit end =
+structure Test : sig val compile : string -> unit end =
 struct
 
-fun typecheck filename =
+fun compile filename =
     let val ast = Parse.parse(filename)
+	val fraglist = Semant.transProg ast
     in
-	Semant.transProg ast
+	()
     end
     
 end

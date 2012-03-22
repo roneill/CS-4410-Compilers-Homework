@@ -19,6 +19,8 @@ Group is
 ./translate/mipsframe.sml
 ./translate/findescape.sml
 ./translate/tree.sml
+./translate/printtree.sml
+./compiler.sml
 $/ml-yacc-lib.cm
 $/smlnj-lib.cm
 $/basis.cm

@@ -11,7 +11,9 @@ datatype frag = PROC of {body: Tree.stm, frame: frame}
 val wordSize = 4
 val maxParamRegsters = 4
 val FP = Temp.newtemp()
-	 
+val RV = Temp.newtemp()
+
+fun procEntryExit1 (frame, body) = body 
 fun newFrame {name, formals} =
     let
 	val argumentOffset = ref 0

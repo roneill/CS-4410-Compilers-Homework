@@ -48,7 +48,7 @@ val toploopEnd = Temp.newlabel()
 
 end
 
-structure Semant :sig val transProg : A.exp -> unit end =
+structure Semant :sig val transProg : A.exp -> Translate.fraglist end =
 struct 
 
 type venv = Env.enventry Symbol.table
@@ -254,7 +254,8 @@ fun transDec (level, loopEnd, exps, venv, tenv,
 				    params'
 		val {exp=bodyexp, ty=bodyty} = transExp(level, loopEnd, venv'', tenv) body
 	    in
-		if (actual_ty bodyty = actual_ty result_ty) then ()
+		if (actual_ty bodyty = actual_ty result_ty)
+		then (Tr.procEntryExit{level=level,body=bodyexp})
 		else (Error.error pos ("return type of body: "^
 				       (stringTy (actual_ty bodyty))^
 				       " does not match declaration: "^
@@ -267,7 +268,7 @@ fun transDec (level, loopEnd, exps, venv, tenv,
     end
     
 and transDecs (level, loopEnd, venv, tenv, decs) =
-    foldl (fn (dec, {venv,tenv, exps}) => 
+    foldl (fn (dec, {venv, tenv, exps}) => 
 	      transDec (level, loopEnd, exps, venv, tenv, dec))
 	  {venv=venv,tenv=tenv, exps=[]}
 	  decs
@@ -299,7 +300,7 @@ and transExp (level, loopEnd, venv, tenv) =
 	  | trexp (A.StringExp(s, pos)) = {exp=(Tr.newString(s)), ty=Types.STRING}
 	  | trexp (A.CallExp{func, args, pos}) = 
 	    (case S.look(venv, func)
-	      of SOME (Env.FunEntry{level, label, formals, result}) =>
+	      of SOME (Env.FunEntry{level=funlevel, label, formals, result}) =>
 		 let
 		     fun compareArgs (formal, arg) =
 			 let
@@ -312,7 +313,9 @@ and transExp (level, loopEnd, venv, tenv) =
 						" wrong argument type "^
 						(stringTy actualArg)))
 			 end
-		     val argTypes = map (fn arg => (#ty (trexp arg))) args
+		     val exptyList = map trexp args
+		     val argTypes = map #ty exptyList
+		     val argExps = map #exp exptyList
 		     val pairs = ListPair.zipEq(formals, argTypes)
 			 handle UnequalLengths =>
 				(Error.error pos
@@ -321,7 +324,7 @@ and transExp (level, loopEnd, venv, tenv) =
 				 [])
 		 in
 		     map compareArgs pairs;
-		     {exp=(Tr.NOP()), ty=result}
+		     {exp=Tr.callFun(label, argExps, level, funlevel), ty=result}
 		 end
 	       | _ => (Error.error pos ("function name: "^
 					(S.name func)^
@@ -447,7 +450,7 @@ and transExp (level, loopEnd, venv, tenv) =
 	    let
 		val vardec = A.VarDec{name=var,
 				      escape=escape,
-				      typ=SOME (S.symbol("int"), pos), (* TODO: test this is not assignible *)
+				      typ=SOME (S.symbol("int"), pos), (* TODO: btest this is not assignible *)
 				      init=lo,
 				      pos=pos}
 		val limit = A.VarDec{name=S.symbol("limit"),
@@ -567,13 +570,19 @@ and transExp (level, loopEnd, venv, tenv) =
     end
     
 fun transProg ast = 
-    let 
+    let
+	val _ = Tr.initResult()
 	val level = Tr.newLevel{parent=Tr.outermost, 
 				name=Temp.newlabel(), 
 				formals=[]}
-    in
-	(FindEscape.findEscape(ast);
-	 transExp(level, Env.toploopEnd, Env.base_venv, Env.base_tenv) ast;
-	 ())
+	val _ = FindEscape.findEscape(ast);
+	val {exp, ty} =  transExp(level,
+				  Env.toploopEnd,
+				  Env.base_venv,
+				  Env.base_tenv)
+				 ast;
+	val _ = Tr.procEntryExit{body=exp, level=level}
+    in	 
+	 Tr.getResult()
     end
 end
