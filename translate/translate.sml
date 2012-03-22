@@ -134,8 +134,9 @@ fun chaseStaticLinks (varlevel, curlevel) =
     if (curlevel = varlevel)
     then T.TEMP Frame.FP
     else case curlevel
-	  of LEVEL {frame, parent} => T.MEM (chaseStaticLinks(varlevel, parent))
-	   | TOP => (ErrorMsg.impossible "oops")
+	  of LEVEL {frame, parent} =>
+	     T.MEM (chaseStaticLinks(varlevel, parent))
+	   | TOP => (ErrorMsg.impossible "Static link not found")
 	  
 fun simpleVar ((varlevel,access), curlevel) =
     Ex(Frame.exp access (chaseStaticLinks(varlevel,curlevel)))
@@ -159,8 +160,6 @@ fun subscriptVar (base:exp, index:exp) =
     end
     
 val fieldVar = subscriptVar
-
-(*fun safeArrayVar TODO implement array bounds checking*)
 	      
 fun arith (lexp, rexp, oper) = 
     let
@@ -208,26 +207,6 @@ fun gt (lexp, rexp) =
 fun ge (lexp, rexp) =
     control(lexp, rexp, T.GE)
 
-(*
-fun ifThenExp (exp1, exp2) =
-    let
-	val s = unCx exp1
-	val exp2 = unNx exp2
-	val t = Temp.newlabel()
-	val f = Temp.newlabel()
-	val r = Temp.newtemp()
-    in
-	Nx (seq [s(t,f),
-		 T.LABEL t,
-		 exp2,
-		 T.LABEL f] )
-    end
- *)
-
-(*TODO:
- * This function will still generate redundant IR:
- * - Make sure NOPS in the then or else clause are optimized (removed then unnecessary jumps are removed)
- * - Optimize constanst comparisions 0=0 -> 1 *)
 fun ifExp (exp1, exp2, exp3) =
     let
 	val s = unCx exp1
@@ -344,7 +323,6 @@ fun newLoop (test, body, done) =
 fun newBreak (loopEnd) =
     Nx ( T.JUMP (T.NAME loopEnd,[loopEnd]))
     
-(* Figure out how nil should be represented in IR *)
 fun nil () = 
     Ex(T.CONST (0))
 
