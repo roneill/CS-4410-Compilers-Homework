@@ -384,7 +384,7 @@ and transExp (level, loopEnd, venv, tenv) =
 		       in
 			   loopFields(fields)
 		       end;
-		       {exp=(Tr.NOP()), ty=(Ty.RECORD(recFields, unique))})
+		       {exp=(Tr.newRecord(map (fn (s, exp, p) => #exp(trexp exp)) fields)), ty=(Ty.RECORD(recFields, unique))})
 		    | _ => (Error.error pos ("identifier: "^
 					     (stringTy ty)^
 					     " was not a record");
