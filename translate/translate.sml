@@ -123,8 +123,8 @@ fun unNx (Ex e) = T.EXP e
 fun unCx (Ex e) =
     (case e
       of T.CONST k => if (k = 0)
-		    then (fn (t,f) => T.JUMP (T.NAME f,[f]))
-		    else (fn (t,f) => T.JUMP (T.NAME t,[t]))
+		      then (fn (t,f) => T.JUMP (T.NAME f,[f]))
+		      else (fn (t,f) => T.JUMP (T.NAME t,[t]))
        | _ => fn (t,f) => T.CJUMP (T.NE, T.CONST 0, e, t,f))
 		   
   | unCx (Cx genstm) = genstm
