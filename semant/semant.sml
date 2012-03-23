@@ -308,8 +308,7 @@ and transExp (level, loopEnd, venv, tenv) =
 	  | trexp (A.StringExp(s, pos)) = {exp=(Tr.newString(s)),
 					   ty=Types.STRING}
 	  | trexp (A.CallExp{func, args, pos}) = 
-	    ((Error.error pos ("Called function "^(S.name func)));
-	    case S.look(venv, func)
+	    (case S.look(venv, func)
 	      of SOME (Env.FunEntry{level=funlevel, label, formals, result}) =>
 		 let
 		     fun compareArgs (formal, arg) =

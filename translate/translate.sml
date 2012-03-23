@@ -131,25 +131,33 @@ fun unCx (Ex e) =
   | unCx (Cx genstm) = genstm
   | unCx (Nx _) = Error.impossible "Tried to convert statement to control"
 
-fun chaseStaticLinks (varlevel, curlevel) =
-    ((ErrorMsg.error 0 "Called chaseStaticLinks");
-    if (curlevel = varlevel)
-    then ((ErrorMsg.error 0 "Returned"); T.TEMP Frame.FP)
+fun chaseStaticLinks (deflevel, curlevel) =
+    if (curlevel = deflevel)
+    then (T.TEMP Frame.FP)
     else case curlevel
 	  of LEVEL {frame, parent, unique} =>
-	     (T.MEM (chaseStaticLinks(varlevel, parent)))
-	   | TOP => (ErrorMsg.impossible "Called chaseStaticLinks on TOP"))
+	     (T.MEM (chaseStaticLinks(deflevel, parent)))
+	   | TOP => (ErrorMsg.impossible "Called chaseStaticLinks on TOP")
 
 fun simpleVar ((varlevel,access), curlevel) =
-    Ex(Frame.exp access (chaseStaticLinks(varlevel,curlevel)))
+    Ex(Frame.exp access (chaseStaticLinks(varlevel, curlevel)))
 
 fun callFun (label, args, expLevel, funLevel) =
     let
 	val args = map unEx args
-	val sl = chaseStaticLinks(funLevel, expLevel)
-	val args = sl::args
     in
-	Ex (T.CALL(T.NAME label, args))
+	case funLevel
+	  (* Calls to Standard Library 
+	   * - do not pass static link as first argument *)
+	 of TOP => Ex(T.CALL( T.NAME label, args))
+	  (* All other calls to user defined functions*)
+	  | LEVEL {frame, parent, unique} =>
+	    let 
+		val sl = chaseStaticLinks(parent, expLevel)
+		val args' = sl::args 
+	    in
+		Ex (T.CALL(T.NAME label, args))
+	    end
     end
 
 fun subscriptVar (base:exp, index:exp) =
