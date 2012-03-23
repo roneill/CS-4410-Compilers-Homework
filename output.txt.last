@@ -1,0 +1,311 @@
+Standard ML of New Jersey v110.73 [built: Fri Jan  6 14:01:08 2012]
+[opening output.sml]
+[autoloading]
+[library $smlnj/cm/cm.cm is stable]
+[library $smlnj/internal/cm-sig-lib.cm is stable]
+[library $/pgraph.cm is stable]
+[library $smlnj/internal/srcpath-lib.cm is stable]
+[library $SMLNJ-BASIS/basis.cm is stable]
+[autoloading done]
+[scanning sources.cm]
+[attempting to load plugin $/lex-ext.cm]
+[library $/lex-ext.cm is stable]
+[library $smlnj/cm/tools.cm is stable]
+[library $smlnj/internal/cm-lib.cm is stable]
+[plugin $/lex-ext.cm loaded successfully]
+[attempting to load plugin $/mllex-tool.cm]
+[library $/mllex-tool.cm is stable]
+[plugin $/mllex-tool.cm loaded successfully]
+[attempting to load plugin $/grm-ext.cm]
+[library $/grm-ext.cm is stable]
+[plugin $/grm-ext.cm loaded successfully]
+[attempting to load plugin $/mlyacc-tool.cm]
+[library $/mlyacc-tool.cm is stable]
+[plugin $/mlyacc-tool.cm loaded successfully]
+[library $/ml-yacc-lib.cm is stable]
+[library $SMLNJ-LIB/Util/smlnj-lib.cm is stable]
+[library $SMLNJ-ML-YACC-LIB/ml-yacc-lib.cm is stable]
+[loading (sources.cm):./parser/table.sig]
+[loading (sources.cm):./parser/table.sml]
+[loading (sources.cm):./parser/symbol.sml]
+[loading (sources.cm):./translate/temp.sig]
+[loading (sources.cm):./translate/temp.sml]
+[loading (sources.cm):./translate/tree.sml]
+[loading (sources.cm):./parser/errormsg.sml]
+[loading (sources.cm):./translate/frame.sig]
+[loading (sources.cm):./translate/mipsframe.sml]
+[loading (sources.cm):./translate/translate.sml]
+[loading (sources.cm):./semant/types.sml]
+[loading (sources.cm):./parser/absyn.sml]
+[loading (sources.cm):./translate/findescape.sml]
+[loading (sources.cm):./semant/semant.sml]
+[loading (sources.cm):./translate/printtree.sml]
+[loading (sources.cm):parser/tiger.grm.sig]
+[loading (sources.cm):parser/tiger.grm.sml]
+[loading (sources.cm):lexer/tiger.lex.sml]
+[loading (sources.cm):./parser/parse.sml]
+[loading (sources.cm):./compiler.sml]
+[loading (sources.cm):./parser/prabsyn.sml]
+[loading (sources.cm):./semant/typecheck.sml]
+[New bindings added.]
+val it = true : bool
+[autoloading]
+[autoloading done]
+Compiling ./testcases/merge-break.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/merge.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/queens.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test-break-outside.tig
+val it = () : unit
+./testcases/test-break-outside.tig:11.3:Error: break encountered outside of loop
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test1.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test10.tig
+val it = () : unit
+./testcases/test10.tig:2.1:Error: exp was not a unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test11.tig
+val it = () : unit
+./testcases/test11.tig:2.1:Error: The types of the expression: INT and initializer STRING type do not match
+./testcases/test11.tig:2.1:Error: exp was not an int
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test12.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test13.tig
+val it = () : unit
+./testcases/test13.tig:3.1:Error: exp was not an int
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test14.tig
+val it = () : unit
+./testcases/test14.tig:12.5:Error: The types RECORD and ARRAY are not comparable
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test15.tig
+val it = () : unit
+./testcases/test15.tig:3.1:Error: exp was not a unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test16.tig
+val it = () : unit
+./testcases/test16.tig:5.1:Error: cycle inmutually recursive type definition
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test17.tig
+val it = () : unit
+./testcases/test17.tig:4.23:Error: type treelist not defined
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test18.tig
+val it = () : unit
+./testcases/test18.tig:5.4:Error: function name: do_nothing2 not declared
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test19.tig
+val it = () : unit
+./testcases/test19.tig:8.16:Error: undefined variable: a
+./testcases/test19.tig:8.4:Error: INT wrong argument type BOTTOM
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test2.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test20.tig
+val it = () : unit
+./testcases/test20.tig:3.18:Error: undefined variable: i
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test21.tig
+val it = () : unit
+./testcases/test21.tig:8.9:Error: exp was not an int
+./testcases/test21.tig:5.1:Error: return type of body: INT does not match declaration: UNIT
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test22.tig
+val it = () : unit
+./testcases/test22.tig:7.2:Error: field: "nam" not found in record
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test23.tig
+val it = () : unit
+./testcases/test23.tig:7.2:Error: cannot assign expression of type: INT to variable of type: STRING
+./testcases/test23.tig:8.2:Error: cannot assign expression of type: STRING to variable of type: INT
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test24.tig
+val it = () : unit
+./testcases/test24.tig:5.2:Error: Attempt to index a non-array INT
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test25.tig
+val it = () : unit
+./testcases/test25.tig:5.2:Error: Attempt access field of a non-record INT
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test26.tig
+val it = () : unit
+./testcases/test26.tig:3.1:Error: exp was not an int
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test27.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test28.tig
+val it = () : unit
+./testcases/test28.tig:7.2:Error: The types of the expression: RECORD and initializer RECORD type do not match
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test29.tig
+val it = () : unit
+./testcases/test29.tig:7.2:Error: The types of the expression: ARRAY and initializer ARRAY type do not match
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test3.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test30.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test31.tig
+val it = () : unit
+./testcases/test31.tig:3.2:Error: The types of the expression: INT and initializer STRING type do not match
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test32.tig
+val it = () : unit
+./testcases/test32.tig:6.11:Error: wrong initial value type of STRING
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test33.tig
+val it = () : unit
+./testcases/test33.tig:3.10:Error: record type: rectype not declared
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test34.tig
+val it = () : unit
+./testcases/test34.tig:5.2:Error: INT wrong argument type STRING
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test35.tig
+val it = () : unit
+./testcases/test35.tig:5.2:Error: g has incorrect number of arguments
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test36.tig
+val it = () : unit
+./testcases/test36.tig:5.2:Error: g has incorrect number of arguments
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test37.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test38.tig
+val it = () : unit
+./testcases/test38.tig:6.2:Error: duplicate declaration: a
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test39.tig
+val it = () : unit
+./testcases/test39.tig:6.2:Error: duplicate declaration: g
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test4.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test40.tig
+val it = () : unit
+./testcases/test40.tig:3.2:Error: return type of body: INT does not match declaration: UNIT
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test41.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test42.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test43.tig
+val it = () : unit
+./testcases/test43.tig:6.2:Error: exp was not an int
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test44.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test45.tig
+val it = () : unit
+./testcases/test45.tig:5.2:Error: Cannot assign expression to nil
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test46.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test47.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test48.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test49.tig
+val it = () : unit
+./testcases/test49.tig:5.18:Error: syntax error: inserting  PLUS
+./testcases/test49.tig:5.10:Error: undefined variable: rectype
+./testcases/test49.tig:5.10:Error: exp was not an int
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test5.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test50.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test6.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test7.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test8.tig
+val it = () : unit
+val it = () : unit
+val it = fn : unit -> unit
+Compiling ./testcases/test9.tig
+val it = () : unit
+./testcases/test9.tig:3.1:Error: the type of the then clause: INT and else clause: STRING do not match
+val it = () : unit
+val it = fn : unit -> unit
+[autoloading]
+[autoloading done]
+output.sml:110.1-110.36 Warning: type vars not generalized because of
+   value restriction are instantiated to dummy types (X1,X2,...)

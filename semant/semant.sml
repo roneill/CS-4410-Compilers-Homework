@@ -406,22 +406,28 @@ and transExp (level, loopEnd, venv, tenv) =
 			    if (defFields = nil)
 			    then Ty.BOTTOM (* record error already encountered*)
 			    else lookupFieldTy' (id, defFields)
-			val ty = lookupFieldTy(symbol)
+			val ty = actual_ty (lookupFieldTy(symbol))
+			val fldTy = actual_ty fldTy
 		    in
 			(if (ty = Ty.BOTTOM)
 			then () (* record error already encountered*) 
 			else
-			    if (ty = fldTy)
+			    if (Ty.lteq(fldTy,ty))
 			    then () (* successful typecheck *)
 			    else (Error.error pos
-					      ("record field initializer \
-					       \does not match field type"));
+					      ("record field initializer: "
+					       ^stringTy fldTy^
+					       " does not match defined type: "
+					       ^stringTy ty));
 			 
 			 fldExp)
 		    end
 		val fieldExps = map trfield fields
 	    in
-		{exp=Tr.newRecord(fieldExps), ty=defRecType} 
+		case fieldExps 
+		 of [] => (* record error already encountered*)
+		    {exp=Tr.NOP(), ty=defRecType}
+		  | _ => {exp=Tr.newRecord(fieldExps), ty=defRecType} 
 	    end
 	  | trexp (A.SeqExp(exps)) =
 	    let fun checkExps nil = {exp=(Tr.NOP()), ty=Types.UNIT }
