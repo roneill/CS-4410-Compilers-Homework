@@ -388,7 +388,7 @@ and transExp (level, loopEnd, venv, tenv) =
 		val defFields =
 		    case defRecType
 		     of Ty.RECORD (fields, unique) => fields
-		      | Ty.BOTTOM => [] (* record error alread encountered*)
+		      | Ty.BOTTOM => [] (* record error already encountered*)
 		      | _ => (Error.error pos
 					  ("identifier: "^(stringTy defRecType)^
 					   " was not a record");
@@ -405,12 +405,12 @@ and transExp (level, loopEnd, venv, tenv) =
 			    else lookupFieldTy'(id, tail)
 			and lookupFieldTy (id:S.symbol) =
 			    if (defFields = nil)
-			    then Ty.BOTTOM (* record error alread encountered*)
+			    then Ty.BOTTOM (* record error already encountered*)
 			    else lookupFieldTy' (id, defFields)
 			val ty = lookupFieldTy(symbol)
 		    in
 			(if (ty = Ty.BOTTOM)
-			then () (* record error alread encountered*) 
+			then () (* record error already encountered*) 
 			else
 			    if (ty = fldTy)
 			    then () (* successful typecheck *)

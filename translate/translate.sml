@@ -136,15 +136,10 @@ fun chaseStaticLinks (varlevel, curlevel) =
     if (curlevel = varlevel)
     then ((ErrorMsg.error 0 "Returned"); T.TEMP Frame.FP)
     else case curlevel
-<<<<<<< HEAD
-	  of LEVEL {frame, parent, unique} => (T.MEM (chaseStaticLinks(varlevel, parent)))
+	  of LEVEL {frame, parent, unique} =>
+	     (T.MEM (chaseStaticLinks(varlevel, parent)))
 	   | TOP => (ErrorMsg.impossible "Called chaseStaticLinks on TOP"))
-=======
-	  of LEVEL {frame, parent} =>
-	     T.MEM (chaseStaticLinks(varlevel, parent))
-	   | TOP => (ErrorMsg.impossible "Static link not found")
->>>>>>> 0ee926cf284a9e285f9ab863c17cbafc96a1bb1c
-	  
+
 fun simpleVar ((varlevel,access), curlevel) =
     Ex(Frame.exp access (chaseStaticLinks(varlevel,curlevel)))
 
