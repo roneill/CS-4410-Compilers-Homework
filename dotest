@@ -5,7 +5,7 @@ echo "CM.make \"sources.cm\";" > output.sml
 for i in ./testcases/*.tig
 do
     echo "TextIO.output (TextIO.stdOut, \"Compiling $i\n\");" >> output.sml
-    echo "Compiler.compile \"$i\"; Compiler.printIR;" >> output.sml
+    echo "Compiler.compile \"$i\"; Compiler.printIR();" >> output.sml
 done
 echo "OS.Process.exit(OS.Process.success);" >> output.sml
 

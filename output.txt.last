@@ -54,257 +54,2775 @@ val it = true : bool
 Compiling ./testcases/merge-break.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~12)),
+    CALL(
+     NAME L41)),
+   SEQ(
+    MOVE(
+     MEM(
+      BINOP(PLUS,
+       TEMP t100,
+       CONST ~8)),
+     CALL(
+      NAME L41)),
+    MOVE(
+     TEMP t102,
+     CALL(
+      NAME L2)))),
+  CALL(
+   NAME L47,
+    CALL(
+     NAME L43,
+      MEM(
+       BINOP(PLUS,
+        TEMP t100,
+        CONST ~8)),
+      MEM(
+       BINOP(PLUS,
+        TEMP t100,
+        CONST ~12))))))
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   CJUMP(EQ,
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST 4)),
+    CONST 0,
+    L77,L78),
+   SEQ(
+    LABEL L77,
+    SEQ(
+     MOVE(
+      TEMP t124,
+      CALL(
+       NAME L0,
+        NAME L74)),
+     SEQ(
+      LABEL L78,
+      SEQ(
+       MOVE(
+        TEMP t124,
+        CALL(
+         NAME L47,
+          MEM(
+           BINOP(PLUS,
+            MEM(
+             MEM(
+              BINOP(PLUS,
+               TEMP t100,
+               CONST 4))),
+            BINOP(MUL,
+             CONST 1,
+             CONST 4))))),
+       LABEL L76))))),
+  TEMP t124))
+ 
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t123,
+   TEMP t123),
+  ESEQ(
+   SEQ(
+    CJUMP(LT,
+     MEM(
+      BINOP(PLUS,
+       TEMP t100,
+       CONST 4)),
+     CONST 0,
+     L72,L73),
+    SEQ(
+     LABEL L72,
+     SEQ(
+      MOVE(
+       TEMP t122,
+       CALL(
+        NAME L61,
+         BINOP(MINUS,
+          CONST 0,
+          MEM(
+           BINOP(PLUS,
+            TEMP t100,
+            CONST 4))))),
+      SEQ(
+       LABEL L73,
+       SEQ(
+        MOVE(
+         TEMP t122,
+         ESEQ(
+          SEQ(
+           CJUMP(GT,
+            MEM(
+             BINOP(PLUS,
+              TEMP t100,
+              CONST 4)),
+            CONST 0,
+            L69,L70),
+           SEQ(
+            LABEL L69,
+            SEQ(
+             MOVE(
+              TEMP t121,
+              CALL(
+               NAME L61,
+                MEM(
+                 BINOP(PLUS,
+                  TEMP t100,
+                  CONST 4)))),
+             SEQ(
+              LABEL L70,
+              SEQ(
+               MOVE(
+                TEMP t121,
+                CALL(
+                 NAME L0,
+                  NAME L67)),
+               LABEL L68))))),
+          TEMP t121)),
+        LABEL L71))))),
+   TEMP t122)))
+0-MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   CJUMP(GT,
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST 4)),
+    CONST 0,
+    L64,L65),
+   SEQ(
+    LABEL L64,
+    SEQ(
+     MOVE(
+      TEMP t120,
+      CALL(
+       NAME L0,
+        CALL(
+         NAME L4,
+          BINOP(PLUS,
+           BINOP(MINUS,
+            MEM(
+             BINOP(PLUS,
+              TEMP t100,
+              CONST 4)),
+            BINOP(MUL,
+             BINOP(DIV,
+              MEM(
+               BINOP(PLUS,
+                TEMP t100,
+                CONST 4)),
+              CONST 10),
+             CONST 10)),
+           CALL(
+            NAME L3,
+             NAME L62))))),
+     SEQ(
+      LABEL L65,
+      SEQ(
+       MOVE(
+        TEMP t120,
+        ESEQ(
+         MOVE(
+          TEMP t119,
+          TEMP t119),
+         CONST 0)),
+       LABEL L63))))),
+  TEMP t120))
+0MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   CJUMP(EQ,
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST 4)),
+    CONST 0,
+    L58,L59),
+   SEQ(
+    LABEL L58,
+    SEQ(
+     MOVE(
+      TEMP t117,
+      TEMP t106),
+     SEQ(
+      LABEL L59,
+      SEQ(
+       MOVE(
+        TEMP t117,
+        ESEQ(
+         SEQ(
+          CJUMP(EQ,
+           TEMP t106,
+           CONST 0,
+           L55,L56),
+          SEQ(
+           LABEL L55,
+           SEQ(
+            MOVE(
+             TEMP t116,
+             MEM(
+              BINOP(PLUS,
+               TEMP t100,
+               CONST 4))),
+            SEQ(
+             LABEL L56,
+             SEQ(
+              MOVE(
+               TEMP t116,
+               ESEQ(
+                SEQ(
+                 CJUMP(LT,
+                  MEM(
+                   BINOP(PLUS,
+                    MEM(
+                     MEM(
+                      BINOP(PLUS,
+                       TEMP t100,
+                       CONST 4))),
+                    BINOP(MUL,
+                     CONST 0,
+                     CONST 4))),
+                  MEM(
+                   BINOP(PLUS,
+                    MEM(
+                     TEMP t106),
+                    BINOP(MUL,
+                     CONST 0,
+                     CONST 4))),
+                  L52,L53),
+                 SEQ(
+                  LABEL L52,
+                  SEQ(
+                   MOVE(
+                    TEMP t115,
+                    ESEQ(
+                     SEQ(
+                      MOVE(
+                       TEMP t113,
+                       CALL(
+                        NAME malloc,
+                         CONST 8)),
+                      SEQ(
+                       MOVE(
+                        MEM(
+                         BINOP(PLUS,
+                          TEMP t113,
+                          CONST 0)),
+                        MEM(
+                         BINOP(PLUS,
+                          MEM(
+                           MEM(
+                            BINOP(PLUS,
+                             TEMP t100,
+                             CONST 4))),
+                          BINOP(MUL,
+                           CONST 0,
+                           CONST 4)))),
+                       MOVE(
+                        MEM(
+                         BINOP(PLUS,
+                          TEMP t113,
+                          CONST 4)),
+                        CALL(
+                         NAME L43,
+                          MEM(
+                           BINOP(PLUS,
+                            MEM(
+                             MEM(
+                              BINOP(PLUS,
+                               TEMP t100,
+                               CONST 4))),
+                            BINOP(MUL,
+                             CONST 1,
+                             CONST 4))),
+                          TEMP t106)))),
+                     TEMP t113)),
+                   SEQ(
+                    LABEL L53,
+                    SEQ(
+                     MOVE(
+                      TEMP t115,
+                      ESEQ(
+                       SEQ(
+                        MOVE(
+                         TEMP t114,
+                         CALL(
+                          NAME malloc,
+                           CONST 8)),
+                        SEQ(
+                         MOVE(
+                          MEM(
+                           BINOP(PLUS,
+                            TEMP t114,
+                            CONST 0)),
+                          MEM(
+                           BINOP(PLUS,
+                            MEM(
+                             TEMP t106),
+                            BINOP(MUL,
+                             CONST 0,
+                             CONST 4)))),
+                         MOVE(
+                          MEM(
+                           BINOP(PLUS,
+                            TEMP t114,
+                            CONST 4)),
+                          CALL(
+                           NAME L43,
+                            MEM(
+                             BINOP(PLUS,
+                              TEMP t100,
+                              CONST 4)),
+                            MEM(
+                             BINOP(PLUS,
+                              MEM(
+                               TEMP t106),
+                              BINOP(MUL,
+                               CONST 1,
+                               CONST 4))))))),
+                       TEMP t114)),
+                     LABEL L51))))),
+                TEMP t115)),
+              LABEL L54))))),
+         TEMP t116)),
+       LABEL L57))))),
+  TEMP t117))
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~8)),
+    CALL(
+     NAME L12,
+      MEM(
+       BINOP(PLUS,
+        TEMP t100,
+        CONST ~4)))),
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~4)),
+    ESEQ(
+     SEQ(
+      MOVE(
+       TEMP t110,
+       CALL(
+        NAME malloc,
+         CONST 4)),
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t110,
+         CONST 0)),
+       CONST 0)),
+     TEMP t110))),
+  ESEQ(
+   SEQ(
+    CJUMP(NE,
+     CONST 0,
+     MEM(
+      BINOP(PLUS,
+       MEM(
+        MEM(
+         BINOP(PLUS,
+          TEMP t100,
+          CONST ~4))),
+       BINOP(MUL,
+        CONST 0,
+        CONST 4))),
+     L49,L50),
+    SEQ(
+     LABEL L49,
+     SEQ(
+      MOVE(
+       TEMP t112,
+       ESEQ(
+        SEQ(
+         MOVE(
+          TEMP t111,
+          CALL(
+           NAME malloc,
+            CONST 8)),
+         SEQ(
+          MOVE(
+           MEM(
+            BINOP(PLUS,
+             TEMP t111,
+             CONST 0)),
+           MEM(
+            BINOP(PLUS,
+             TEMP t100,
+             CONST ~8))),
+          MOVE(
+           MEM(
+            BINOP(PLUS,
+             TEMP t111,
+             CONST 4)),
+           CALL(
+            NAME L41)))),
+        TEMP t111)),
+      SEQ(
+       LABEL L50,
+       SEQ(
+        MOVE(
+         TEMP t112,
+         CONST 0),
+        LABEL L48))))),
+   TEMP t112)))
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 0),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+0MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   JUMP(
+    NAME L35),
+   SEQ(
+    LABEL L34,
+    SEQ(
+     MOVE(
+      TEMP t102,
+      CALL(
+       NAME L2)),
+     SEQ(
+      LABEL L35,
+      SEQ(
+       SEQ(
+        CJUMP(EQ,
+         TEMP t102,
+         NAME L27,
+         L32,L33),
+        SEQ(
+         LABEL L32,
+         SEQ(
+          JUMP(
+           NAME L34),
+          SEQ(
+           LABEL L33,
+           CJUMP(EQ,
+            TEMP t102,
+            NAME L28,
+            L34,L26))))),
+       LABEL L26))))),
+  CONST 0))
+
+ MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    TEMP t105,
+    CONST 1),
+   SEQ(
+    SEQ(
+     CJUMP(GE,
+      CALL(
+       NAME L3,
+        TEMP t102),
+      CALL(
+       NAME L3,
+        NAME L17),
+      L22,L23),
+     SEQ(
+      LABEL L22,
+      SEQ(
+       CJUMP(LE,
+        CALL(
+         NAME L3,
+          TEMP t102),
+        CALL(
+         NAME L3,
+          NAME L18),
+        L24,L25),
+       SEQ(
+        LABEL L23,
+        JUMP(
+         NAME L25))))),
+    SEQ(
+     LABEL L25,
+     SEQ(
+      MOVE(
+       TEMP t105,
+       CONST 0),
+      LABEL L24)))),
+  TEMP t105))
+90val it = () : unit
 Compiling ./testcases/merge.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~12)),
+    CALL(
+     NAME L110)),
+   SEQ(
+    MOVE(
+     MEM(
+      BINOP(PLUS,
+       TEMP t100,
+       CONST ~8)),
+     CALL(
+      NAME L110)),
+    MOVE(
+     TEMP t125,
+     CALL(
+      NAME L2)))),
+  CALL(
+   NAME L116,
+    CALL(
+     NAME L112,
+      MEM(
+       BINOP(PLUS,
+        TEMP t100,
+        CONST ~8)),
+      MEM(
+       BINOP(PLUS,
+        TEMP t100,
+        CONST ~12))))))
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   CJUMP(EQ,
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST 4)),
+    CONST 0,
+    L146,L147),
+   SEQ(
+    LABEL L146,
+    SEQ(
+     MOVE(
+      TEMP t147,
+      CALL(
+       NAME L0,
+        NAME L143)),
+     SEQ(
+      LABEL L147,
+      SEQ(
+       MOVE(
+        TEMP t147,
+        CALL(
+         NAME L116,
+          MEM(
+           BINOP(PLUS,
+            MEM(
+             MEM(
+              BINOP(PLUS,
+               TEMP t100,
+               CONST 4))),
+            BINOP(MUL,
+             CONST 1,
+             CONST 4))))),
+       LABEL L145))))),
+  TEMP t147))
+ 
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t146,
+   TEMP t146),
+  ESEQ(
+   SEQ(
+    CJUMP(LT,
+     MEM(
+      BINOP(PLUS,
+       TEMP t100,
+       CONST 4)),
+     CONST 0,
+     L141,L142),
+    SEQ(
+     LABEL L141,
+     SEQ(
+      MOVE(
+       TEMP t145,
+       CALL(
+        NAME L130,
+         BINOP(MINUS,
+          CONST 0,
+          MEM(
+           BINOP(PLUS,
+            TEMP t100,
+            CONST 4))))),
+      SEQ(
+       LABEL L142,
+       SEQ(
+        MOVE(
+         TEMP t145,
+         ESEQ(
+          SEQ(
+           CJUMP(GT,
+            MEM(
+             BINOP(PLUS,
+              TEMP t100,
+              CONST 4)),
+            CONST 0,
+            L138,L139),
+           SEQ(
+            LABEL L138,
+            SEQ(
+             MOVE(
+              TEMP t144,
+              CALL(
+               NAME L130,
+                MEM(
+                 BINOP(PLUS,
+                  TEMP t100,
+                  CONST 4)))),
+             SEQ(
+              LABEL L139,
+              SEQ(
+               MOVE(
+                TEMP t144,
+                CALL(
+                 NAME L0,
+                  NAME L136)),
+               LABEL L137))))),
+          TEMP t144)),
+        LABEL L140))))),
+   TEMP t145)))
+0-MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   CJUMP(GT,
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST 4)),
+    CONST 0,
+    L133,L134),
+   SEQ(
+    LABEL L133,
+    SEQ(
+     MOVE(
+      TEMP t143,
+      CALL(
+       NAME L0,
+        CALL(
+         NAME L4,
+          BINOP(PLUS,
+           BINOP(MINUS,
+            MEM(
+             BINOP(PLUS,
+              TEMP t100,
+              CONST 4)),
+            BINOP(MUL,
+             BINOP(DIV,
+              MEM(
+               BINOP(PLUS,
+                TEMP t100,
+                CONST 4)),
+              CONST 10),
+             CONST 10)),
+           CALL(
+            NAME L3,
+             NAME L131))))),
+     SEQ(
+      LABEL L134,
+      SEQ(
+       MOVE(
+        TEMP t143,
+        ESEQ(
+         MOVE(
+          TEMP t142,
+          TEMP t142),
+         CONST 0)),
+       LABEL L132))))),
+  TEMP t143))
+0MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   CJUMP(EQ,
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST 4)),
+    CONST 0,
+    L127,L128),
+   SEQ(
+    LABEL L127,
+    SEQ(
+     MOVE(
+      TEMP t140,
+      TEMP t129),
+     SEQ(
+      LABEL L128,
+      SEQ(
+       MOVE(
+        TEMP t140,
+        ESEQ(
+         SEQ(
+          CJUMP(EQ,
+           TEMP t129,
+           CONST 0,
+           L124,L125),
+          SEQ(
+           LABEL L124,
+           SEQ(
+            MOVE(
+             TEMP t139,
+             MEM(
+              BINOP(PLUS,
+               TEMP t100,
+               CONST 4))),
+            SEQ(
+             LABEL L125,
+             SEQ(
+              MOVE(
+               TEMP t139,
+               ESEQ(
+                SEQ(
+                 CJUMP(LT,
+                  MEM(
+                   BINOP(PLUS,
+                    MEM(
+                     MEM(
+                      BINOP(PLUS,
+                       TEMP t100,
+                       CONST 4))),
+                    BINOP(MUL,
+                     CONST 0,
+                     CONST 4))),
+                  MEM(
+                   BINOP(PLUS,
+                    MEM(
+                     TEMP t129),
+                    BINOP(MUL,
+                     CONST 0,
+                     CONST 4))),
+                  L121,L122),
+                 SEQ(
+                  LABEL L121,
+                  SEQ(
+                   MOVE(
+                    TEMP t138,
+                    ESEQ(
+                     SEQ(
+                      MOVE(
+                       TEMP t136,
+                       CALL(
+                        NAME malloc,
+                         CONST 8)),
+                      SEQ(
+                       MOVE(
+                        MEM(
+                         BINOP(PLUS,
+                          TEMP t136,
+                          CONST 0)),
+                        MEM(
+                         BINOP(PLUS,
+                          MEM(
+                           MEM(
+                            BINOP(PLUS,
+                             TEMP t100,
+                             CONST 4))),
+                          BINOP(MUL,
+                           CONST 0,
+                           CONST 4)))),
+                       MOVE(
+                        MEM(
+                         BINOP(PLUS,
+                          TEMP t136,
+                          CONST 4)),
+                        CALL(
+                         NAME L112,
+                          MEM(
+                           BINOP(PLUS,
+                            MEM(
+                             MEM(
+                              BINOP(PLUS,
+                               TEMP t100,
+                               CONST 4))),
+                            BINOP(MUL,
+                             CONST 1,
+                             CONST 4))),
+                          TEMP t129)))),
+                     TEMP t136)),
+                   SEQ(
+                    LABEL L122,
+                    SEQ(
+                     MOVE(
+                      TEMP t138,
+                      ESEQ(
+                       SEQ(
+                        MOVE(
+                         TEMP t137,
+                         CALL(
+                          NAME malloc,
+                           CONST 8)),
+                        SEQ(
+                         MOVE(
+                          MEM(
+                           BINOP(PLUS,
+                            TEMP t137,
+                            CONST 0)),
+                          MEM(
+                           BINOP(PLUS,
+                            MEM(
+                             TEMP t129),
+                            BINOP(MUL,
+                             CONST 0,
+                             CONST 4)))),
+                         MOVE(
+                          MEM(
+                           BINOP(PLUS,
+                            TEMP t137,
+                            CONST 4)),
+                          CALL(
+                           NAME L112,
+                            MEM(
+                             BINOP(PLUS,
+                              TEMP t100,
+                              CONST 4)),
+                            MEM(
+                             BINOP(PLUS,
+                              MEM(
+                               TEMP t129),
+                              BINOP(MUL,
+                               CONST 1,
+                               CONST 4))))))),
+                       TEMP t137)),
+                     LABEL L120))))),
+                TEMP t138)),
+              LABEL L123))))),
+         TEMP t139)),
+       LABEL L126))))),
+  TEMP t140))
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~8)),
+    CALL(
+     NAME L81,
+      MEM(
+       BINOP(PLUS,
+        TEMP t100,
+        CONST ~4)))),
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~4)),
+    ESEQ(
+     SEQ(
+      MOVE(
+       TEMP t133,
+       CALL(
+        NAME malloc,
+         CONST 4)),
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t133,
+         CONST 0)),
+       CONST 0)),
+     TEMP t133))),
+  ESEQ(
+   SEQ(
+    CJUMP(NE,
+     CONST 0,
+     MEM(
+      BINOP(PLUS,
+       MEM(
+        MEM(
+         BINOP(PLUS,
+          TEMP t100,
+          CONST ~4))),
+       BINOP(MUL,
+        CONST 0,
+        CONST 4))),
+     L118,L119),
+    SEQ(
+     LABEL L118,
+     SEQ(
+      MOVE(
+       TEMP t135,
+       ESEQ(
+        SEQ(
+         MOVE(
+          TEMP t134,
+          CALL(
+           NAME malloc,
+            CONST 8)),
+         SEQ(
+          MOVE(
+           MEM(
+            BINOP(PLUS,
+             TEMP t134,
+             CONST 0)),
+           MEM(
+            BINOP(PLUS,
+             TEMP t100,
+             CONST ~8))),
+          MOVE(
+           MEM(
+            BINOP(PLUS,
+             TEMP t134,
+             CONST 4)),
+           CALL(
+            NAME L110)))),
+        TEMP t134)),
+      SEQ(
+       LABEL L119,
+       SEQ(
+        MOVE(
+         TEMP t135,
+         CONST 0),
+        LABEL L117))))),
+   TEMP t135)))
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 0),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+0MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   JUMP(
+    NAME L104),
+   SEQ(
+    LABEL L103,
+    SEQ(
+     MOVE(
+      TEMP t125,
+      CALL(
+       NAME L2)),
+     SEQ(
+      LABEL L104,
+      SEQ(
+       SEQ(
+        CJUMP(EQ,
+         TEMP t125,
+         NAME L96,
+         L101,L102),
+        SEQ(
+         LABEL L101,
+         SEQ(
+          JUMP(
+           NAME L103),
+          SEQ(
+           LABEL L102,
+           CJUMP(EQ,
+            TEMP t125,
+            NAME L97,
+            L103,L95))))),
+       LABEL L95))))),
+  CONST 0))
+
+ MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    TEMP t128,
+    CONST 1),
+   SEQ(
+    SEQ(
+     CJUMP(GE,
+      CALL(
+       NAME L3,
+        TEMP t125),
+      CALL(
+       NAME L3,
+        NAME L86),
+      L91,L92),
+     SEQ(
+      LABEL L91,
+      SEQ(
+       CJUMP(LE,
+        CALL(
+         NAME L3,
+          TEMP t125),
+        CALL(
+         NAME L3,
+          NAME L87),
+        L93,L94),
+       SEQ(
+        LABEL L92,
+        JUMP(
+         NAME L94))))),
+    SEQ(
+     LABEL L94,
+     SEQ(
+      MOVE(
+       TEMP t128,
+       CONST 0),
+      LABEL L93)))),
+  TEMP t128))
+90val it = () : unit
 Compiling ./testcases/queens.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    TEMP t155,
+    ESEQ(
+     MOVE(
+      TEMP t156,
+      CALL(
+       NAME initArray,
+        BINOP(MINUS,
+         BINOP(PLUS,
+          TEMP t148,
+          TEMP t148),
+         CONST 1),
+        CONST 0)),
+     TEMP t156)),
+   SEQ(
+    MOVE(
+     TEMP t153,
+     ESEQ(
+      MOVE(
+       TEMP t154,
+       CALL(
+        NAME initArray,
+         BINOP(MINUS,
+          BINOP(PLUS,
+           TEMP t148,
+           TEMP t148),
+          CONST 1),
+         CONST 0)),
+      TEMP t154)),
+    SEQ(
+     MOVE(
+      TEMP t151,
+      ESEQ(
+       MOVE(
+        TEMP t152,
+        CALL(
+         NAME initArray,
+          TEMP t148,
+          CONST 0)),
+       TEMP t152)),
+     SEQ(
+      MOVE(
+       TEMP t149,
+       ESEQ(
+        MOVE(
+         TEMP t150,
+         CALL(
+          NAME initArray,
+           TEMP t148,
+           CONST 0)),
+        TEMP t150)),
+      MOVE(
+       TEMP t148,
+       CONST 8))))),
+  CALL(
+   NAME L152,
+    CONST 0)))
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   CJUMP(EQ,
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST 4)),
+    TEMP t148,
+    L183,L184),
+   SEQ(
+    LABEL L183,
+    SEQ(
+     MOVE(
+      TEMP t160,
+      CALL(
+       NAME L150)),
+     SEQ(
+      LABEL L184,
+      SEQ(
+       MOVE(
+        TEMP t160,
+        ESEQ(
+         SEQ(
+          MOVE(
+           MEM(
+            BINOP(PLUS,
+             TEMP t100,
+             CONST ~8)),
+           BINOP(MINUS,
+            TEMP t148,
+            CONST 1)),
+          MOVE(
+           MEM(
+            BINOP(PLUS,
+             TEMP t100,
+             CONST ~4)),
+           CONST 0)),
+         ESEQ(
+          SEQ(
+           JUMP(
+            NAME L181),
+           SEQ(
+            LABEL L180,
+            SEQ(
+             MOVE(
+              MEM(
+               BINOP(PLUS,
+                TEMP t100,
+                CONST ~4)),
+              BINOP(PLUS,
+               MEM(
+                BINOP(PLUS,
+                 TEMP t100,
+                 CONST ~4)),
+               CONST 1)),
+             SEQ(
+              LABEL L181,
+              SEQ(
+               CJUMP(LE,
+                MEM(
+                 BINOP(PLUS,
+                  TEMP t100,
+                  CONST ~4)),
+                MEM(
+                 BINOP(PLUS,
+                  TEMP t100,
+                  CONST ~8)),
+                L180,L166),
+               LABEL L166))))),
+          CONST 0))),
+       LABEL L182))))),
+  TEMP t160))
+MOVE(
+ TEMP t101,
+ CALL(
+  NAME L0,
+   NAME L165))
+
+
+ . Oval it = () : unit
 Compiling ./testcases/test-break-outside.tig
 val it = () : unit
 ./testcases/test-break-outside.tig:11.3:Error: break encountered outside of loop
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t161,
+   CONST 0),
+  ESEQ(
+   JUMP(
+    NAME L9),
+   CONST 0)))
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~8)),
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST 4))),
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~4)),
+    CONST 0)),
+  ESEQ(
+   SEQ(
+    JUMP(
+     NAME L193),
+    SEQ(
+     LABEL L192,
+     SEQ(
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t100,
+         CONST ~4)),
+       BINOP(PLUS,
+        MEM(
+         BINOP(PLUS,
+          TEMP t100,
+          CONST ~4)),
+        CONST 1)),
+      SEQ(
+       LABEL L193,
+       SEQ(
+        CJUMP(LE,
+         MEM(
+          BINOP(PLUS,
+           TEMP t100,
+           CONST ~4)),
+         MEM(
+          BINOP(PLUS,
+           TEMP t100,
+           CONST ~8)),
+         L192,L188),
+        LABEL L188))))),
+   CONST 0)))
+val it = () : unit
 Compiling ./testcases/test1.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    MOVE(
+     TEMP t163,
+     CALL(
+      NAME initArray,
+       CONST 10,
+       CONST 0)),
+    TEMP t163)),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+val it = () : unit
 Compiling ./testcases/test10.tig
 val it = () : unit
 ./testcases/test10.tig:2.1:Error: exp was not a unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   JUMP(
+    NAME L198),
+   SEQ(
+    LABEL L197,
+    SEQ(
+     EXP(
+      BINOP(PLUS,
+       CONST 5,
+       CONST 6)),
+     SEQ(
+      LABEL L198,
+      SEQ(
+       CJUMP(GT,
+        CONST 10,
+        CONST 5,
+        L197,L196),
+       LABEL L196))))),
+  CONST 0))
+val it = () : unit
 Compiling ./testcases/test11.tig
 val it = () : unit
 ./testcases/test11.tig:2.1:Error: The types of the expression: INT and initializer STRING type do not match
 ./testcases/test11.tig:2.1:Error: exp was not an int
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~8)),
+    NAME L200),
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~4)),
+    CONST 10)),
+  ESEQ(
+   SEQ(
+    JUMP(
+     NAME L203),
+    SEQ(
+     LABEL L202,
+     SEQ(
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t100,
+         CONST ~4)),
+       BINOP(PLUS,
+        MEM(
+         BINOP(PLUS,
+          TEMP t100,
+          CONST ~4)),
+        CONST 1)),
+      SEQ(
+       LABEL L203,
+       SEQ(
+        CJUMP(LE,
+         MEM(
+          BINOP(PLUS,
+           TEMP t100,
+           CONST ~4)),
+         MEM(
+          BINOP(PLUS,
+           TEMP t100,
+           CONST ~8)),
+         L202,L201),
+        LABEL L201))))),
+   CONST 0)))
+ val it = () : unit
 Compiling ./testcases/test12.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 0),
+  ESEQ(
+   SEQ(
+    MOVE(
+     MEM(
+      BINOP(PLUS,
+       TEMP t100,
+       CONST ~12)),
+     CONST 100),
+    MOVE(
+     MEM(
+      BINOP(PLUS,
+       TEMP t100,
+       CONST ~8)),
+     CONST 0)),
+   ESEQ(
+    SEQ(
+     JUMP(
+      NAME L207),
+     SEQ(
+      LABEL L206,
+      SEQ(
+       MOVE(
+        MEM(
+         BINOP(PLUS,
+          TEMP t100,
+          CONST ~8)),
+        BINOP(PLUS,
+         MEM(
+          BINOP(PLUS,
+           TEMP t100,
+           CONST ~8)),
+         CONST 1)),
+       SEQ(
+        LABEL L207,
+        SEQ(
+         CJUMP(LE,
+          MEM(
+           BINOP(PLUS,
+            TEMP t100,
+            CONST ~8)),
+          MEM(
+           BINOP(PLUS,
+            TEMP t100,
+            CONST ~12)),
+          L206,L205),
+         LABEL L205))))),
+    CONST 0))))
+val it = () : unit
 Compiling ./testcases/test13.tig
 val it = () : unit
 ./testcases/test13.tig:3.1:Error: exp was not an int
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    TEMP t165,
+    CONST 1),
+   SEQ(
+    CJUMP(GT,
+     CONST 3,
+     NAME L209,
+     L210,L211),
+    SEQ(
+     LABEL L211,
+     SEQ(
+      MOVE(
+       TEMP t165,
+       CONST 0),
+      LABEL L210)))),
+  TEMP t165))
+dfval it = () : unit
 Compiling ./testcases/test14.tig
 val it = () : unit
 ./testcases/test14.tig:12.5:Error: The types RECORD and ARRAY are not comparable
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~8)),
+    ESEQ(
+     MOVE(
+      TEMP t167,
+      CALL(
+       NAME initArray,
+        CONST 3,
+        CONST 0)),
+     TEMP t167)),
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~4)),
+    ESEQ(
+     SEQ(
+      MOVE(
+       TEMP t166,
+       CALL(
+        NAME malloc,
+         CONST 8)),
+      SEQ(
+       MOVE(
+        MEM(
+         BINOP(PLUS,
+          TEMP t166,
+          CONST 0)),
+        NAME L213),
+       MOVE(
+        MEM(
+         BINOP(PLUS,
+          TEMP t166,
+          CONST 4)),
+        CONST 0))),
+     TEMP t166))),
+  ESEQ(
+   SEQ(
+    CJUMP(NE,
+     MEM(
+      BINOP(PLUS,
+       TEMP t100,
+       CONST ~4)),
+     MEM(
+      BINOP(PLUS,
+       TEMP t100,
+       CONST ~8)),
+     L215,L216),
+    SEQ(
+     LABEL L215,
+     SEQ(
+      MOVE(
+       TEMP t168,
+       CONST 3),
+      SEQ(
+       LABEL L216,
+       SEQ(
+        MOVE(
+         TEMP t168,
+         CONST 4),
+        LABEL L214))))),
+   TEMP t168)))
+anameval it = () : unit
 Compiling ./testcases/test15.tig
 val it = () : unit
 ./testcases/test15.tig:3.1:Error: exp was not a unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   JUMP(
+    NAME L219),
+   SEQ(
+    LABEL L219,
+    SEQ(
+     MOVE(
+      TEMP t170,
+      CONST 3),
+     SEQ(
+      LABEL L220,
+      SEQ(
+       MOVE(
+        TEMP t170,
+        ESEQ(
+         MOVE(
+          TEMP t169,
+          TEMP t169),
+         CONST 0)),
+       LABEL L218))))),
+  TEMP t170))
+val it = () : unit
 Compiling ./testcases/test16.tig
 val it = () : unit
 ./testcases/test16.tig:5.1:Error: cycle inmutually recursive type definition
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t171,
+   TEMP t171),
+  NAME L222))
+val it = () : unit
 Compiling ./testcases/test17.tig
 val it = () : unit
 ./testcases/test17.tig:4.23:Error: type treelist not defined
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 0),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+val it = () : unit
 Compiling ./testcases/test18.tig
 val it = () : unit
 ./testcases/test18.tig:5.4:Error: function name: do_nothing2 not declared
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 0),
+  CALL(
+   NAME L226,
+    CONST 0,
+    NAME L231)))
+str2MOVE(
+ TEMP t101,
+ NAME L230)
+ strMOVE(
+ TEMP t101,
+ CONST 0)
+val it = () : unit
 Compiling ./testcases/test19.tig
 val it = () : unit
 ./testcases/test19.tig:8.16:Error: undefined variable: a
 ./testcases/test19.tig:8.4:Error: INT wrong argument type BOTTOM
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t180,
+   TEMP t180),
+  CALL(
+   NAME L234,
+    CONST 0,
+    NAME L239)))
+str2MOVE(
+ TEMP t101,
+ NAME L238)
+ strMOVE(
+ TEMP t101,
+ CONST 0)
+val it = () : unit
 Compiling ./testcases/test2.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    MOVE(
+     TEMP t181,
+     CALL(
+      NAME initArray,
+       CONST 10,
+       CONST 0)),
+    TEMP t181)),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+val it = () : unit
 Compiling ./testcases/test20.tig
 val it = () : unit
 ./testcases/test20.tig:3.18:Error: undefined variable: i
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   JUMP(
+    NAME L244),
+   SEQ(
+    LABEL L243,
+    SEQ(
+     MOVE(
+      TEMP t183,
+      TEMP t183),
+     SEQ(
+      LABEL L244,
+      SEQ(
+       CJUMP(GT,
+        CONST 10,
+        CONST 5,
+        L243,L242),
+       LABEL L242))))),
+  CONST 0))
+val it = () : unit
 Compiling ./testcases/test21.tig
 val it = () : unit
 ./testcases/test21.tig:8.9:Error: exp was not an int
 ./testcases/test21.tig:5.1:Error: return type of body: INT does not match declaration: UNIT
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t186,
+   TEMP t186),
+  CALL(
+   NAME L247,
+    CONST 10)))
+val it = () : unit
 Compiling ./testcases/test22.tig
 val it = () : unit
 ./testcases/test22.tig:7.2:Error: field: "nam" not found in record
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    SEQ(
+     MOVE(
+      TEMP t187,
+      CALL(
+       NAME malloc,
+        CONST 8)),
+     SEQ(
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t187,
+         CONST 0)),
+       NAME L252),
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t187,
+         CONST 4)),
+       CONST 0))),
+    TEMP t187)),
+  ESEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      MEM(
+       MEM(
+        BINOP(PLUS,
+         TEMP t100,
+         CONST ~4))),
+      BINOP(MUL,
+       CONST 2,
+       CONST 4))),
+    NAME L253),
+   CONST 0)))
+asdNameval it = () : unit
 Compiling ./testcases/test23.tig
 val it = () : unit
 ./testcases/test23.tig:7.2:Error: cannot assign expression of type: INT to variable of type: STRING
 ./testcases/test23.tig:8.2:Error: cannot assign expression of type: STRING to variable of type: INT
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    SEQ(
+     MOVE(
+      TEMP t188,
+      CALL(
+       NAME malloc,
+        CONST 8)),
+     SEQ(
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t188,
+         CONST 0)),
+       NAME L255),
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t188,
+         CONST 4)),
+       CONST 0))),
+    TEMP t188)),
+  ESEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      MEM(
+       MEM(
+        BINOP(PLUS,
+         TEMP t100,
+         CONST ~4))),
+      BINOP(MUL,
+       CONST 1,
+       CONST 4))),
+    NAME L256),
+   CONST 0)))
+anameval it = () : unit
 Compiling ./testcases/test24.tig
 val it = () : unit
 ./testcases/test24.tig:5.2:Error: Attempt to index a non-array INT
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 0),
+  ESEQ(
+   MOVE(
+    TEMP t189,
+    TEMP t189),
+   CONST 0)))
+val it = () : unit
 Compiling ./testcases/test25.tig
 val it = () : unit
 ./testcases/test25.tig:5.2:Error: Attempt access field of a non-record INT
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 0),
+  ESEQ(
+   MOVE(
+    TEMP t190,
+    TEMP t190),
+   CONST 0)))
+val it = () : unit
 Compiling ./testcases/test26.tig
 val it = () : unit
 ./testcases/test26.tig:3.1:Error: exp was not an int
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ BINOP(PLUS,
+  CONST 3,
+  NAME L260))
+varval it = () : unit
 Compiling ./testcases/test27.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 0),
+  CALL(
+   NAME L263,
+    CONST 2)))
+MOVE(
+ TEMP t101,
+ MEM(
+  BINOP(PLUS,
+   TEMP t100,
+   CONST 4)))
+val it = () : unit
 Compiling ./testcases/test28.tig
 val it = () : unit
 ./testcases/test28.tig:7.2:Error: The types of the expression: RECORD and initializer RECORD type do not match
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    SEQ(
+     MOVE(
+      TEMP t192,
+      CALL(
+       NAME malloc,
+        CONST 8)),
+     SEQ(
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t192,
+         CONST 0)),
+       NAME L265),
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t192,
+         CONST 4)),
+       CONST 0))),
+    TEMP t192)),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+Nameval it = () : unit
 Compiling ./testcases/test29.tig
 val it = () : unit
 ./testcases/test29.tig:7.2:Error: The types of the expression: ARRAY and initializer ARRAY type do not match
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    MOVE(
+     TEMP t193,
+     CALL(
+      NAME initArray,
+       CONST 10,
+       CONST 0)),
+    TEMP t193)),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+val it = () : unit
 Compiling ./testcases/test3.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    SEQ(
+     MOVE(
+      TEMP t194,
+      CALL(
+       NAME malloc,
+        CONST 8)),
+     SEQ(
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t194,
+         CONST 0)),
+       NAME L268),
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t194,
+         CONST 4)),
+       CONST 1000))),
+    TEMP t194)),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+SomebodyNobodyval it = () : unit
 Compiling ./testcases/test30.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    MOVE(
+     TEMP t195,
+     CALL(
+      NAME initArray,
+       CONST 10,
+       CONST 0)),
+    TEMP t195)),
+  MEM(
+   BINOP(PLUS,
+    MEM(
+     MEM(
+      BINOP(PLUS,
+       TEMP t100,
+       CONST ~4))),
+    BINOP(MUL,
+     CONST 2,
+     CONST 4)))))
+val it = () : unit
 Compiling ./testcases/test31.tig
 val it = () : unit
 ./testcases/test31.tig:3.2:Error: The types of the expression: INT and initializer STRING type do not match
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   NAME L272),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+ val it = () : unit
 Compiling ./testcases/test32.tig
 val it = () : unit
 ./testcases/test32.tig:6.11:Error: wrong initial value type of STRING
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    MOVE(
+     TEMP t196,
+     CALL(
+      NAME initArray,
+       CONST 10,
+       NAME L274)),
+    TEMP t196)),
+  CONST 0))
+ val it = () : unit
 Compiling ./testcases/test33.tig
 val it = () : unit
 ./testcases/test33.tig:3.10:Error: record type: rectype not declared
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    MOVE(
+     TEMP t197,
+     TEMP t197),
+    CONST 0)),
+  CONST 0))
+val it = () : unit
 Compiling ./testcases/test34.tig
 val it = () : unit
 ./testcases/test34.tig:5.2:Error: INT wrong argument type STRING
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t200,
+   TEMP t200),
+  CALL(
+   NAME L278,
+    NAME L279,
+    NAME L280)))
+twooneMOVE(
+ TEMP t101,
+ MEM(
+  BINOP(PLUS,
+   TEMP t100,
+   CONST 4)))
+val it = () : unit
 Compiling ./testcases/test35.tig
 val it = () : unit
 ./testcases/test35.tig:5.2:Error: g has incorrect number of arguments
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t203,
+   TEMP t203),
+  CALL(
+   NAME L283,
+    NAME L284)))
+oneMOVE(
+ TEMP t101,
+ MEM(
+  BINOP(PLUS,
+   TEMP t100,
+   CONST 4)))
+val it = () : unit
 Compiling ./testcases/test36.tig
 val it = () : unit
 ./testcases/test36.tig:5.2:Error: g has incorrect number of arguments
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t206,
+   TEMP t206),
+  CALL(
+   NAME L287,
+    CONST 3,
+    NAME L288,
+    CONST 5)))
+oneMOVE(
+ TEMP t101,
+ MEM(
+  BINOP(PLUS,
+   TEMP t100,
+   CONST 4)))
+val it = () : unit
 Compiling ./testcases/test37.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~8)),
+    NAME L290),
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~4)),
+    CONST 0)),
+  CONST 0))
+ val it = () : unit
 Compiling ./testcases/test38.tig
 val it = () : unit
 ./testcases/test38.tig:6.2:Error: duplicate declaration: a
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t207,
+   TEMP t207),
+  CONST 0))
+val it = () : unit
 Compiling ./testcases/test39.tig
 val it = () : unit
 ./testcases/test39.tig:6.2:Error: duplicate declaration: g
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t210,
+   TEMP t210),
+  CONST 0))
+MOVE(
+ TEMP t101,
+ MEM(
+  BINOP(PLUS,
+   TEMP t100,
+   CONST 4)))
+MOVE(
+ TEMP t101,
+ MEM(
+  BINOP(PLUS,
+   TEMP t100,
+   CONST 4)))
+val it = () : unit
 Compiling ./testcases/test4.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t213,
+   TEMP t213),
+  CALL(
+   NAME L299,
+    CONST 10)))
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   CJUMP(EQ,
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST 4)),
+    CONST 0,
+    L301,L302),
+   SEQ(
+    LABEL L301,
+    SEQ(
+     MOVE(
+      TEMP t212,
+      CONST 1),
+     SEQ(
+      LABEL L302,
+      SEQ(
+       MOVE(
+        TEMP t212,
+        BINOP(MUL,
+         MEM(
+          BINOP(PLUS,
+           TEMP t100,
+           CONST 4)),
+         CALL(
+          NAME L299,
+           BINOP(MINUS,
+            MEM(
+             BINOP(PLUS,
+              TEMP t100,
+              CONST 4)),
+            CONST 1)))),
+       LABEL L300))))),
+  TEMP t212))
+val it = () : unit
 Compiling ./testcases/test40.tig
 val it = () : unit
 ./testcases/test40.tig:3.2:Error: return type of body: INT does not match declaration: UNIT
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t215,
+   TEMP t215),
+  CALL(
+   NAME L305,
+    CONST 2)))
+val it = () : unit
 Compiling ./testcases/test41.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t217,
+   TEMP t217),
+  ESEQ(
+   MOVE(
+    TEMP t216,
+    TEMP t216),
+   CONST 0)))
+val it = () : unit
 Compiling ./testcases/test42.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~20)),
+    ESEQ(
+     SEQ(
+      MOVE(
+       TEMP t224,
+       CALL(
+        NAME malloc,
+         CONST 8)),
+      SEQ(
+       MOVE(
+        MEM(
+         BINOP(PLUS,
+          TEMP t224,
+          CONST 0)),
+        NAME L313),
+       MOVE(
+        MEM(
+         BINOP(PLUS,
+          TEMP t224,
+          CONST 4)),
+        ESEQ(
+         MOVE(
+          TEMP t223,
+          CALL(
+           NAME initArray,
+            CONST 3,
+            CONST 1900)),
+         TEMP t223)))),
+     TEMP t224)),
+   SEQ(
+    MOVE(
+     MEM(
+      BINOP(PLUS,
+       TEMP t100,
+       CONST ~16)),
+     ESEQ(
+      SEQ(
+       MOVE(
+        TEMP t222,
+        CALL(
+         NAME malloc,
+          CONST 16)),
+       SEQ(
+        MOVE(
+         MEM(
+          BINOP(PLUS,
+           TEMP t222,
+           CONST 0)),
+         NAME L311),
+        SEQ(
+         MOVE(
+          MEM(
+           BINOP(PLUS,
+            TEMP t222,
+            CONST 4)),
+          NAME L312),
+         SEQ(
+          MOVE(
+           MEM(
+            BINOP(PLUS,
+             TEMP t222,
+             CONST 8)),
+           CONST 2432),
+          MOVE(
+           MEM(
+            BINOP(PLUS,
+             TEMP t222,
+             CONST 12)),
+           CONST 44))))),
+      TEMP t222)),
+    SEQ(
+     MOVE(
+      MEM(
+       BINOP(PLUS,
+        TEMP t100,
+        CONST ~12)),
+      ESEQ(
+       MOVE(
+        TEMP t221,
+        CALL(
+         NAME initArray,
+          CONST 100,
+          NAME L310)),
+       TEMP t221)),
+     SEQ(
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t100,
+         CONST ~8)),
+       ESEQ(
+        MOVE(
+         TEMP t220,
+         CALL(
+          NAME initArray,
+           CONST 5,
+           ESEQ(
+            SEQ(
+             MOVE(
+              TEMP t219,
+              CALL(
+               NAME malloc,
+                CONST 16)),
+             SEQ(
+              MOVE(
+               MEM(
+                BINOP(PLUS,
+                 TEMP t219,
+                 CONST 0)),
+               NAME L308),
+              SEQ(
+               MOVE(
+                MEM(
+                 BINOP(PLUS,
+                  TEMP t219,
+                  CONST 4)),
+                NAME L309),
+               SEQ(
+                MOVE(
+                 MEM(
+                  BINOP(PLUS,
+                   TEMP t219,
+                   CONST 8)),
+                 CONST 0),
+                MOVE(
+                 MEM(
+                  BINOP(PLUS,
+                   TEMP t219,
+                   CONST 12)),
+                 CONST 0))))),
+            TEMP t219))),
+        TEMP t220)),
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t100,
+         CONST ~4)),
+       ESEQ(
+        MOVE(
+         TEMP t218,
+         CALL(
+          NAME initArray,
+           CONST 10,
+           CONST 0)),
+        TEMP t218)))))),
+  ESEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      MEM(
+       MEM(
+        BINOP(PLUS,
+         MEM(
+          MEM(
+           BINOP(PLUS,
+            TEMP t100,
+            CONST ~20))),
+         BINOP(MUL,
+          CONST 1,
+          CONST 4)))),
+      BINOP(MUL,
+       CONST 2,
+       CONST 4))),
+    CONST 2323),
+   CONST 0)))
+sdfsfdkatiAllosKapouKapoiossomewhereanameval it = () : unit
 Compiling ./testcases/test43.tig
 val it = () : unit
 ./testcases/test43.tig:6.2:Error: exp was not an int
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    MOVE(
+     TEMP t225,
+     TEMP t225),
+    CONST 0)),
+  BINOP(PLUS,
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 3)))
+val it = () : unit
 Compiling ./testcases/test44.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 0),
+  ESEQ(
+   MOVE(
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST ~4)),
+    CONST 0),
+   CONST 0)))
+val it = () : unit
 Compiling ./testcases/test45.tig
 val it = () : unit
 ./testcases/test45.tig:5.2:Error: Cannot assign expression to nil
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 0),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+val it = () : unit
 Compiling ./testcases/test46.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 0),
+  ESEQ(
+   SEQ(
+    MOVE(
+     TEMP t226,
+     CONST 1),
+    SEQ(
+     CJUMP(NE,
+      MEM(
+       BINOP(PLUS,
+        TEMP t100,
+        CONST ~4)),
+      CONST 0,
+      L321,L322),
+     SEQ(
+      LABEL L322,
+      SEQ(
+       MOVE(
+        TEMP t226,
+        CONST 0),
+       LABEL L321)))),
+   TEMP t226)))
+val it = () : unit
 Compiling ./testcases/test47.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 4),
+  CONST 0))
+val it = () : unit
 Compiling ./testcases/test48.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t229,
+   TEMP t229),
+  CONST 0))
+MOVE(
+ TEMP t101,
+ MEM(
+  BINOP(PLUS,
+   TEMP t100,
+   CONST 4)))
+MOVE(
+ TEMP t101,
+ MEM(
+  BINOP(PLUS,
+   TEMP t100,
+   CONST 4)))
+val it = () : unit
 Compiling ./testcases/test49.tig
 val it = () : unit
 ./testcases/test49.tig:5.18:Error: syntax error: inserting  PLUS
 ./testcases/test49.tig:5.10:Error: undefined variable: rectype
 ./testcases/test49.tig:5.10:Error: exp was not an int
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   BINOP(PLUS,
+    ESEQ(
+     MOVE(
+      TEMP t230,
+      TEMP t230),
+     CONST 0),
+    CONST 0)),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+val it = () : unit
 Compiling ./testcases/test5.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   ESEQ(
+    SEQ(
+     MOVE(
+      TEMP t231,
+      CALL(
+       NAME malloc,
+        CONST 8)),
+     SEQ(
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t231,
+         CONST 0)),
+       CONST 0),
+      MOVE(
+       MEM(
+        BINOP(PLUS,
+         TEMP t231,
+         CONST 4)),
+       CONST 0))),
+    TEMP t231)),
+  MEM(
+   BINOP(PLUS,
+    TEMP t100,
+    CONST ~4))))
+val it = () : unit
 Compiling ./testcases/test50.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST ~4)),
+   CONST 1),
+  CALL(
+   NAME L333,
+    CONST 2)))
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t233,
+   TEMP t233),
+  CALL(
+   NAME L335,
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST 4)))))
+MOVE(
+ TEMP t101,
+ MEM(
+  BINOP(PLUS,
+   MEM(
+    TEMP t100),
+   CONST 4)))
+val it = () : unit
 Compiling ./testcases/test6.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t237,
+   TEMP t237),
+  CALL(
+   NAME L338,
+    CONST 0,
+    NAME L342)))
+str2MOVE(
+ TEMP t101,
+ CALL(
+  NAME L338,
+   MEM(
+    BINOP(PLUS,
+     TEMP t100,
+     CONST 4)),
+   NAME L341))
+strMOVE(
+ TEMP t101,
+ CALL(
+  NAME L340,
+   BINOP(PLUS,
+    MEM(
+     BINOP(PLUS,
+      TEMP t100,
+      CONST 4)),
+    CONST 1)))
+val it = () : unit
 Compiling ./testcases/test7.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  MOVE(
+   TEMP t241,
+   TEMP t241),
+  CALL(
+   NAME L345,
+    CONST 0,
+    NAME L350)))
+str2MOVE(
+ TEMP t101,
+ NAME L349)
+ strMOVE(
+ TEMP t101,
+ CONST 0)
+val it = () : unit
 Compiling ./testcases/test8.tig
 val it = () : unit
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   CJUMP(GT,
+    CONST 10,
+    CONST 20,
+    L353,L354),
+   SEQ(
+    LABEL L353,
+    SEQ(
+     MOVE(
+      TEMP t242,
+      CONST 30),
+     SEQ(
+      LABEL L354,
+      SEQ(
+       MOVE(
+        TEMP t242,
+        CONST 40),
+       LABEL L352))))),
+  TEMP t242))
+val it = () : unit
 Compiling ./testcases/test9.tig
 val it = () : unit
 ./testcases/test9.tig:3.1:Error: the type of the then clause: INT and else clause: STRING do not match
 val it = () : unit
-val it = fn : unit -> unit
+MOVE(
+ TEMP t101,
+ ESEQ(
+  SEQ(
+   CJUMP(GT,
+    CONST 5,
+    CONST 4,
+    L358,L359),
+   SEQ(
+    LABEL L358,
+    SEQ(
+     MOVE(
+      TEMP t243,
+      CONST 13),
+     SEQ(
+      LABEL L359,
+      SEQ(
+       MOVE(
+        TEMP t243,
+        NAME L356),
+       LABEL L357))))),
+  TEMP t243))
+ val it = () : unit
 [autoloading]
 [autoloading done]
 output.sml:110.1-110.36 Warning: type vars not generalized because of
