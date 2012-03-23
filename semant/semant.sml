@@ -166,13 +166,14 @@ fun transDec (level, loopEnd, exps, venv, tenv,
 	(* Check for cycles in recursive type name declarations *)	     
 	fun checkForCycles (tenv, {name, ty, pos}::tail) =
 	    let 
-		(* Only check cycles of NAMEs. Only stop when anyother type is found *)
+		(* Only check cycles of NAMEs.
+		 * Only stop when anyother type is found *)
 		fun hasCycle (Ty.NAME (name, body), visited) =
 		    (* visited is a table of name's that we've visited *)
 		    (case S.look (visited, name)
 		      of SOME _ =>
 			 (Error.error pos
-				      ("cycle in mutually recursive type definition");
+			   ("cycle inmutually recursive type definition");
 			  true)
 		       | NONE => hasCycle(getOpt(!body,Ty.BOTTOM),
 					  S.enter(visited, name, ref ())))    
@@ -194,14 +195,14 @@ fun transDec (level, loopEnd, exps, venv, tenv,
   | transDec(level, loopEnd, exps, venv, tenv, A.FunctionDec(fundecs)) =
     let
 	fun getResultTy (result) = case result
-				    of SOME(rt, pos) => (* function has return value *)
+				    of SOME(rt, pos) =>
 				       (case S.look(tenv, rt)
 					 of SOME ty => ty
 					  | NONE =>
 					    (Error.error pos
 						"return type undeclared";
 					     Ty.BOTTOM))
-				     | NONE => Ty.UNIT  (* procedure returns no value *)
+				     | NONE => Ty.UNIT 
 	fun transparam {name, escape, typ, pos}  =
 	    case S.look(tenv, typ)
 	     of SOME t => {name=name, ty=t}
@@ -227,13 +228,17 @@ fun transDec (level, loopEnd, exps, venv, tenv,
 	fun checkFunBody ({name=funName,params,body,pos,result}) =
 	    let
 		val result_ty = getResultTy result
-		(* we need to get accesses (Translate.access) for each of the params.
-		 * Look up the formals (access list) of the function from the venv *)
+		(* we need to get accesses (Translate.access) for each of
+		 *the params. Look up the formals (access list) of the
+		 * function from the venv *)
 		val level = case S.look(venv',funName) 
-			     of SOME (Env.FunEntry {level, label, formals, result}) => 
+			     of SOME (Env.FunEntry {level,
+						    label,
+						    formals,
+						    result}) => 
 				level
 			      | _ => Error.impossible 
-					    "checkFunBody did not find function header"
+				"checkFunBody did not find function header"
 		val formals = Tr.formals level
 		val params_access = ListPair.zip(params,formals)
 		val params' = map (fn (p,a) => 
@@ -252,7 +257,10 @@ fun transDec (level, loopEnd, exps, venv, tenv,
 							     ty=ty}))
 				    venv'
 				    params'
-		val {exp=bodyexp, ty=bodyty} = transExp(level, loopEnd, venv'', tenv) body
+		val {exp=bodyexp, ty=bodyty} = transExp(level,
+							loopEnd,
+							venv'',
+							tenv) body
 	    in
 		if (actual_ty bodyty = actual_ty result_ty)
 		then (Tr.procEntryExit{level=level,body=bodyexp})
@@ -297,7 +305,8 @@ and transExp (level, loopEnd, venv, tenv) =
     let fun trexp (A.VarExp var) = trvar var
 	  | trexp (A.NilExp) = {exp=(Tr.nil()), ty=Types.NIL}			       
 	  | trexp (A.IntExp i) = {exp=(Tr.newInt(i)), ty=Types.INT}
-	  | trexp (A.StringExp(s, pos)) = {exp=(Tr.newString(s)), ty=Types.STRING}
+	  | trexp (A.StringExp(s, pos)) = {exp=(Tr.newString(s)),
+					   ty=Types.STRING}
 	  | trexp (A.CallExp{func, args, pos}) = 
 	    ((Error.error pos ("Called function "^(S.name func)));
 	    case S.look(venv, func)
@@ -320,12 +329,16 @@ and transExp (level, loopEnd, venv, tenv) =
 		     val pairs = ListPair.zipEq(formals, argTypes)
 			 handle UnequalLengths =>
 				(Error.error pos
-					     ((S.name func)^
-					      " has incorrect number of arguments");
+				((S.name func)^
+				 " has incorrect number of arguments");
 				 [])
 		 in
 		     map compareArgs pairs;
-		     {exp=Tr.callFun(label, argExps, level, funlevel), ty=result}
+		     {exp=Tr.callFun(label,
+				     argExps,
+				     level,
+				     funlevel),
+		      ty=result}
 		 end
 	       | _ => (Error.error pos ("function name: "^
 					(S.name func)^
@@ -414,7 +427,8 @@ and transExp (level, loopEnd, venv, tenv) =
 	  | trexp (A.SeqExp(exps)) =
 	    let fun checkExps nil = {exp=(Tr.NOP()), ty=Types.UNIT }
 		  | checkExps ((exp, pos)::nil) = trexp(exp)
-		  | checkExps ((exp, pos)::tail) = (trexp(exp); checkExps(tail))
+		  | checkExps ((exp, pos)::tail) = (trexp(exp);
+						    checkExps(tail))
 	    in
 		checkExps(exps)
 	    end
@@ -451,13 +465,16 @@ and transExp (level, loopEnd, venv, tenv) =
 				       (stringTy thenTy)^
 				       " and else clause: "^
 				       (stringTy elseTy)^ " do not match");
-		 {exp=Tr.ifExp(testExp, thenExp, elseExp), ty=Ty.join(thenTy,elseTy) }
+		 {exp=Tr.ifExp(testExp, thenExp, elseExp),
+		  ty=Ty.join(thenTy,elseTy) }
 	     end
 	  | trexp (A.WhileExp{test, body, pos}) =
 	    let 
 		val loopEnd = Temp.newlabel();
-		val {exp=testexp, ty=testty} = transExp(level, loopEnd, venv, tenv) test
-		val {exp=bodyexp, ty=bodyty} = transExp(level, loopEnd, venv, tenv) body
+		val {exp=testexp, ty=testty} =
+		    transExp(level, loopEnd, venv, tenv) test
+		val {exp=bodyexp, ty=bodyty} =
+		    transExp(level, loopEnd, venv, tenv) body
 	    in 
 		checkInt'(testty, pos);
 		checkUnit'(bodyty, pos);
@@ -468,7 +485,7 @@ and transExp (level, loopEnd, venv, tenv) =
 	    let
 		val vardec = A.VarDec{name=var,
 				      escape=escape,
-				      typ=SOME (S.symbol("int"), pos), (* TODO: btest this is not assignible *)
+				      typ=SOME (S.symbol("int"), pos),
 				      init=lo,
 				      pos=pos}
 		val limit = A.VarDec{name=S.symbol("limit"),
@@ -479,15 +496,20 @@ and transExp (level, loopEnd, venv, tenv) =
 		val decs = [vardec, limit]
 		val aexp = A.AssignExp{var=A.SimpleVar(var,pos),
 				       exp=A.OpExp{oper=A.PlusOp, 
-						   left=(A.VarExp(A.SimpleVar(var,pos))),  
+						   left=(A.VarExp(
+							 A.SimpleVar(var,pos))),  
 						   right=A.IntExp(1),
 						   pos=pos},
 				       pos=pos}
 		val wbody = A.SeqExp([(body,pos),(aexp,pos)])
 		val whileExp = A.WhileExp{test=A.OpExp{oper=A.LeOp, 
-						       left=(A.VarExp(A.SimpleVar(var,pos))),
-						       right=A.VarExp(A.SimpleVar
-									  (S.symbol("limit"), pos)),
+						       left=(A.VarExp(
+							     A.SimpleVar(
+							     var,pos))),
+						       right=A.VarExp(
+						       A.SimpleVar
+							   (S.symbol("limit"),
+							 pos)),
 						      pos=pos},
 					  body=wbody,
 					  pos=pos}
@@ -495,23 +517,9 @@ and transExp (level, loopEnd, venv, tenv) =
 	    in
 		trexp(letexp)
 	    end
-(*	  | trexp (A.ForExp{var, escape,
-			    lo, hi, body, pos}) =
-	    (checkInt(trexp(lo), pos);
-	     checkInt(trexp(hi), pos);
-	     let
-		 val access = Tr.allocLocal level (!escape)
-		 val venv' = S.enter(venv, var, Env.VarEntry{access=access,
-							     ty=Ty.IMMUTABLE_INT})
-	     in
-		 Env.in_loop := !Env.in_loop + 1;
-		 checkUnit((transExp(level,loopEnd, venv', tenv) body), pos);
-		 Env.in_loop := !Env.in_loop - 1;
-		 {exp=(Tr.NOP()), ty=Types.UNIT }
-	     end)
-*)
 	  | trexp (A.BreakExp pos) = (checkInLoop(loopEnd, pos);
-				      {exp=Tr.newBreak(loopEnd), ty=Types.BOTTOM})
+				      {exp=Tr.newBreak(loopEnd), ty
+								 =Types.BOTTOM})
 	  | trexp (A.LetExp{decs, body,pos}) =
 	    let val {venv=venv', tenv=tenv', exps=exps} =
 		    transDecs(level, loopEnd, venv,tenv,decs)
@@ -534,7 +542,8 @@ and transExp (level, loopEnd, venv, tenv) =
 		       if ((actual_ty ty) = (actual_ty initTy)) then ()
 		       else (Error.error pos ("wrong initial value type of "
 					      ^(stringTy initTy)));
-		       {exp=Tr.newArray(sizeExp, initExp), ty=Ty.ARRAY(ty, unique) })
+		       {exp=Tr.newArray(sizeExp, initExp),
+			ty=Ty.ARRAY(ty, unique) })
 		    | _ => (Error.error pos ((S.name typ)^" is not array type");
 			    {exp=(Tr.NOP()), ty=Ty.BOTTOM }))
 	       | NONE => (Error.error pos "Array type not defined";
@@ -553,7 +562,8 @@ and transExp (level, loopEnd, venv, tenv) =
 		fun getField (fields) = getField'(fields, 0)
 		and getField' (nil, index) =
 		    (Error.error(pos) ("field: \""^(S.name id)^
-				       "\" not found in record"); (Ty.BOTTOM, index))
+				       "\" not found in record");
+		     (Ty.BOTTOM, index))
 		  | getField' ((name,ty)::tail, index) =
 		    if (id = name) then (ty,index)
 		    else getField'(tail, index + 1)
@@ -566,7 +576,7 @@ and transExp (level, loopEnd, venv, tenv) =
 			{exp=Tr.fieldVar(varExp, Tr.newInt(index)), ty=ty}
 		    end
 		   | _ => (Error.error pos
-				       ("Attempt access field of a non-record "^
+			   ("Attempt access field of a non-record "^
 					(stringTy varTy));
 			   {exp=(Tr.NOP()), ty=Ty.BOTTOM}))
 	    end
