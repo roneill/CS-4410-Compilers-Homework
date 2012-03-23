@@ -20,6 +20,11 @@ Group is
 ./translate/findescape.sml
 ./translate/tree.sml
 ./translate/printtree.sml
+./instruction/canon.sml
+./instruction/assem.sml
+./instruction/flowgraph.sml
+./instruction/graph.sml
+./instruction/graph.sig
 ./compiler.sml
 $/ml-yacc-lib.cm
 $/smlnj-lib.cm
