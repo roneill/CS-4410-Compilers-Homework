@@ -299,7 +299,8 @@ and transExp (level, loopEnd, venv, tenv) =
 	  | trexp (A.IntExp i) = {exp=(Tr.newInt(i)), ty=Types.INT}
 	  | trexp (A.StringExp(s, pos)) = {exp=(Tr.newString(s)), ty=Types.STRING}
 	  | trexp (A.CallExp{func, args, pos}) = 
-	    (case S.look(venv, func)
+	    ((Error.error pos ("Called function "^(S.name func)));
+	    case S.look(venv, func)
 	      of SOME (Env.FunEntry{level=funlevel, label, formals, result}) =>
 		 let
 		     fun compareArgs (formal, arg) =
@@ -364,35 +365,52 @@ and transExp (level, loopEnd, venv, tenv) =
 		  | A.GeOp => checkArithmetic(Tr.ge)
 	    end
 	  | trexp (A.RecordExp{fields, typ, pos}) =
-	    (*TODO quagmire ahead*)
-	    (case S.look(tenv, typ)
-	      of SOME ty =>
-		 (case actual_ty ty
-		   of (Ty.RECORD(recFields, unique)) =>
-		      (let fun lookupID (id, nil) = NONE
-			     | lookupID (id, ((recID, ty)::tail)) =
-			       if (id = recID) then SOME ty
-			       else lookupID(id, tail)
-			   and loopFields nil = ()
-			     | loopFields ((symbol, exp, pos)::tail) =
-			       case lookupID(symbol, recFields)
-				of SOME ty => if (ty = #ty(trexp exp)) then ()
-					      else loopFields(tail)
-				 | NONE => (Error.error pos ("record field: "^
-							     (S.name symbol)^
-							     " not declared"))
-		       in
-			   loopFields(fields)
-		       end;
-		       {exp=(Tr.newRecord(map (fn (s, exp, p) => #exp(trexp exp)) fields)), ty=(Ty.RECORD(recFields, unique))})
-		    | _ => (Error.error pos ("identifier: "^
-					     (stringTy ty)^
-					     " was not a record");
-			    {exp=(Tr.NOP()), ty=Ty.INT}))
-	       | NONE => (Error.error pos ("record type: "^
-					   (S.name typ)^
-					   " not declared");
-			  {exp=(Tr.NOP()), ty=Ty.INT}))
+	    let
+		val defRecType =
+		    case S.look(tenv, typ)
+		     of SOME ty => actual_ty ty
+		      | NONE => (Error.error pos ("record type: "^(S.name typ)^
+						  " not declared");
+				 Ty.BOTTOM)
+		val defFields =
+		    case defRecType
+		     of Ty.RECORD (fields, unique) => fields
+		      | Ty.BOTTOM => [] (* record error alread encountered*)
+		      | _ => (Error.error pos
+					  ("identifier: "^(stringTy defRecType)^
+					   " was not a record");
+			      [])
+		fun trfield (symbol, exp, pos) : Tr.exp =
+		    let
+			val {exp=fldExp, ty=fldTy} = trexp exp
+			fun lookupFieldTy' (id, nil) =
+			    (Error.error pos ("record field: "^(S.name symbol)^
+					      " not declared");
+			     Ty.BOTTOM)
+			  | lookupFieldTy' (id, ((recID, ty)::tail)) =
+			    if (id = recID) then ty
+			    else lookupFieldTy'(id, tail)
+			and lookupFieldTy (id:S.symbol) =
+			    if (defFields = nil)
+			    then Ty.BOTTOM (* record error alread encountered*)
+			    else lookupFieldTy' (id, defFields)
+			val ty = lookupFieldTy(symbol)
+		    in
+			(if (ty = Ty.BOTTOM)
+			then () (* record error alread encountered*) 
+			else
+			    if (ty = fldTy)
+			    then () (* successful typecheck *)
+			    else (Error.error pos
+					      ("record field initializer \
+					       \does not match field type"));
+			 
+			 fldExp)
+		    end
+		val fieldExps = map trfield fields
+	    in
+		{exp=Tr.newRecord(fieldExps), ty=defRecType} 
+	    end
 	  | trexp (A.SeqExp(exps)) =
 	    let fun checkExps nil = {exp=(Tr.NOP()), ty=Types.UNIT }
 		  | checkExps ((exp, pos)::nil) = trexp(exp)

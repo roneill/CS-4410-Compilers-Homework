@@ -55,7 +55,8 @@ datatype exp = Ex of Tree.exp
 	     | Cx of Temp.label * Temp.label -> Tree.stm
 						
 datatype level = LEVEL of {frame: Frame.frame,
-			   parent: level} (* consider making this unique *)
+			   parent: level,
+			   unique: unit ref} (* consider making this unique *)
 	       | TOP
 		 
 type access = level * Frame.access
@@ -71,12 +72,12 @@ fun newLevel {parent=parent, name=name, formals=formals} =
     let
 	val frame = Frame.newFrame{name=name,formals=true::formals}
     in
-	LEVEL {frame=frame, parent=parent}
+	LEVEL {frame=frame, parent=parent, unique=ref()}
     end
 
 fun formals level =
     case level
-     of LEVEL {frame, parent} => 
+     of LEVEL {frame, parent, unique} => 
 	let
 	    val formals = Frame.formals(frame)
 	in
@@ -86,7 +87,7 @@ fun formals level =
 
 fun allocLocal lev esc = 
     case lev
-     of LEVEL {frame, parent} => 
+     of LEVEL {frame, parent, unique} => 
 	let
 	    val access=Frame.allocLocal frame esc
 	in
@@ -124,18 +125,19 @@ fun unCx (Ex e) =
     (case e
       of T.CONST k => if (k = 0)
 		      then (fn (t,f) => T.JUMP (T.NAME f,[f]))
-		      else (fn (t,f) => T.JUMP (T.NAME t,[t]))
+		    else (fn (t,f) => T.JUMP (T.NAME t,[t]))
        | _ => fn (t,f) => T.CJUMP (T.NE, T.CONST 0, e, t,f))
 		   
   | unCx (Cx genstm) = genstm
   | unCx (Nx _) = Error.impossible "Tried to convert statement to control"
 
 fun chaseStaticLinks (varlevel, curlevel) =
+    ((ErrorMsg.error 0 "Called chaseStaticLinks");
     if (curlevel = varlevel)
-    then T.TEMP Frame.FP
+    then ((ErrorMsg.error 0 "Returned"); T.TEMP Frame.FP)
     else case curlevel
-	  of LEVEL {frame, parent} => T.MEM (chaseStaticLinks(varlevel, parent))
-	   | TOP => (ErrorMsg.impossible "oops")
+	  of LEVEL {frame, parent, unique} => (T.MEM (chaseStaticLinks(varlevel, parent)))
+	   | TOP => (ErrorMsg.impossible "Called chaseStaticLinks on TOP"))
 	  
 fun simpleVar ((varlevel,access), curlevel) =
     Ex(Frame.exp access (chaseStaticLinks(varlevel,curlevel)))
@@ -143,7 +145,7 @@ fun simpleVar ((varlevel,access), curlevel) =
 fun callFun (label, args, expLevel, funLevel) =
     let
 	val args = map unEx args
-	val sl = chaseStaticLinks(expLevel, funLevel)
+	val sl = chaseStaticLinks(funLevel, expLevel)
 	val args = sl::args
     in
 	Ex (T.CALL(T.NAME label, args))
