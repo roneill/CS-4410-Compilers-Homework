@@ -156,7 +156,7 @@ fun callFun (label, args, expLevel, funLevel) =
 		val sl = chaseStaticLinks(parent, expLevel)
 		val args' = sl::args 
 	    in
-		Ex (T.CALL(T.NAME label, args))
+		Ex (T.CALL(T.NAME label, args'))
 	    end
     end
 
