@@ -10,6 +10,8 @@ struct
 
     fun makestring t = "t" ^ Int.toString t
 
+    fun toString l = Symbol.name l
+		       
   type label = Symbol.symbol
 
 local structure F = Format

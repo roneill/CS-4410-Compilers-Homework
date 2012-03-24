@@ -25,6 +25,8 @@ Group is
 ./instruction/flowgraph.sml
 ./instruction/graph.sml
 ./instruction/graph.sig
+./instruction/codegen.sig
+./instruction/codegen.sml
 ./compiler.sml
 $/ml-yacc-lib.cm
 $/smlnj-lib.cm

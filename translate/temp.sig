@@ -7,5 +7,6 @@ sig
   type label = Symbol.symbol
   val newlabel : unit -> label
   val namedlabel : string -> label
+  val toString : label -> string
 end
 
