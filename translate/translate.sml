@@ -56,7 +56,7 @@ datatype exp = Ex of Tree.exp
 						
 datatype level = LEVEL of {frame: Frame.frame,
 			   parent: level,
-			   unique: unit ref} (* consider making this unique *)
+			   unique: unit ref}
 	       | TOP
 		 
 type access = level * Frame.access
@@ -138,7 +138,7 @@ fun chaseStaticLinks (deflevel, curlevel) =
 	  of LEVEL {frame, parent, unique} =>
 	     (T.MEM (chaseStaticLinks(deflevel, parent)))
 	   | TOP => (ErrorMsg.impossible "Called chaseStaticLinks on TOP")
-
+		    
 fun simpleVar ((varlevel,access), curlevel) =
     Ex(Frame.exp access (chaseStaticLinks(varlevel, curlevel)))
 

@@ -4,6 +4,24 @@ structure Assem = struct
   type temp = Temp.temp
   type label = Temp.label
 
+  fun getTemps (num) =
+      let
+	  fun getTemps' (0, temps) = temps
+	    | getTemps' (i, temps) = Temp.newtemp()::temps
+      in
+	  getTemps'(num, [])
+      end
+  val FP = Temp.newtemp()
+  val RV = Temp.newtemp()
+  val SP = Temp.newtemp()
+  val RA = Temp.newtemp()
+  val ZERO = Temp.newtemp()
+	     
+  val specialregs = [FP,RV,SP,RA,ZERO]
+  val argregs = getTemps(4)
+  val calleesaves = getTemps(8)
+  val callersaves = getTemps(10)		  
+			       
   datatype instr = OPER of {assem: string,
 			    dst: temp list,
 			    src: temp list,
