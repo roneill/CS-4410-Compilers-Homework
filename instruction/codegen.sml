@@ -17,8 +17,28 @@ structure Frame = MipsFrame
 	   | binopInstr T.DIV = "div"
 	   | binopInstr T.MUL = "mul"
 	   | binopInstr _ = ErrorMsg.impossible("Unsupported operator")
-	 fun munchArgs (args) = [] (*TODO*)
-	 fun munchStm (T.SEQ(a,b)) = (munchStm a; munchStm b)
+	 fun munchArgs (args) =
+	     let
+		 val argLength = length args
+		 val growSP = "addi 'd0, 'd0, -"^(int (Frame.wordSize * argLength))^"\n"
+		 fun appendInstr(nil, _, str) = str
+		   | appendInstr(arg::tail, i, str) =
+		     let
+			 val offset = ~i*Frame.wordSize
+			 val cmd = "sw 's"^ int i ^", "^int (offset)^"('d0)\n"
+		     in
+			 appendInstr(tail, i+1, cmd::str)
+		     end
+		 val copyArgs = appendInstr(args, 0, nil)
+		 val assembly = String.concat(growSP::copyArgs)
+		 val _ = emit (A.OPER {assem=assembly,
+    				       src=map munchExp args,
+				       dst=[Frame.FP],
+				       jump=NONE})
+	     in
+		 nil
+	     end     
+	 and munchStm (T.SEQ(a,b)) = (munchStm a; munchStm b)
 	   | munchStm (T.MOVE(T.MEM(T.BINOP(T.PLUS,e1,T.CONST i)),e2)) =
 	     emit (A.OPER {assem="sw 's1, "^ int i ^"('s0)\n",
     			   src=[munchExp e1, munchExp e2],
@@ -41,10 +61,94 @@ structure Frame = MipsFrame
 			   src=munchExp(e)::munchArgs(args),
 			   dst=calldefs,
 			   jump=NONE})
+	   | munchStm(T.JUMP (T.NAME l,labels)) =
+	     emit (A.OPER {assem="j 'j0\n",
+			   src=[],
+			   dst=[],
+			   jump=SOME labels})
+	   | munchStm(T.CJUMP (T.EQ, e1, (T.CONST 0), t, f)) =
+	     emit (A.OPER {assem="beqz 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.EQ, (T.CONST 0), e1, t, f)) =
+	     emit (A.OPER {assem="beqz 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.GE, e1, (T.CONST 0), t, f)) =
+	     emit (A.OPER {assem="bgez 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.GE, (T.CONST 0), e1, t, f)) =
+	     emit (A.OPER {assem="blez 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.GT, e1, (T.CONST 0), t, f)) =
+	     emit (A.OPER {assem="bgtz 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.GT, (T.CONST 0), e1, t, f)) =
+	     emit (A.OPER {assem="bltz 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.LE, e1, (T.CONST 0), t, f)) =
+	     emit (A.OPER {assem="blez 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.LE, (T.CONST 0), e1, t, f)) =
+	     emit (A.OPER {assem="bgez 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.LT, e1, (T.CONST 0), t, f)) =
+	     emit (A.OPER {assem="bltz 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.LT, (T.CONST 0), e1, t, f)) =
+	     emit (A.OPER {assem="bgtz 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.NE, e1, (T.CONST 0), t, f)) =
+	     emit (A.OPER {assem="bnez 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.NE, (T.CONST 0), e1, t, f)) =
+	     emit (A.OPER {assem="bnez 's0, 'j0",
+			   src=[munchExp e1],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.NE, e1, e2, t, f)) =
+	     emit (A.OPER {assem="bne 's0, 's1, 'j0",
+			   src=[munchExp e1, munchExp e2],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.EQ, e1, e2, t, f)) =
+	     emit (A.OPER {assem="beq 's0, 's1, 'j0",
+			   src=[munchExp e1, munchExp e2],
+			   dst=[],
+			   jump=SOME [t,f]})
+	   | munchStm(T.MOVE(T.TEMP t1, T.TEMP t2)) =
+	     emit (A.MOVE{assem="",
+			      dst=t1,
+			      src=t2})
 	   | munchStm (T.MOVE(T.TEMP i, e2)) =
 	     emit (A.OPER {assem="move 'd0, 's0\n",
 			   src=[munchExp e2],
 			   dst=[i],jump=NONE})
+	   | munchStm(T.EXP(T.CALL(e, args))) =
+	     emit (A.OPER{assem="jal 's0\n",
+			  src=munchExp(e)::munchArgs(args),
+			  dst=calldefs,
+			  jump=NONE})
 	   | munchStm (T.LABEL lab) =
 	     emit (A.LABEL {assem=Temp.toString(lab) ^ ":\n", lab=lab })
 
@@ -73,10 +177,6 @@ structure Frame = MipsFrame
 				      {assem="addi 'd0, 's0, "^int i,
 				       src=[munchExp e1], dst=[r], jump=NONE}))
 	   | munchExp(T.BINOP(T.MINUS, e1, T.CONST i)) =
-	     result (fn r => emit(A.OPER
-				      {assem="addi 'd0, 's0, "^int (~i),
-				       src=[munchExp e1], dst=[r], jump=NONE}))
-	   | munchExp(T.BINOP(T.MINUS, T.CONST i, e1)) =
 	     result (fn r => emit(A.OPER
 				      {assem="addi 'd0, 's0, "^int (~i),
 				       src=[munchExp e1], dst=[r], jump=NONE}))
