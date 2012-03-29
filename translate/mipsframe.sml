@@ -12,45 +12,64 @@ type register = string
     
 val wordSize = 4
 val maxParamRegsters = 4
-val FP = A.FP
-val RV = A.RV
+val FP = Temp.newtemp()
+val RV = Temp.newtemp()
 
 val tempMap = Temp.Table.empty
-	 
-(*val tempMap = foldl Temp.Table.enter' Temp.Table.empty
-		    [(A.ZERO, "$zero"),
-		     (A.FP, "$fp"),
-		     (A.RV, "$v0"),
-		     (A.SP, "$sp"),
-		     (A.RA, "$ra"),
-		     (List.nth(A.argregs, 0), "$a0"), 
-		     (List.nth(A.argregs, 1), "$a1"), 
-		     (List.nth(A.argregs, 2), "$a2"), 
-		     (List.nth(A.argregs, 3), "$a3"),
-		     (List.nth(A.calleesaves, 0), "$s0"),
-		     (List.nth(A.calleesaves, 1), "$s1"), 
-		     (List.nth(A.calleesaves, 2), "$s2"), 
-		     (List.nth(A.calleesaves, 3), "$s3"), 
-		     (List.nth(A.calleesaves, 4), "$s4"),
-		     (List.nth(A.calleesaves, 5), "$s5"),
-		     (List.nth(A.calleesaves, 6), "$s6"), 
-		     (List.nth(A.calleesaves, 7), "$s7"),
-		     (List.nth(A.callersaves, 0), "$t0"),
-		     (List.nth(A.callersaves, 1), "$t1"), 
-		     (List.nth(A.callersaves, 2), "$t2"), 
-		     (List.nth(A.callersaves, 3), "$t3"), 
-		     (List.nth(A.callersaves, 4), "$t4"),
-		     (List.nth(A.callersaves, 5), "$t5"),
-		     (List.nth(A.callersaves, 6), "$t6"), 
-		     (List.nth(A.callersaves, 7), "$t7"), 
-		     (List.nth(A.callersaves, 8), "$t8"),
-		     (List.nth(A.callersaves, 9), "$t9")]
+
+fun getTemps (num) =
+    let
+	fun getTemps' (0, temps) = temps
+	  | getTemps' (i, temps) = getTemps'(i - 1, Temp.newtemp()::temps)
+    in
+	getTemps'(num, [])
+
+    end
+val FP = Temp.newtemp()
+val RV = Temp.newtemp()
+val SP = Temp.newtemp()
+val RA = Temp.newtemp()
+val ZERO = Temp.newtemp()
+	     
+val specialregs = [FP,RV,SP,RA,ZERO]
+val argregs = getTemps(4)
+val calleesaves = getTemps(8)
+val callersaves = getTemps(10)
+	      
+val tempMap = foldl Temp.Table.enter' Temp.Table.empty
+		    [(ZERO, "$zero"),
+		     (FP, "$fp"),
+		     (RV, "$v0"),
+		     (SP, "$sp"),
+		     (RA, "$ra"), 
+		     (List.nth(argregs, 0), "$a0"),
+		     (List.nth(argregs, 1), "$a1"), 
+		     (List.nth(argregs, 2), "$a2"), 
+		     (List.nth(argregs, 3), "$a3"),
+		     (List.nth(calleesaves, 0), "$s0"),
+		     (List.nth(calleesaves, 1), "$s1"), 
+		     (List.nth(calleesaves, 2), "$s2"), 
+		     (List.nth(calleesaves, 3), "$s3"), 
+		     (List.nth(calleesaves, 4), "$s4"),
+		     (List.nth(calleesaves, 5), "$s5"),
+		     (List.nth(calleesaves, 6), "$s6"), 
+		     (List.nth(calleesaves, 7), "$s7"),
+		     (List.nth(callersaves, 0), "$t0"),
+		     (List.nth(callersaves, 1), "$t1"), 
+		     (List.nth(callersaves, 2), "$t2"), 
+		     (List.nth(callersaves, 3), "$t3"), 
+		     (List.nth(callersaves, 4), "$t4"),
+		     (List.nth(callersaves, 5), "$t5"),
+		     (List.nth(callersaves, 6), "$t6"), 
+		     (List.nth(callersaves, 7), "$t7"), 
+		     (List.nth(callersaves, 8), "$t8"),
+		     (List.nth(callersaves, 9), "$t9")]
 
 fun tempToString (t) =
     case Temp.Table.look(tempMap, t)
      of SOME s => s
       | NONE => "$"^Temp.makestring(t) 
-*)	      
+	      
 fun procEntryExit1 (frame, body) = body 
 fun newFrame {name, formals} =
     let
@@ -71,6 +90,12 @@ fun newFrame {name, formals} =
     in
 	{name=name, frameOffset= ref 0, formals=formals'}
     end
+
+fun procEntryExit2(frame, body) =
+    body @
+    [A.OPER{assem="",
+	    src=specialregs@calleesaves,
+	    dst=[], jump=SOME[]}]
     
 fun allocLocal (frame:frame) escape =
     let
