@@ -8,5 +8,6 @@ sig
   val newlabel : unit -> label
   val namedlabel : string -> label
   val toString : label -> string
+  val compareLabels : label * label -> order
 end
 

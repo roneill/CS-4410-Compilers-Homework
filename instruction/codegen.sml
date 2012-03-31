@@ -8,7 +8,7 @@ structure Frame = MipsFrame
  
  fun codegen frame stm =
      let val ilist = ref nil
-	 val calldefs = A.RV::A.RA::A.calleesaves
+	 val calldefs = Frame.RV::Frame.RA::Frame.calleesaves
 	 fun emit x = ilist := x :: !ilist
 	 val int  = Int.toString
 	 fun result(gen) = let val t = Temp.newtemp() in gen t; t end
@@ -50,159 +50,173 @@ structure Frame = MipsFrame
 	     end     
 	 and munchStm (T.SEQ(a,b)) = (munchStm a; munchStm b)
 	   | munchStm (T.MOVE(T.MEM(T.BINOP(T.PLUS,e1,T.CONST i)),e2)) =
-	     emit (A.OPER {assem="sw 's1, "^ int i ^"('s0)\n",
+	     emit (A.OPER {assem="sw `s1, "^ int i ^"(`s0)\n",
     			   src=[munchExp e1, munchExp e2],
 			   dst=[],jump=NONE})
 	   | munchStm (T.MOVE(T.MEM(T.BINOP(T.PLUS,T.CONST i, e1)), e2)) =
-	     emit (A.OPER {assem="sw 's1, "^ int i ^"('s0) \n",
+	     emit (A.OPER {assem="sw `s1, "^ int i ^"(`s0) \n",
 			   src=[munchExp e1, munchExp e2],
 			   dst=[],jump=NONE})
 	   | munchStm (T.MOVE(T.MEM(T.CONST i), e2)) =
-	     emit (A.OPER {assem="sw 's0, "^ int i ^"($r0)\n",
+	     emit (A.OPER {assem="sw `s0, "^ int i ^"($r0)\n",
 			   src=[munchExp e2],
 			   dst=[],jump=NONE})
 	   | munchStm (T.MOVE(T.MEM(e1), e2)) =
-	     emit (A.OPER {assem="sw 's1, 0('s0)\n",
+	     emit (A.OPER {assem="sw `s1, 0(`s0)\n",
 			   src=[munchExp e1, munchExp e2],
 			   dst=[],jump=NONE})
 	   | munchStm(T.MOVE(T.TEMP(t), T.CALL(e, args))) =
-	     emit (A.OPER {assem="jal 's0\n"^ (*Jump to the function*)
-				 "move "^Temp.makestring(t)^", 'd0", (*copy the return value into t*)
+	     emit (A.OPER {assem="jal `s0\n"^ (*Jump to the function*)
+				 "move "^Frame.tempToString(t)^", `d0\n", (*copy the return value into t*)
 			   src=munchExp(e)::munchArgs(args),
 			   dst=calldefs,
 			   jump=NONE})
 	   | munchStm(T.JUMP (T.NAME l,labels)) =
-	     emit (A.OPER {assem="j 'j0\n",
+	     emit (A.OPER {assem="j `j0\n",
 			   src=[],
 			   dst=[],
 			   jump=SOME labels})
 	   | munchStm(T.CJUMP (T.EQ, e1, (T.CONST 0), t, f)) =
-	     emit (A.OPER {assem="beqz 's0, 'j0",
+	     emit (A.OPER {assem="beqz `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.EQ, (T.CONST 0), e1, t, f)) =
-	     emit (A.OPER {assem="beqz 's0, 'j0",
+	     emit (A.OPER {assem="beqz `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.GE, e1, (T.CONST 0), t, f)) =
-	     emit (A.OPER {assem="bgez 's0, 'j0",
+	     emit (A.OPER {assem="bgez `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.GE, (T.CONST 0), e1, t, f)) =
-	     emit (A.OPER {assem="blez 's0, 'j0",
+	     emit (A.OPER {assem="blez `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.GT, e1, (T.CONST 0), t, f)) =
-	     emit (A.OPER {assem="bgtz 's0, 'j0",
+	     emit (A.OPER {assem="bgtz `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.GT, (T.CONST 0), e1, t, f)) =
-	     emit (A.OPER {assem="bltz 's0, 'j0",
+	     emit (A.OPER {assem="bltz `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.LE, e1, (T.CONST 0), t, f)) =
-	     emit (A.OPER {assem="blez 's0, 'j0",
+	     emit (A.OPER {assem="blez `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.LE, (T.CONST 0), e1, t, f)) =
-	     emit (A.OPER {assem="bgez 's0, 'j0",
+	     emit (A.OPER {assem="bgez `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.LT, e1, (T.CONST 0), t, f)) =
-	     emit (A.OPER {assem="bltz 's0, 'j0",
+	     emit (A.OPER {assem="bltz `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.LT, (T.CONST 0), e1, t, f)) =
-	     emit (A.OPER {assem="bgtz 's0, 'j0",
+	     emit (A.OPER {assem="bgtz `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.NE, e1, (T.CONST 0), t, f)) =
-	     emit (A.OPER {assem="bnez 's0, 'j0",
+	     emit (A.OPER {assem="bnez `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.NE, (T.CONST 0), e1, t, f)) =
-	     emit (A.OPER {assem="bnez 's0, 'j0",
+	     emit (A.OPER {assem="bnez `s0, `j0\n",
 			   src=[munchExp e1],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.NE, e1, e2, t, f)) =
-	     emit (A.OPER {assem="bne 's0, 's1, 'j0",
+	     emit (A.OPER {assem="bne `s0, `s1, `j0\n",
 			   src=[munchExp e1, munchExp e2],
 			   dst=[],
 			   jump=SOME [t,f]})
 	   | munchStm(T.CJUMP (T.EQ, e1, e2, t, f)) =
-	     emit (A.OPER {assem="beq 's0, 's1, 'j0",
+	     emit (A.OPER {assem="beq `s0, `s1, `j0",
 			   src=[munchExp e1, munchExp e2],
 			   dst=[],
 			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.LT, e1, e2, t, f)) =
+	     emit (A.OPER {assem="slt `d0, `s0, `s1\n"^
+				 "bgtz `d0, `j0\n" ,
+			   src=[munchExp e1, munchExp e2],
+			   dst=[Temp.newtemp()],
+			   jump=SOME [t,f]})
+	   | munchStm(T.CJUMP (T.GE, e1, e2, t, f)) = 
+	     emit (A.OPER {assem="slt `d0, `s0, `s1\n"^
+				 "beqz `d0, `j0\n" ,
+			   src=[munchExp e1, munchExp e2],
+			   dst=[Temp.newtemp()],
+			   jump=SOME [t,f]})
+	     
 	   | munchStm(T.MOVE(T.TEMP t1, T.TEMP t2)) =
 	     emit (A.MOVE{assem="",
 			      dst=t1,
 			      src=t2})
 	   | munchStm (T.MOVE(T.TEMP i, e2)) =
-	     emit (A.OPER {assem="move 'd0, 's0\n",
+	     emit (A.OPER {assem="move `d0, `s0\n",
 			   src=[munchExp e2],
 			   dst=[i],jump=NONE})
 	   | munchStm(T.EXP(T.CALL(e, args))) =
-	     emit (A.OPER{assem="jal 's0\n",
+	     emit (A.OPER{assem="jal `s0\n",
 			  src=munchExp(e)::munchArgs(args),
 			  dst=calldefs,
 			  jump=NONE})
 	   | munchStm (T.LABEL lab) =
 	     emit (A.LABEL {assem=Temp.toString(lab) ^ ":\n", lab=lab })
+	   | munchStm x = Error.impossible "unmatched node"
 
 	 and munchExp(T.MEM(T.BINOP(T.PLUS, e1, T.CONST i))) =
 	     result(fn r => emit (A.OPER
-				      {assem="lw 'd0, "^ int i^"('s0)\n",
+				      {assem="lw `d0, "^ int i^"(`s0)\n",
 				       src=[munchExp e1], dst=[r], jump=NONE}))
 	   | munchExp(T.MEM(T.BINOP(T.PLUS, T.CONST i, e1))) =
 	     result (fn r => emit(A.OPER
-				      {assem="lw 'd0, "^ int i^"('s0)\n",
+				      {assem="lw `d0, "^ int i^"(`s0)\n",
 				       src=[munchExp e1], dst=[r], jump=NONE}))
 	   | munchExp(T.MEM(T.CONST i)) =
 	     result(fn r => emit(A.OPER
-				     {assem="lw 'd0, "^ int i^"($r0)\n",
+				     {assem="lw `d0, "^ int i^"($r0)\n",
 				      src=[], dst=[r], jump=NONE}))
 	   | munchExp(T.MEM(e1)) =
 	     result (fn r => emit(A.OPER
-				      {assem="lw 'd0, 0('s0)",
+				      {assem="lw `d0, 0(`s0)\n",
 				       src=[munchExp e1], dst=[r], jump=NONE}))
 	   | munchExp(T.BINOP(T.PLUS, e1, T.CONST i)) =
 	     result (fn r => emit(A.OPER
-				      {assem="addi 'd0, 's0, "^int i,
+				      {assem="addi `d0, `s0, "^(int i)^"\n",
 				       src=[munchExp e1], dst=[r], jump=NONE}))
 	   | munchExp(T.BINOP(T.PLUS, T.CONST i, e1)) =
 	     result (fn r => emit(A.OPER
-				      {assem="addi 'd0, 's0, "^int i,
+				      {assem="addi `d0, `s0, "^(int i^"\n"),
 				       src=[munchExp e1], dst=[r], jump=NONE}))
 	   | munchExp(T.BINOP(T.MINUS, e1, T.CONST i)) =
 	     result (fn r => emit(A.OPER
-				      {assem="addi 'd0, 's0, "^int (~i),
+				      {assem="addi `d0, `s0, -"^(int (i))^"\n",
 				       src=[munchExp e1], dst=[r], jump=NONE}))
 	   | munchExp(T.BINOP(oper, e1, e2)) =
 	     result(fn r => emit(A.OPER
-				     {assem=binopInstr(oper)^" 'd0, 's0, 's1",
+				     {assem=binopInstr(oper)^" `d0, `s0, `s1\n",
 				      src=[munchExp e1, munchExp e2],
 				      dst=[r],
 				      jump=NONE}))
 	   | munchExp(T.CONST i) =
 	     result (fn r => emit(A.OPER
-				      {assem="li 'd0, "^ int i,
+				      {assem="li `d0, "^(int i)^"\n",
 				       src=[], dst=[r], jump=NONE}))
 	   | munchExp(T.NAME lab) =
 	     result(fn r => emit(A.OPER
-				     {assem="la 'd0, "^Temp.toString(lab),
+				     {assem="la `d0, "^(Temp.toString(lab))^"\n",
 				      src=[],
 				      dst=[r],
 				      jump=NONE}))

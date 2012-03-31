@@ -11,6 +11,14 @@ struct
     fun makestring t = "t" ^ Int.toString t
 
     fun toString l = Symbol.name l
+
+    fun compareLabels (l1, l2) =
+	let
+	    val s1 = toString(l1)
+	    val s2 = toString(l2)
+	in
+	    String.compare(s1, s2)
+	end
 		       
   type label = Symbol.symbol
 

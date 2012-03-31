@@ -7,6 +7,17 @@ sig type frame
 		  | STRING of Temp.label * string
     val RV: Temp.temp
     val FP: Temp.temp
+    val RA: Temp.temp
+    val SP: Temp.temp
+    val ZERO: Temp.temp
+
+    val specialregs: Temp.temp list
+    val argregs: Temp.temp list
+    val calleesaves: Temp.temp list
+    val callersaves: Temp.temp list
+
+    val tempToString: Temp.temp -> string
+		     
     val newFrame : {name: Temp.label,
 		    formals: bool list} -> frame
     val name: frame -> Temp.label
@@ -15,6 +26,7 @@ sig type frame
     val wordSize: int
     val exp: access -> Tree.exp -> Tree.exp
     val procEntryExit1 : frame * Tree.stm -> Tree.stm
+    val procEntryExit2 : frame * Assem.instr list -> Assem.instr list
     val externalCall: string * Tree.exp list -> Tree.exp
     val tempMap: register Temp.Table.table	   
 end
