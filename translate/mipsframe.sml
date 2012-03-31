@@ -25,21 +25,29 @@ fun getTemps (num) =
 	getTemps'(num, [])
 
     end
+    
 val FP = Temp.newtemp()
-val RV = Temp.newtemp()
+val RV0 = Temp.newtemp()
+val RV1 = Temp.newtemp()
 val SP = Temp.newtemp()
 val RA = Temp.newtemp()
 val ZERO = Temp.newtemp()
 	     
-val specialregs = [FP,RV,SP,RA,ZERO]
+val specialregs = [FP, RV0, RV1, SP, RA, ZERO]
 val argregs = getTemps(4)
 val calleesaves = getTemps(8)
 val callersaves = getTemps(10)
+
+val registersAsTemps = List.concat [specialregs,
+				   argregs,
+				   calleesaves,
+				   callersaves]
 	      
 val tempMap = foldl Temp.Table.enter' Temp.Table.empty
 		    [(ZERO, "$zero"),
 		     (FP, "$fp"),
-		     (RV, "$v0"),
+		     (RV0, "$v0"),
+		     (RV1, "$v1"),
 		     (SP, "$sp"),
 		     (RA, "$ra"), 
 		     (List.nth(argregs, 0), "$a0"),
@@ -64,7 +72,7 @@ val tempMap = foldl Temp.Table.enter' Temp.Table.empty
 		     (List.nth(callersaves, 7), "$t7"), 
 		     (List.nth(callersaves, 8), "$t8"),
 		     (List.nth(callersaves, 9), "$t9")]
-
+	      
 fun tempToString (t) =
     case Temp.Table.look(tempMap, t)
      of SOME s => s
@@ -91,11 +99,16 @@ fun newFrame {name, formals} =
 	{name=name, frameOffset= ref 0, formals=formals'}
     end
 
-fun procEntryExit2(frame, body) =
+fun procEntryExit2 (frame, body) =
     body @
     [A.OPER{assem="",
 	    src=specialregs@calleesaves,
 	    dst=[], jump=SOME[]}]
+    
+fun procEntryExit3 (frame as {name=name, frameOffset=offset, formals=locals}, body) = 
+    {prolog = "PROCEDURE " ^ Symbol.name name ^"\n",
+      body = body,
+      epilog = "END "^Symbol.name name ^"\n" }
     
 fun allocLocal (frame:frame) escape =
     let

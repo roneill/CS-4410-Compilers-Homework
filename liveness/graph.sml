@@ -22,7 +22,7 @@ struct
 
   type node = graph * node'
   fun eq((_,a),(_,b)) = a=b
-
+			
   fun augment (g: graph) (n: node') : node = (g,n)
 
   fun newGraph() = A.array(0,bogusNode)

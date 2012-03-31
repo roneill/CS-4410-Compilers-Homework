@@ -89,6 +89,9 @@ fun instrs2graph instrs =
 		    end			  
 		val prevJumps = getJumpList(prev)
 		val nextJumps = getJumpList(next)
+		(* Note :
+		 may need to handle case where there are jumps to
+			 labels that were not in the instruction list *)
 		val _ = map (fn jump => Graph.mk_edge {from=prev, to=jump}) prevJumps
 		val _ = map (fn jump => Graph.mk_edge {from=next, to=jump}) nextJumps
 		val _ =
@@ -103,6 +106,24 @@ fun instrs2graph instrs =
 				     def=def,
 				     use=use,
 				     ismove=ismove}
+	fun say s =  TextIO.output(TextIO.stdOut,s)
+	fun sayln s= (say s; say "\n")
+	
+	fun printNodeInstr (node) =
+	    let
+		val instr = getOpt(Graph.Table.look(instrTable, node), A.OPER{assem="",src=[],dst=[],jump=NONE})
+		val assemString =
+		    case instr
+		     of A.OPER {assem=assem, ...} => assem
+		      | A.MOVE {assem=assem, ...} => assem
+		      | _ => ""
+		val nodeString = Graph.nodename(node)
+		val succ = Graph.succ(node)
+		val succString = "{"^(String.concat(map (fn n => (Graph.nodename n)^" ") succ))^"}"
+	    in
+		sayln (nodeString^": "^assemString^succString)
+	    end
+	val _ = app printNodeInstr (rev nodes)
     in
 	(flowgraph, Graph.nodes control)
     end

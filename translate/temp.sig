@@ -9,5 +9,6 @@ sig
   val namedlabel : string -> label
   val toString : label -> string
   val compareLabels : label * label -> order
+  val tempint : temp -> int
 end
 

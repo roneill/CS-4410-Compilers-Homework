@@ -19,6 +19,8 @@ struct
 	in
 	    String.compare(s1, s2)
 	end
+
+    fun tempint t = t
 		       
   type label = Symbol.symbol
 
