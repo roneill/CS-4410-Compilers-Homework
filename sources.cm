@@ -22,11 +22,12 @@ Group is
 ./translate/printtree.sml
 ./instruction/canon.sml
 ./instruction/assem.sml
-./instruction/flowgraph.sml
-./instruction/graph.sml
-./instruction/graph.sig
 ./instruction/codegen.sig
 ./instruction/codegen.sml
+./liveness/flowgraph.sml
+./liveness/graph.sml
+./liveness/graph.sig
+./liveness/makegraph.sml
 ./compiler.sml
 $/ml-yacc-lib.cm
 $/smlnj-lib.cm
