@@ -11,10 +11,9 @@ datatype frag = PROC of {body: Tree.stm, frame: frame}
 type register = string
     
 val wordSize = 4
-val maxParamRegsters = 4
 val FP = A.FP
 val RV = A.RV
-
+val maxArgRegisters = 4
 val tempMap = Temp.Table.empty
 	 
 (*val tempMap = foldl Temp.Table.enter' Temp.Table.empty
@@ -58,14 +57,11 @@ fun newFrame {name, formals} =
 	fun getArgumentOffset () = 
 	    (argumentOffset := !argumentOffset + wordSize;
 	     !argumentOffset)
-	val usedRegisters = ref 0
 
 	fun allocFormal escape =  
-	    if (escape orelse (!usedRegisters >= maxParamRegsters)) then 
-		InFrame (getArgumentOffset())
-	    else 
-		(usedRegisters := !usedRegisters + 1;
-		 InReg (Temp.newtemp()))
+	    if escape
+	    then InFrame (getArgumentOffset())
+	    else (InReg (Temp.newtemp()))
 
 	val formals' = map allocFormal formals
     in

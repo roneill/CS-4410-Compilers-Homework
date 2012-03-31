@@ -19,21 +19,31 @@ structure Frame = MipsFrame
 	   | binopInstr _ = ErrorMsg.impossible("Unsupported operator")
 	 fun munchArgs (args) =
 	     let
-		 val argLength = length args
-		 val growSP = "addi 'd0, 'd0, -"^(int (Frame.wordSize * argLength))^"\n"
+		 val numArgs = length args
+		 val numArgRegs = length argregs
+		 val stackArgs = if (numArgs > numArgRegs)
+				 then (numArgRegs - numArgs)
+				 else (0)
+		 val growSP = "addi `d0, `d0, -"^(int (Frame.wordSize * stackArgs))^"\n"
 		 fun appendInstr(nil, _, str) = str
 		   | appendInstr(arg::tail, i, str) =
 		     let
-			 val offset = ~i*Frame.wordSize
-			 val cmd = "sw 's"^ int i ^", "^int (offset)^"('d0)\n"
+			 val offset = ~(i-numArgRegs)*Frame.wordSize
+			 val copyToStack = "sw `s"^ int i ^", "^int (offset)^"(`d0)\n"
+			 val copyToReg  = "move `d"^(int (i+1)) ^", `s"^ (int i)^"\n"
 		     in
-			 appendInstr(tail, i+1, cmd::str)
+			 if (i < numArgRegs)
+			 then appendInstr(tail, i+1, copyToReg::str)
+			 else appendInstr(tail, i+1, copyToStack::str)
 		     end
 		 val copyArgs = appendInstr(args, 0, nil)
-		 val assembly = String.concat(growSP::copyArgs)
+		 val copyArgs' = if (stackArgs > 0)
+				 then growSP::copyArgs
+				 else copyArgs
+		 val assembly = String.concat(copyArgs')
 		 val _ = emit (A.OPER {assem=assembly,
     				       src=map munchExp args,
-				       dst=[Frame.FP],
+				       dst=[Frame.SP]@argregs,
 				       jump=NONE})
 	     in
 		 nil
