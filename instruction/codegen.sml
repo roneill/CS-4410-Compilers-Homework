@@ -20,7 +20,7 @@ structure Frame = MipsFrame
 	 fun munchArgs (args) =
 	     let
 		 val numArgs = length args
-		 val numArgRegs = length argregs
+		 val numArgRegs = length Frame.argregs
 		 val stackArgs = if (numArgs > numArgRegs)
 				 then (numArgRegs - numArgs)
 				 else (0)
@@ -43,7 +43,7 @@ structure Frame = MipsFrame
 		 val assembly = String.concat(copyArgs')
 		 val _ = emit (A.OPER {assem=assembly,
     				       src=map munchExp args,
-				       dst=[Frame.SP]@argregs,
+				       dst=[Frame.SP]@Frame.argregs,
 				       jump=NONE})
 	     in
 		 nil
