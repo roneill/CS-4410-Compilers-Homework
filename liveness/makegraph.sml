@@ -21,6 +21,17 @@ structure LabelNodeMap = BinaryMapFn(struct
 fun instrs2graph instrs =
     let
 	val control = Graph.newGraph()
+	(* Loop through each instruction, creating nodes and storing information
+	 * in tables as we go along
+	 * instrTable: node -> instr map 
+	 * label2node: label -> node map
+	 * def: node -> def list map
+	 * use: node -> use list map
+	 * ismove: node -> move map 
+	 * labels: list of labels that occur directly before the current 
+	 *          instruction 
+	 * nodes: stack of nodes in the reverse order from the order in the 
+	 *         instruction list *)
 	fun makeNodes (nil, instrTable, label2node, def, use, ismove, labels, nodes) =
 	    (instrTable, label2node, def, use, ismove, nodes)
 	  | makeNodes (instr::tail, instrTable, label2node, def, use, ismove, labels, nodes) =
