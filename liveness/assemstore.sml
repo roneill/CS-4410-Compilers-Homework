@@ -25,7 +25,7 @@ fun storeLabelkey(l) = "\"" ^ (String.toString l) ^ "\""
 (* a nicer table than the one given by the TABLE sig *)
 structure TempTable = BinaryMapFn(struct type ord_key=Temp.temp
 					 val compare =
-					     (fn (t1,t2) =>
+			 		     (fn (t1,t2) =>
 						 Int.compare(Temp.tempint t1,
 							     Temp.tempint t2))
 				  end)

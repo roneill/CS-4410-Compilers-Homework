@@ -28,6 +28,7 @@ Group is
 ./liveness/graph.sml
 ./liveness/graph.sig
 ./liveness/makegraph.sml
+./liveness/assemstore.sml
 ./compiler.sml
 $/ml-yacc-lib.cm
 $/smlnj-lib.cm
