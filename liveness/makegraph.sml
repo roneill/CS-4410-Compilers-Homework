@@ -18,6 +18,8 @@ structure LabelNodeMap = BinaryMapFn(struct
 				   val compare = Temp.compareLabels
 				   end)
 			 
+fun list2set l = Flow.Set.addList(Flow.Set.empty, l)
+			 
 fun instrs2graph instrs =
     let
 	val control = Graph.newGraph()
@@ -25,8 +27,8 @@ fun instrs2graph instrs =
 	 * in tables as we go along
 	 * instrTable: node -> instr map 
 	 * label2node: label -> node map
-	 * def: node -> def list map
-	 * use: node -> use list map
+	 * def: node -> def set map
+	 * use: node -> use set map
 	 * ismove: node -> move map 
 	 * labels: list of labels that occur directly before the current 
 	 *          instruction 
@@ -40,8 +42,8 @@ fun instrs2graph instrs =
 		let
 		    val node = Graph.newNode(control)
 		    val instrTable' = Graph.Table.enter(instrTable, node, instr)
-		    val def' = Graph.Table.enter(def, node, dst)
-		    val use' = Graph.Table.enter(use, node, src)
+		    val def' = Graph.Table.enter(def, node, list2set dst)
+		    val use' = Graph.Table.enter(use, node, list2set src)
 		    val ismove' = Graph.Table.enter(ismove, node, false)
 		    val label2node' = foldl (fn (label, table) =>
 						LabelNodeMap.insert(table, label, node))
@@ -56,8 +58,8 @@ fun instrs2graph instrs =
 		let
 		    val node = Graph.newNode(control)
 		    val instrTable' = Graph.Table.enter(instrTable, node, instr)
-		    val def' = Graph.Table.enter(def, node, [dst])
-		    val use' = Graph.Table.enter(use, node, [src])
+		    val def' = Graph.Table.enter(def, node, list2set [dst])
+		    val use' = Graph.Table.enter(use, node, list2set [src])
 		    val ismove' = Graph.Table.enter(ismove, node, true)
 		    val label2node' = foldl (fn (label, table) =>
 						LabelNodeMap.insert(table, label, node))
@@ -87,7 +89,7 @@ fun instrs2graph instrs =
 			      | NONE => ErrorMsg.impossible
 		              "Node is not entered into instruction table"
 			val jumps = case instr
-				     of A.OPER {jump=SOME jump, ...} => jump
+				     of A.OPER {jump=SOME labels, ...} => labels
 				      | _ => []
 			fun getNode label =
 			    case LabelNodeMap.find(label2node, label)

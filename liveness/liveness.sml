@@ -1,101 +1,85 @@
 signature LIVENESS =
 sig
     datatype igraph = 
-	 IGRAPH of {graph: IGraph,
-		    tnode:Temp.temp -> IGraph.node,
-		    gtemp: IGraph.node -> Temp.temp,
-		    movesL (IGraph.node * IGraph.node) list}
+	 IGRAPH of {graph: Graph.graph,
+		    tnode:Temp.temp -> Graph.node,
+		    gtemp: Graph.node -> Temp.temp,
+		    moves: (Graph.node * Graph.node) list}
 val interferenceGraph :
     Flow.flowgraph ->
     igraph * (Flow.Graph.node -> Temp.temp list)
     
-val show: outstream * igraph -> unit
+val show: TextIO.outstream * igraph -> unit
 
 end
 
 structure Liveness : LIVENESS =
 struct
 		     
-structure Flow
-structure ListMergeSort
-	  
+structure Flow = Flow
+structure T = Flow.Graph.Table
+structure S = Flow.Set
+
+	      
 datatype igraph = 
-	 IGRAPH of {graph: IGraph,
-		    tnode:Temp.temp -> IGraph.node,
-		    gtemp: IGraph.node -> Temp.temp,
-		    moves: (IGraph.node * IGraph.node) list}
+	 IGRAPH of {graph: Graph.graph,
+		    tnode: Temp.temp -> Graph.node,
+		    gtemp: Graph.node -> Temp.temp,
+		    moves: (Graph.node * Graph.node) list}
 		   
-type liveSet = unit Temp.Table.table * temp list
-type liveMap = liveSet Flow.Graph.Table.table
-
-fun union ((_, ltemps), (_,rtemps)) =
-    let 
-	fun merge (nil, r::rtail, acc) = merge(nil, rtail, r::acc)
-	  | merge (l::ltail, nil, acc) = merge(ltail, nil, l::acc)
-	  | merge (nil, nil, acc) = rev(acc)
-	  | merge (l::ltail, r::rtail, acc) =
-	    case Temp.compare (l,r)
-	     of LESS => merge (ltail, r::rtail, l::acc)
-	      | EQUAL => merge (ltail, rtail, l::acc)
-	      | GREATER => merge (l::ltail, rtail, r::acc) 
-	    
-	val utemps = merge(ltemps, rtemps)
-
-	val ulookup = foldl (fn (temp, table) => 
-				Temp.Table.enter(table, temp, ()))
-		      Temp.Table.empty
-		      utemps
-
-    in 
-	(ulookup, utemps)
-    end 
-
-fun diff ((_, ltemps), (_,rtemps)) = =
-    let
-	fun merge (nil, r::rtail, acc) = merge(nil, rtail, acc)
-	  | merge (l::ltail, nil, acc) = merge(ltail, nil, l::acc)
-	  | merge (nil, nil, acc) = rev(acc)
-	  | merge (l::ltail, r::rtail, acc) = 
-	    case Temp.compare (l,r)
-	     of LESS => merge (ltail, r::rtail, l::acc)
-	      | EQUAL => merge (ltail, rtail, acc)
-	      | GREATER => merge (l::ltail, rtail, acc)
-	val utemps = merge(ltemps, rtemps)
-
-	val ulookup = foldl (fn (temp, table) => 
-				Temp.Table.enter(table, temp, ()))
-		      Temp.Table.empty
-		      utemps
-    in 
-	(ulookup, utemps)
-    end 
-
-fun interferenceGraph ({control, def, use, ismove}) = 
+type liveSet = unit Temp.Table.table * Temp.temp list
+type liveMap = liveSet T.table
+	
+fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) = 
     let
 	val nodes = rev (Flow.Graph.nodes control) (* start at the bottom of the nodes *)
 	val liveIn = foldl (fn (node, table) => 
-			       Flow.Graph.Table.enter(table, node, 
-						      (Temp.Table.empty,[])))
-		     Flow.Graph.Table.empty
+			       T.enter(table, node, (Flow.Set.empty)))
+		     T.empty
 		     nodes
 	val liveOut = foldl (fn (node, table) => 
-			       Flow.Graph.Table.enter(table, node, 
-						      (Temp.Table.empty,[])))
-		     Flow.Graph.Table.empty
+			       T.enter(table, node, 
+						      (Flow.Set.empty)))
+		     T.empty
 		     nodes
-	fun computeLiveness (node::tail, liveIn, liveOut) =
+	fun computeLiveness (liveInTable, liveOutTable) =
 	    let 
-		val liveIn'=liveIn[node]
-		val liveOut'=liveOut[node]
-		val liveIn=union(Flow.Graph.table.look(use, node),
-				 diff(Flow.Graph.table.look(liveOut,node),
-				      Flow.Graph.table.look(def,node)))
-		val liveOut=foldl (fn (s, ins as (_,intemps)) => 
-				      union(liveIn[S],intemps))
-				  (Temp.Table.empty,[])
-			    Flow.Graph.succ(node)
+		val (liveInTable', liveOutTable', changed) =
+		    iterate(nodes, liveOutTable, liveOutTable, false)
+	    in
+		if changed
+		then computeLiveness (liveInTable', liveOutTable')
+		else (liveInTable', liveOutTable')
+	    end
+	and iterate (nil, liveInTable, liveOutTable, changed) =
+	    (liveInTable, liveOutTable, changed)
+	  | iterate (node::tail, liveInTable, liveOutTable, changed) =
+	    let 
+		val liveIn' = getOpt(T.look(liveInTable, node), Flow.Set.empty)
+		val liveOut' =  getOpt(T.look(liveOutTable, node), Flow.Set.empty)
+		val uses = getOpt(T.look(use, node), Flow.Set.empty)
+		val defs = getOpt(T.look(def, node), Flow.Set.empty)
+		val liveIn = Flow.Set.union(uses,
+					    Flow.Set.difference(liveOut', defs))
+		val liveOut = foldl (fn (s, ins) => 
+					Flow.Set.union(getOpt(T.look(liveInTable, s),
+							      Flow.Set.empty),ins))
+				    (Flow.Set.empty)
+				    (Flow.Graph.succ(node))
+		val changed' = changed orelse (not(Flow.Set.equal(liveIn',liveIn) andalso
+						    Flow.Set.equal(liveOut', liveOut)))
+		val liveInTable' = T.enter(liveInTable, node, liveIn)
+		val liveOutTable' = T.enter(liveOutTable, node, liveOut)
+	    in
+		iterate(tail, liveInTable', liveOutTable', changed)
+	    end
+	val (_, liveMap) = computeLiveness(liveIn, liveOut)
+    in
+	()
+    end 
 
-val show (outstream, igraph) = ()
+fun show (outstream, igraph) = ()
 
 
 
+end

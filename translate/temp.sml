@@ -20,11 +20,12 @@ struct
 	    String.compare(s1, s2)
 	end
 	
-    fun compareTemps (t1,t2) =
-	Int.compare(Temp.tempint t1,
-		    Temp.tempint t2))
-
     fun tempint t = t
+
+    fun compareTemps (t1,t2) =
+	Int.compare(tempint t1,
+		    tempint t2)
+
 		       
   type label = Symbol.symbol
 

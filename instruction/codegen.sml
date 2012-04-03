@@ -8,7 +8,7 @@ structure Frame = MipsFrame
  
  fun codegen frame stm =
      let val ilist = ref nil
-	 val calldefs = Frame.RV::Frame.RA::Frame.calleesaves
+	 val calldefs = Frame.RV0::Frame.RA::Frame.calleesaves
 	 fun emit x = ilist := x :: !ilist
 	 val int  = Int.toString
 	 fun result(gen) = let val t = Temp.newtemp() in gen t; t end

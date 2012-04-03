@@ -376,7 +376,7 @@ fun getResult () = !result
 fun procEntryExit {level=LEVEL l, body=b} =
     let
 	val bexp = unEx b
-	val bstm = T.MOVE (T.TEMP Frame.RV, bexp)
+	val bstm = T.MOVE (T.TEMP Frame.RV0, bexp)
 	val frame = #frame l
 	val body = Frame.procEntryExit1(frame,bstm)
 	val fragment = Frame.PROC {body=body, frame=frame}

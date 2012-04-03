@@ -2,9 +2,10 @@
 signature FLOW =
 sig
     structure Graph : GRAPH
+    structure Set : ORD_SET
     datatype flowgraph = FGRAPH of {control: Graph.graph,
-				    def: Temp.temp list Graph.Table.table,
-				    use: Temp.temp list Graph.Table.table,
+				    def: Set.set Graph.Table.table,
+				    use: Set.set Graph.Table.table,
 				    ismove: bool Graph.Table.table}
 
 end
@@ -15,10 +16,11 @@ structure Flow : FLOW =
 struct
 
 structure Graph = Graph
+structure Set = IntListSet
 	  
 datatype flowgraph = FGRAPH of {control: Graph.graph,
-				    def: Temp.temp list Graph.Table.table,
-				    use: Temp.temp list Graph.Table.table,
+				    def: Set.set Graph.Table.table,
+				    use: Set.set Graph.Table.table,
 				    ismove: bool Graph.Table.table}
 			       
   (* Note:  any "use" within the block is assumed to be BEFORE a "def" 
