@@ -14,11 +14,9 @@ structure Flow = Flow
 structure A = Assem 
 
 structure LabelNodeMap = BinaryMapFn(struct
-				   type ord_key = Temp.label
-				   val compare = Temp.compareLabels
-				   end)
-			 
-fun list2set l = Flow.Set.addList(Flow.Set.empty, l)
+				     type ord_key = Temp.label
+				     val compare = Temp.compareLabels
+				     end)
 			 
 fun instrs2graph instrs =
     let
@@ -42,8 +40,8 @@ fun instrs2graph instrs =
 		let
 		    val node = Graph.newNode(control)
 		    val instrTable' = Graph.Table.enter(instrTable, node, instr)
-		    val def' = Graph.Table.enter(def, node, list2set dst)
-		    val use' = Graph.Table.enter(use, node, list2set src)
+		    val def' = Graph.Table.enter(def, node, dst)
+		    val use' = Graph.Table.enter(use, node, src)
 		    val ismove' = Graph.Table.enter(ismove, node, false)
 		    val label2node' = foldl (fn (label, table) =>
 						LabelNodeMap.insert(table, label, node))
@@ -58,8 +56,8 @@ fun instrs2graph instrs =
 		let
 		    val node = Graph.newNode(control)
 		    val instrTable' = Graph.Table.enter(instrTable, node, instr)
-		    val def' = Graph.Table.enter(def, node, list2set [dst])
-		    val use' = Graph.Table.enter(use, node, list2set [src])
+		    val def' = Graph.Table.enter(def, node, [dst])
+		    val use' = Graph.Table.enter(use, node, [src])
 		    val ismove' = Graph.Table.enter(ismove, node, true)
 		    val label2node' = foldl (fn (label, table) =>
 						LabelNodeMap.insert(table, label, node))
@@ -125,14 +123,22 @@ fun instrs2graph instrs =
 	fun printNodeInstr (node) =
 	    let
 		val instr = getOpt(Graph.Table.look(instrTable, node), A.OPER{assem="",src=[],dst=[],jump=NONE})
-		val assemString =
+		fun list2str str l = 
+		    String.concat(map (fn x => (str x)^" ") l)
+		val assemString = 
 		    case instr
-		     of A.OPER {assem=assem, ...} => assem
-		      | A.MOVE {assem=assem, ...} => assem
+		     of A.OPER {assem, src, dst, jump} => 
+			let 
+			    val temps2str = list2str Temp.makestring
+			in 
+			    assem^", def{"^(temps2str dst)^"}, use{"^(temps2str src)^"}, "
+			end
+		      | A.MOVE {assem, src, dst} =>
+			assem^", def{ "^(Temp.makestring dst)^"}, use{ "^(Temp.makestring src)^"}, "  
 		      | _ => ""
 		val nodeString = Graph.nodename(node)
 		val succ = Graph.succ(node)
-		val succString = "{"^(String.concat(map (fn n => (Graph.nodename n)^" ") succ))^"}"
+		val succString = "succ{"^(list2str Graph.nodename succ)^"}"
 	    in
 		sayln (nodeString^": "^assemString^succString)
 	    end

@@ -22,13 +22,23 @@ structure T = Flow.Graph.Table
 structure S = Flow.Set
 structure IGraph = Graph
 
-structure MoveTable = BinaryMapFn(struct
-        type ord_key = (Temp.temp * Temp.temp)
-        val compare = (fn ((l1,l2),(r1,r2)) =>
-			  if (l1 = r1) andalso (l2 = r2)
-			  then EQUAL
-			  else LESS (*TODO*)
-				  end)
+(* Move hash table to check for duplicates in the move list *)
+structure MoveTable =
+BinaryMapFn
+    (struct
+	 type ord_key = (Temp.temp * Temp.temp)
+	 val compare = (fn ((l1,l2),(r1,r2)) =>
+			   if ((Temp.tempint l1) < (Temp.tempint r1))
+			   then LESS
+			   else if ((Temp.tempint l1) = (Temp.tempint r1))
+			   then if ((Temp.tempint l2) < (Temp.tempint r2))
+				then LESS
+				else if ((Temp.tempint l2) = (Temp.tempint r2))
+				then EQUAL
+				else GREATER
+			   else GREATER)
+     end)
+
 datatype igraph = 
 	 IGRAPH of {graph: IGraph.graph,
 		    tnode: Temp.temp -> IGraph.node,
@@ -50,6 +60,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 						      (Flow.Set.empty)))
 		     T.empty
 		     nodes
+	fun list2set l = Flow.Set.addList(Flow.Set.empty,l)
 	fun computeLiveness (liveInTable, liveOutTable) =
 	    let 
 		val (liveInTable', liveOutTable', changed) =
@@ -65,8 +76,8 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 	    let 
 		val liveIn' = getOpt(T.look(liveInTable, node), Flow.Set.empty)
 		val liveOut' =  getOpt(T.look(liveOutTable, node), Flow.Set.empty)
-		val uses = getOpt(T.look(use, node), Flow.Set.empty)
-		val defs = getOpt(T.look(def, node), Flow.Set.empty)
+		val uses = list2set(getOpt(T.look(use, node), []))
+		val defs = list2set(getOpt(T.look(def, node), []))
 		val liveIn = Flow.Set.union(uses,
 					    Flow.Set.difference(liveOut', defs))
 		val liveOut = foldl (fn (s, ins) => 
@@ -86,75 +97,120 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 	(* Make nodes in the interference graph *)
 	fun makeINodes (fnode, (node2temp, temp2node)) =
 	    let 
-		val defSet = getOpt(T.look(def, fnode), Flow.Set.empty)
+		val defs = getOpt(T.look(def, fnode), [])
+		val uses = getOpt(T.look(use, fnode), [])
 		fun makeNode (temp, (node2temp, temp2node)) =
-		    let
-			val node = IGraph.newNode(graph)
-		    in
-			(T.enter(node2temp, fnode, temp),
-			 Temp.Table.enter(temp2node, temp, fnode))
-		    end
-		val (node2temp',temp2node') = foldl makeNode (node2temp, temp2node) (Flow.Set.listItems defSet)
+		    case Temp.Table.look(temp2node, temp) 
+		     of SOME node => (node2temp, temp2node)
+		      | NONE => 
+			let
+			    val node = IGraph.newNode(graph)
+			in
+			    (T.enter(node2temp, node, temp),
+			     Temp.Table.enter(temp2node, temp, node))
+			end
+		val (node2temp',temp2node') = foldl makeNode (node2temp, temp2node) defs
+		val (node2temp',temp2node') = foldl makeNode (node2temp', temp2node') uses
 	    in 
 		 (node2temp',temp2node')
 	    end
-	val emptyTempTable: Temp.temp Flow.Graph.Table.table = T.empty
-	val emptyNodeTable: IGraph.node Flow.Graph.Table.table = T.empty				     
 	val (node2temp, temp2node) = foldl makeINodes (T.empty, Temp.Table.empty) nodes
-	fun tnode temp =
+	fun tnode temp  =
 	    case Temp.Table.look(temp2node, temp)
 		 of SOME node => node
-		  | NONE => ErrorMsg.impossible "Temporary not in node table"
-	fun gtemp node = case T.look(node2temp, node)
+		  | NONE => ErrorMsg.impossible ("Temporary "
+						 ^(Temp.makestring temp)^
+						 " not in node table")
+	fun gtemp node = 
+	    case T.look(node2temp, node)
 			  of SOME temp => temp
-			   | NONE => ErrorMsg.impossible "Node not in temp table"
+			   | NONE => ErrorMsg.impossible ("Node "^
+							  (IGraph.nodename node)
+							  ^" not in temp table")
+	val moves = ref []
+	val moveTable = ref MoveTable.empty
+	fun inMoveTable (t1,t2) =
+	    let 
+		val entry = case Temp.compareTemps(t1,t2)
+			     of LESS => MoveTable.find(!moveTable, (t1,t2)) 
+			      | GREATER => MoveTable.find(!moveTable, (t2,t1))
+			      | EQUAL => ErrorMsg.impossible 
+					     "Temps should not be equal here"
+	    in
+		case entry
+		 of SOME _ => true
+		  | NONE => false
+	    end
 	fun makeEdges (fnode) = 
 	    let
-		val defSet = getOpt(T.look(def, fnode), Flow.Set.empty)
+		val defs = getOpt(T.look(def, fnode), [])
 		val liveSet = getOpt(T.look(liveMap, fnode), Flow.Set.empty)
-		fun ismovep () = getOpt(T.look(ismove, fnode), false) 
+		val ismovep = getOpt(T.look(ismove, fnode), false) 
 		fun moveusep temp =
 		    let
-			val uses = getOpt((T.look(use, fnode)), Flow.Set.empty)
+			val uses = list2set(getOpt((T.look(use, fnode)), []))
 		    in
 			Flow.Set.member(uses, temp)
 		    end 
 	        fun makeEdge (t1, t2) =
-		    if t1=t2 orelse (ismovep() andalso (moveusep t2))
-		    then ()
-		    else
-			let
-			    val n1 = tnode(t1)
-			    val n2 = tnode(t2)
-			in
-			    IGraph.mk_edge{from=n1, to=n2}
-			end
-		fun createMoves (t1, t2, moves) =
-		    if t1=t2 orelse (ismovep() andalso (moveusep t2))
+		    let
+			val n1 = tnode(t1)
+			val n2 = tnode(t2)
+		    in
+			if t1=t2 then ()
+			else if (ismovep andalso (moveusep t2))
+			then makeMove(t1,t2)
+			else IGraph.mk_edge{from=n1, to=n2}
+		    end
+		and makeMove (t1, t2) =
+		    if (ismovep andalso (moveusep t2) andalso not(inMoveTable(t1,t2)))
 		    then
 			let
 			    val n1 = tnode(t1)
 			    val n2 = tnode(t2)
+			    
 			in
-			    (n1, n2)::moves
+			    moves := (n1, n2)::(!moves);
+			    moveTable := MoveTable.insert(!moveTable, (t1,t2), ()) 
 			end
-		    else
-			moves
+		    else ()
 			
 	    in
 		app (fn def =>
 			(app (fn live =>
-				 makeEdge(def, live)) (Flow.Set.listItems liveSet)))
-		    (Flow.Set.listItems defSet)
+				 makeEdge(def, live))
+			     (Flow.Set.listItems liveSet)))
+		    defs
 	    end
 	val _ = app makeEdges nodes
 	fun fnode2temps fnode =
 	    (Flow.Set.listItems (getOpt(T.look(liveMap, fnode), Flow.Set.empty)))
     in
-	(IGRAPH {graph=graph, tnode=tnode, gtemp=gtemp, moves=[]},
+	(IGRAPH {graph=graph, tnode=tnode, gtemp=gtemp, moves=(!moves)},
 	 fnode2temps)
     end 
 
-fun show (outstream, igraph) = ()
+fun show (outstream,IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}) =
+    let
+	
+    	fun say s =  TextIO.output(outstream,s)
+	fun sayln s= (say s; say "\n")
 
+	val nodes = IGraph.nodes graph
+
+	fun printNode (node) =
+	    let
+		val adjNodes = IGraph.adj node
+		val nodeString = IGraph.nodename node
+		val temp = gtemp node
+		val tempString = Temp.makestring temp 
+		val adjStrings = map (fn node => Temp.makestring (gtemp node)^" ") adjNodes
+		val adjString = "{"^(String.concat adjStrings)^"}"
+	    in
+		sayln (tempString^" "^adjString)
+	    end
+	val _ = app printNode nodes
+    in
+	()
+    end
 end

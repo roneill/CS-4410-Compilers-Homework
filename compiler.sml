@@ -58,7 +58,7 @@ fun compile filename =
 		     (fn out => (app (emitproc out) fraglist))
     end
     
-fun test ()=
+fun testLiveness ()=
 (* the undefined label is for the "hello, world" string itself *)
     let
 	val (_,_,instrs) = AssemStore.decode ("tig_main", 9, [
@@ -91,9 +91,10 @@ fun test ()=
 					AssemStore.OPER{assem="lw `d0, -24(`s0)", src=[0], dst=[21], jump=NONE},
 					AssemStore.OPER{assem="lw `d0, -28(`s0)", src=[0], dst=[22], jump=NONE},
 					AssemStore.OPER{assem="lw `d0, -32(`s0)", src=[0], dst=[23], jump=SOME["l354"]}])
-	val (_, nodes) = MakeGraph.instrs2graph(instrs)
+	val (fgraph, nodes) = MakeGraph.instrs2graph(instrs)
+	val (igraph, node2temps) = Liveness.interferenceGraph fgraph
     in
-	()
+	Liveness.show(TextIO.stdOut, igraph) 
     end
     
 end
