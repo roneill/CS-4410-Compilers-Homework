@@ -77,7 +77,7 @@ fun instrs2graph instrs =
 		      [])
 	fun makeEdges (nil) = ()    
 	  | makeEdges (n1::nil) = ()
-	  | makeEdges (next::prev::nodes) =
+	  | makeEdges (curr::prev::nodes) =
 	    let
 		fun getJumpList(node) =
 		    let
@@ -99,15 +99,14 @@ fun instrs2graph instrs =
 			jumpNodes
 		    end			  
 		val prevJumps = getJumpList(prev)
-		val nextJumps = getJumpList(next)
+		val currJumps = getJumpList(curr)
 		(* Note :
 		 may need to handle case where there are jumps to
 			 labels that were not in the instruction list *)
-		val _ = map (fn jump => Graph.mk_edge {from=prev, to=jump}) prevJumps
-		val _ = map (fn jump => Graph.mk_edge {from=next, to=jump}) nextJumps
+		val _ = map (fn jump => Graph.mk_edge {from=curr, to=jump}) currJumps
 		val _ =
 		    case prevJumps
-		     of nil => Graph.mk_edge {from=prev, to=next}
+		     of nil => Graph.mk_edge {from=prev, to=curr}
 		      | _ => ()
 	    in
 		makeEdges(prev::nodes)

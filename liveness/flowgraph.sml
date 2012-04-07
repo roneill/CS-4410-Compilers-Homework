@@ -16,7 +16,12 @@ structure Flow : FLOW =
 struct
 
 structure Graph = Graph
-structure Set = IntListSet
+structure Set = ListSetFn
+    (struct
+	 type ord_key = Temp.temp
+	 val compare = Temp.compareTemps
+     end)
+
 	  
 datatype flowgraph = FGRAPH of {control: Graph.graph,
 				    def: Temp.temp list Graph.Table.table,

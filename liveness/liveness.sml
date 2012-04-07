@@ -50,14 +50,34 @@ type liveMap = liveSet T.table
 	
 fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) = 
     let
+	(*Debug*)
+	fun say s =  TextIO.output(TextIO.stdOut,s)
+	fun sayln s= (say s; say "\n")
+	fun printNode (node, liveset) = 
+	    let 
+		val nodestr = Graph.nodename node
+		val liveSetstr = String.concat 
+				     (map (fn temp => 
+					      (Temp.makestring temp)^" ") 
+					  (S.listItems liveset))
+	    in sayln (nodestr^": {"^liveSetstr^"} ") 
+	    end 
+	(*Debug printing*)
+	fun printLive (liveMap, nodes) =
+	    let 
+		val liveSets = map (fn node => 
+				       getOpt(T.look(liveMap, node), Flow.Set.empty)) nodes
+	    in
+		map printNode (ListPair.zip (nodes, liveSets))
+	    end
+
 	val nodes = rev (Flow.Graph.nodes control) (* start at the bottom of the nodes *)
 	val liveIn = foldl (fn (node, table) => 
 			       T.enter(table, node, (Flow.Set.empty)))
 		     T.empty
 		     nodes
 	val liveOut = foldl (fn (node, table) => 
-			       T.enter(table, node, 
-						      (Flow.Set.empty)))
+				T.enter(table, node, (Flow.Set.empty)))
 		     T.empty
 		     nodes
 	fun list2set l = Flow.Set.addList(Flow.Set.empty,l)
@@ -65,6 +85,10 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 	    let 
 		val (liveInTable', liveOutTable', changed) =
 		    iterate(nodes, liveOutTable, liveOutTable, false)
+		val _ = sayln "LiveOut"
+		val _ = printLive(liveOutTable', rev(nodes))
+		val _ = sayln "LiveIn"
+		val _ = printLive(liveInTable', rev(nodes))
 	    in
 		if changed
 		then computeLiveness (liveInTable', liveOutTable')
@@ -74,6 +98,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 	    (liveInTable, liveOutTable, changed)
 	  | iterate (node::tail, liveInTable, liveOutTable, changed) =
 	    let 
+		val _ = if changed then sayln "changed" else sayln "unchanged"
 		val liveIn' = getOpt(T.look(liveInTable, node), Flow.Set.empty)
 		val liveOut' =  getOpt(T.look(liveOutTable, node), Flow.Set.empty)
 		val uses = list2set(getOpt(T.look(use, node), []))
@@ -85,14 +110,29 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 							      Flow.Set.empty),ins))
 				    (Flow.Set.empty)
 				    (Flow.Graph.succ(node))
-		val changed' = changed orelse (not(Flow.Set.equal(liveIn',liveIn) andalso
-						    Flow.Set.equal(liveOut', liveOut)))
+		(*val _ = sayln "LIVEIN PRIIIIIIIIIME"
+		val _ = printNode(node, liveIn')
+		val _ = sayln "LIVEIN ORIGINAL"
+		val _ = printNode(node, liveIn')
+		val _ = if Flow.Set.equal(liveIn', liveIn) then sayln "FUCKIN SETS WERE EQUAL"
+								else sayln "FUCK IT THE SETS WER NOT EQUAL"
+		val _ = sayln "LIVEOUT PRIIIIIME"
+		val _ = printNode(node, liveOut')
+		val _ = sayln "LIVEOUT ORIGINAL"
+		val _ = printNode(node, liveOut)
+		val _ = if Flow.Set.equal(liveOut', liveOut) then sayln "FUCKIN SETS WERE EQUAL"
+								else sayln "FUCKING FALSE"*)
+		val areBothSetsDifferent = not((*Flow.Set.equal(liveIn',liveIn) andalso*)
+					       Flow.Set.equal(liveOut', liveOut))
+		val changed' = changed orelse areBothSetsDifferent
+		
 		val liveInTable' = T.enter(liveInTable, node, liveIn)
 		val liveOutTable' = T.enter(liveOutTable, node, liveOut)
 	    in
-		iterate(tail, liveInTable', liveOutTable', changed)
+		iterate(tail, liveInTable', liveOutTable', changed')
 	    end
 	val (_, liveMap) = computeLiveness(liveIn, liveOut)
+	val _ = printLive (liveMap, rev(nodes))
 	val graph = IGraph.newGraph()
 	(* Make nodes in the interference graph *)
 	fun makeINodes (fnode, (node2temp, temp2node)) =
@@ -191,8 +231,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
     end 
 
 fun show (outstream,IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}) =
-    let
-	
+    let	
     	fun say s =  TextIO.output(outstream,s)
 	fun sayln s= (say s; say "\n")
 
