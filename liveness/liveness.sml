@@ -84,7 +84,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 	fun computeLiveness (liveInTable, liveOutTable) =
 	    let 
 		val (liveInTable', liveOutTable', changed) =
-		    iterate(nodes, liveOutTable, liveOutTable, false)
+		    iterate(nodes, liveInTable, liveOutTable, false)
 		val _ = sayln "LiveOut"
 		val _ = printLive(liveOutTable', rev(nodes))
 		val _ = sayln "LiveIn"
@@ -122,7 +122,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 		val _ = printNode(node, liveOut)
 		val _ = if Flow.Set.equal(liveOut', liveOut) then sayln "FUCKIN SETS WERE EQUAL"
 								else sayln "FUCKING FALSE"*)
-		val areBothSetsDifferent = not((*Flow.Set.equal(liveIn',liveIn) andalso*)
+		val areBothSetsDifferent = not(Flow.Set.equal(liveIn',liveIn) andalso
 					       Flow.Set.equal(liveOut', liveOut))
 		val changed' = changed orelse areBothSetsDifferent
 		
