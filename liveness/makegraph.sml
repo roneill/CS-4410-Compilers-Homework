@@ -137,9 +137,11 @@ fun instrs2graph instrs =
 		      | _ => ""
 		val nodeString = Graph.nodename(node)
 		val succ = Graph.succ(node)
-		val succString = "succ{"^(list2str Graph.nodename succ)^"}"
+		val succString = "succ{"^(list2str Graph.nodename succ)^"}, "
+		val pred = Graph.pred(node)
+		val predString = "pred{"^(list2str Graph.nodename pred)^"}"
 	    in
-		sayln (nodeString^": "^assemString^succString)
+		sayln (nodeString^": "^assemString^succString^predString)
 	    end
 	val _ = app printNodeInstr (rev nodes)
     in

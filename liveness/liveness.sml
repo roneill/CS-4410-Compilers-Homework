@@ -85,10 +85,6 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 	    let 
 		val (liveInTable', liveOutTable', changed) =
 		    iterate(nodes, liveInTable, liveOutTable, false)
-		val _ = sayln "LiveOut"
-		val _ = printLive(liveOutTable', rev(nodes))
-		val _ = sayln "LiveIn"
-		val _ = printLive(liveInTable', rev(nodes))
 	    in
 		if changed
 		then computeLiveness (liveInTable', liveOutTable')
@@ -110,18 +106,6 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 							      Flow.Set.empty),ins))
 				    (Flow.Set.empty)
 				    (Flow.Graph.succ(node))
-		(*val _ = sayln "LIVEIN PRIIIIIIIIIME"
-		val _ = printNode(node, liveIn')
-		val _ = sayln "LIVEIN ORIGINAL"
-		val _ = printNode(node, liveIn')
-		val _ = if Flow.Set.equal(liveIn', liveIn) then sayln "FUCKIN SETS WERE EQUAL"
-								else sayln "FUCK IT THE SETS WER NOT EQUAL"
-		val _ = sayln "LIVEOUT PRIIIIIME"
-		val _ = printNode(node, liveOut')
-		val _ = sayln "LIVEOUT ORIGINAL"
-		val _ = printNode(node, liveOut)
-		val _ = if Flow.Set.equal(liveOut', liveOut) then sayln "FUCKIN SETS WERE EQUAL"
-								else sayln "FUCKING FALSE"*)
 		val areBothSetsDifferent = not(Flow.Set.equal(liveIn',liveIn) andalso
 					       Flow.Set.equal(liveOut', liveOut))
 		val changed' = changed orelse areBothSetsDifferent
@@ -145,9 +129,11 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 		      | NONE => 
 			let
 			    val node = IGraph.newNode(graph)
+			    val _ = sayln ("Created node: "^(IGraph.nodename node))
+			    val node2temp' = T.enter(node2temp, node, temp)
+			    val temp2node' = Temp.Table.enter(temp2node, temp, node)
 			in
-			    (T.enter(node2temp, node, temp),
-			     Temp.Table.enter(temp2node, temp, node))
+			    (node2temp', temp2node')
 			end
 		val (node2temp',temp2node') = foldl makeNode (node2temp, temp2node) defs
 		val (node2temp',temp2node') = foldl makeNode (node2temp', temp2node') uses
@@ -191,16 +177,25 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 			val uses = list2set(getOpt((T.look(use, fnode)), []))
 		    in
 			Flow.Set.member(uses, temp)
-		    end 
+		    end
+		fun nodesAdj (n1, n2) =
+		    let
+			val adj1 = IGraph.adj n1
+			val adj2 = IGraph.adj n2
+		    in
+			(List.exists (fn x => IGraph.eq(x, n1)) adj2) orelse
+			(List.exists (fn x => IGraph.eq(x, n2)) adj1)
+		    end
 	        fun makeEdge (t1, t2) =
 		    let
 			val n1 = tnode(t1)
 			val n2 = tnode(t2)
 		    in
-			if t1=t2 then ()
+			if t1=t2 orelse nodesAdj(n1, n2) then ()
 			else if (ismovep andalso (moveusep t2))
 			then makeMove(t1,t2)
-			else IGraph.mk_edge{from=n1, to=n2}
+			else ((sayln ("Making edge from "^(IGraph.nodename n1)^" "^(IGraph.nodename n2)));
+			      IGraph.mk_edge{from=n1, to=n2})
 		    end
 		and makeMove (t1, t2) =
 		    if (ismovep andalso (moveusep t2) andalso not(inMoveTable(t1,t2)))
@@ -216,6 +211,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 		    else ()
 			
 	    in
+		map (fn def => (sayln ("Def: "^(Temp.makestring def)))) defs;
 		app (fn def =>
 			(app (fn live =>
 				 makeEdge(def, live))
@@ -249,6 +245,7 @@ fun show (outstream,IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}) 
 		sayln (tempString^" "^adjString)
 	    end
 	val _ = app printNode nodes
+	val _ = app (fn node => sayln (IGraph.nodename node)) nodes
     in
 	()
     end
