@@ -1,0 +1,40 @@
+#Team Members
+Allen Lee and Robert O'Neill
+
+Factorial function printout:
+
+L56:
+move $t210, $t210
+la $t211, L51
+li $t212, 5
+move $a1, $t212
+move $a0, $fp
+jal $t211
+move $v0, $v0
+j L55
+L55:
+L58:
+lw $t215, 4($fp)
+beqz $t215, L53
+L54:
+lw $t216, 4($fp)
+move $t214, $t216
+la $t217, L51
+lw $t218, 0($fp)
+lw $t220, 4($fp)
+addi $t219, $t220, -1
+move $a1, $t219
+move $a0, $t218
+jal $t217
+move $t213, $v0
+mul $t221, $t214, $t213
+move $t209, $t221
+L52:
+move $v0, $t209
+j L57
+L53:
+li $t222, 1
+move $t209, $t222
+j L54
+L57:
+

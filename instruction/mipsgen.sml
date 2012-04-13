@@ -33,13 +33,16 @@ structure Frame = MipsFrame
 		 val stackArgs = if (numArgs > numArgRegs)
 				 then (numArgRegs - numArgs)
 				 else (0)
-		 val growSP = "addi `d0, `d0, -"^(str (Frame.wordSize * stackArgs))^"\n"
+		 val growSP = "addi `d0, `d0, -"^
+			      (str (Frame.wordSize * stackArgs))^"\n"
 		 fun appendInstr(nil, _, assem) = assem
 		   | appendInstr(arg::tail, i, assem) =
 		     let
 			 val offset = ~(i-numArgRegs)*Frame.wordSize
-			 val copyToStack = "sw `s"^ str i ^", "^str (offset)^"(`d0)\n"
-			 val copyToReg  = "move `d"^(str (i+1)) ^", `s"^ (str i)^"\n"
+			 val copyToStack = "sw `s"^ str i ^", "^str (offset)^
+					   "(`d0)\n"
+			 val copyToReg  = "move `d"^(str (i+1))
+					  ^", `s"^ (str i)^"\n"
 		     in
 			 if (i < numArgRegs)
 			 then appendInstr(tail, i+1, copyToReg::assem)
@@ -76,7 +79,8 @@ structure Frame = MipsFrame
 			   dst=[],jump=NONE})
 	   | munchStm(T.MOVE(T.TEMP(t), T.CALL(e, args))) =
 	     emit (A.OPER {assem="jal `s0\n"^ (*Jump to the function*)
-				 "move "^Frame.tempToString(t)^", `d0\n", (*copy the return value stro t*)
+				 "move "^Frame.tempToString(t)^", `d0\n",
+			   (*copy the return value stro t*)
 			   src=munchExp(e)::munchArgs(args),
 			   dst=calldefs,
 			   jump=NONE})
@@ -132,7 +136,8 @@ structure Frame = MipsFrame
 			  jump=NONE})
 	   | munchStm (T.LABEL lab) =
 	     emit (A.LABEL {assem=Temp.toString(lab) ^ ":\n", lab=lab })
-	   | munchStm x = (Printtree.printtree (TextIO.stdOut, x); Error.impossible "unmatched node:")
+	   | munchStm x = (Printtree.printtree (TextIO.stdOut, x);
+			   Error.impossible "unmatched node:")
 
 	 and munchExp(T.MEM(T.BINOP(T.PLUS, e1, T.CONST i))) =
 	     result(fn r => emit (A.OPER
