@@ -1,0 +1,13 @@
+# Team Members 
+Allen Lee
+Robert O'Neill
+
+# Summary
+These files implement our liveness analyzer.
+
+## makegraph.sml
+Creates the control flow graph by creating graph nodes and saving information about each instruction.  Edges are created in a second pass using a jump map that is created in the node creation phase.
+
+## liveness.sml
+Creates the interference graph. A approach similar to creating the control flow graph is taken.  Interference nodes are created first, then edges are added in a second pass.
+

@@ -64,12 +64,14 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 	fun printLive (liveMap, nodes) =
 	    let 
 		val liveSets = map (fn node => 
-				       getOpt(T.look(liveMap, node), Flow.Set.empty)) nodes
+				       getOpt(T.look(liveMap, node), 
+					      Flow.Set.empty)) 
+				   nodes
 	    in
 		map printNode (ListPair.zip (nodes, liveSets))
 	    end
-
-	val nodes = rev (Flow.Graph.nodes control) (* start at the bottom of the nodes *)
+	(* start at the bottom of the nodes *)
+	val nodes = rev (Flow.Graph.nodes control) 
 	val liveIn = foldl (fn (node, table) => 
 			       T.enter(table, node, (Flow.Set.empty)))
 		     T.empty
@@ -179,9 +181,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 		fun nodesAdj (n1, n2) =
 		    let
 			val adj1 = IGraph.adj n1
-			val adj2 = IGraph.adj n2
 		    in
-			(List.exists (fn x => IGraph.eq(x, n1)) adj2) orelse
 			(List.exists (fn x => IGraph.eq(x, n2)) adj1)
 		    end
 	        fun makeEdge (t1, t2) =
@@ -192,19 +192,20 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 			if t1=t2 orelse nodesAdj(n1, n2) then ()
 			else if (ismovep andalso (moveusep t2))
 			then makeMove(t1,t2)
-			else ((sayln ("Making edge from "^(IGraph.nodename n1)^" "^(IGraph.nodename n2)));
+			else ((sayln ("Making edge from "^(IGraph.nodename n1)
+				      ^" "^(IGraph.nodename n2)));
 			      IGraph.mk_edge{from=n1, to=n2})
 		    end
 		and makeMove (t1, t2) =
-		    if (ismovep andalso (moveusep t2) andalso not(inMoveTable(t1,t2)))
+		    if (ismovep andalso (moveusep t2) andalso 
+			not(inMoveTable(t1,t2)))
 		    then
 			let
 			    val n1 = tnode(t1)
 			    val n2 = tnode(t2)
-			    
 			in
 			    moves := (n1, n2)::(!moves);
-			    moveTable := MoveTable.insert(!moveTable, (t1,t2), ()) 
+			    moveTable := MoveTable.insert(!moveTable, (t1,t2), ())
 			end
 		    else ()
 			
@@ -237,7 +238,9 @@ fun show (outstream,IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}) 
 		val nodeString = IGraph.nodename node
 		val temp = gtemp node
 		val tempString = Temp.makestring temp 
-		val adjStrings = map (fn node => Temp.makestring (gtemp node)^" ") adjNodes
+		val adjStrings = map (fn node => 
+					 Temp.makestring (gtemp node)^" ") 
+				     adjNodes
 		val adjString = "{"^(String.concat adjStrings)^"}"
 	    in
 		sayln (tempString^" "^adjString)
