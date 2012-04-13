@@ -22,8 +22,8 @@ Group is
 ./translate/printtree.sml
 ./instruction/canon.sml
 ./instruction/assem.sml
-./instruction/codegen.sig
-./instruction/codegen.sml
+./instruction/mipsgen.sig
+./instruction/mipsgen.sml
 ./liveness/flowgraph.sml
 ./liveness/graph.sml
 ./liveness/graph.sig

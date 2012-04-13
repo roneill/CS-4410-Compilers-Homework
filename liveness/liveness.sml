@@ -5,7 +5,7 @@ sig
 	 IGRAPH of {graph: IGraph.graph,
 		    tnode:Temp.temp -> IGraph.node,
 		    gtemp: IGraph.node -> Temp.temp,
-		    moves: (IGraph.node * Graph.node) list}
+		    moves: (IGraph.node * IGraph.node) list}
 val interferenceGraph :
     Flow.flowgraph ->
     igraph * (Flow.Graph.node -> Temp.temp list)
@@ -28,15 +28,13 @@ BinaryMapFn
     (struct
 	 type ord_key = (Temp.temp * Temp.temp)
 	 val compare = (fn ((l1,l2),(r1,r2)) =>
-			   if ((Temp.tempint l1) < (Temp.tempint r1))
-			   then LESS
-			   else if ((Temp.tempint l1) = (Temp.tempint r1))
-			   then if ((Temp.tempint l2) < (Temp.tempint r2))
-				then LESS
-				else if ((Temp.tempint l2) = (Temp.tempint r2))
-				then EQUAL
-				else GREATER
-			   else GREATER)
+			   case Temp.compareTemps(l1,r1)
+			    of LESS => LESS
+			     | GREATER => GREATER
+			     | EQUAL => case Temp.compareTemps(l2,r2)
+					 of LESS => LESS
+					  | GREATER => GREATER
+					  | EQUAL => EQUAL)
      end)
 
 datatype igraph = 

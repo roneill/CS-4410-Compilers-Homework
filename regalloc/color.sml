@@ -9,3 +9,8 @@ sig
 		 registers: Frame.register list }
 	       -> allocation * Temp.temp list
 end
+
+(*
+1. Implement Color without spilling or coalescing
+ a. 
+*)
