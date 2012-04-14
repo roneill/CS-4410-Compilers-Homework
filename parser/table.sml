@@ -7,4 +7,5 @@ struct
   fun enter(t,k,a) = IntBinaryMap.insert(t, getInt k, a)
   fun enter'((k,a),t) = IntBinaryMap.insert(t, getInt k, a)
   fun look(t,k) = IntBinaryMap.find(t,getInt k)
+  fun remove(t,k) = let val (t,_) = IntBinaryMap.remove(t, getInt k) in t end
 end

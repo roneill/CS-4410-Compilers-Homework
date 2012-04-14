@@ -21,7 +21,8 @@ structure Flow = Flow
 structure T = Flow.Graph.Table
 structure S = Flow.Set
 structure IGraph = Graph
-
+exception TempNotFound
+		   
 (* Move hash table to check for duplicates in the move list *)
 structure MoveTable =
 BinaryMapFn
@@ -144,9 +145,8 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 	fun tnode temp  =
 	    case Temp.Table.look(temp2node, temp)
 		 of SOME node => node
-		  | NONE => ErrorMsg.impossible ("Temporary "
-						 ^(Temp.makestring temp)^
-						 " not in node table")
+		  | NONE => raise TempNotFound
+
 	fun gtemp node = 
 	    case T.look(node2temp, node)
 			  of SOME temp => temp

@@ -16,7 +16,8 @@ sig type frame
     val argregs: Temp.temp list
     val calleesaves: Temp.temp list
     val callersaves: Temp.temp list
-
+    val registers: register list
+    val registersAsTemps: Temp.temp list
     val tempToString: Temp.temp -> string
 		     
     val newFrame : {name: Temp.label,
@@ -33,5 +34,4 @@ sig type frame
 						      epilog: string}
     val externalCall: string * Tree.exp list -> Tree.exp
     val tempMap: register Temp.Table.table
-    val registersAsTemps : Temp.temp list
 end

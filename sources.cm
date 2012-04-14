@@ -30,6 +30,8 @@ Group is
 ./liveness/makegraph.sml
 ./liveness/assemstore.sml
 ./liveness/liveness.sml
+./regalloc/regalloc.sml
+./regalloc/color.sml
 ./compiler.sml
 $/ml-yacc-lib.cm
 $/smlnj-lib.cm

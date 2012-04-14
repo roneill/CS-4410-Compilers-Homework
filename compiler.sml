@@ -59,7 +59,6 @@ fun compile filename =
     end
     
 fun testLiveness ()=
-(* the undefined label is for the "hello, world" string itself *)
     let
 	val (_,_,instrs) = AssemStore.decode ("tig_main", 9, [
 					AssemStore.OPER{assem="li `d0, 0", src=[], dst=[2], jump=NONE},
