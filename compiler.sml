@@ -10,9 +10,6 @@ structure Compiler : COMPILER =
 struct
 structure Frame = MipsFrame
 structure Mips = MipsGen
-structure AssemStore = AssemStore
-structure MakeGraph = MakeGraph
-structure Graph = Graph
 		  
 val AST = ref Absyn.NilExp
 val IR = ref (Translate.getResult())
@@ -30,12 +27,14 @@ fun printIR () =
     end
 
 fun emitproc out (Frame.PROC{body,frame}) =
-    let val _ = () (*print ("emit " ^ Frame.name frame ^ "\n")*)
+    let
+	(*val _ = TextIO.output(out, (Temp.toString(Frame.name frame) ^ "\n"))*)
 	         (*val _ = Printtree.printtree(out,body); *)
 	 val stms = Canon.linearize body
 	         (*val _ = app (fn s => Printtree.printtree(out,s)) stms;*)
          val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
-	 val instrs =   List.concat(map (Mips.codegen frame) stms')
+	 val instrs = List.concat(map (Mips.codegen frame) stms')
+	 (*val _ = RegAlloc.alloc(instrs, frame)*)
          val format0 = Assem.format(Frame.tempToString)
     in
 	app (fn i => TextIO.output(out,format0 i)) instrs
@@ -58,7 +57,7 @@ fun compile filename =
 		     (fn out => (app (emitproc out) fraglist))
     end
     
-fun testLiveness ()=
+fun testLiveness () =
     let
 	val (_,_,instrs) = AssemStore.decode ("tig_main", 9, [
 					AssemStore.OPER{assem="li `d0, 0", src=[], dst=[2], jump=NONE},
@@ -75,5 +74,5 @@ fun testLiveness ()=
     in
 	Liveness.show(TextIO.stdOut, igraph) 
     end
-    
+        
 end

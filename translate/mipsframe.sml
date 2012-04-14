@@ -53,24 +53,24 @@ val tempRegisterPair =  [(ZERO, "$zero"),
 			 (List.nth(argregs, 1), "$a1"), 
 			 (List.nth(argregs, 2), "$a2"), 
 			 (List.nth(argregs, 3), "$a3"),
-			 (List.nth(calleesaves, 0), "$s0"),
-			 (List.nth(calleesaves, 1), "$s1"), 
-			 (List.nth(calleesaves, 2), "$s2"), 
-			 (List.nth(calleesaves, 3), "$s3"), 
-			 (List.nth(calleesaves, 4), "$s4"),
-			 (List.nth(calleesaves, 5), "$s5"),
-			 (List.nth(calleesaves, 6), "$s6"), 
-			 (List.nth(calleesaves, 7), "$s7"),
-			 (List.nth(callersaves, 0), "$t0"),
-			 (List.nth(callersaves, 1), "$t1"), 
-			 (List.nth(callersaves, 2), "$t2"), 
-			 (List.nth(callersaves, 3), "$t3"), 
-			 (List.nth(callersaves, 4), "$t4"),
-			 (List.nth(callersaves, 5), "$t5"),
-			 (List.nth(callersaves, 6), "$t6"), 
-			 (List.nth(callersaves, 7), "$t7"), 
-			 (List.nth(callersaves, 8), "$t8"),
-			 (List.nth(callersaves, 9), "$t9")]
+			 (List.nth(calleesaves, 2), "$s0"),
+			 (List.nth(calleesaves, 3), "$s1"), 
+			 (List.nth(calleesaves, 4), "$s2"), 
+			 (List.nth(calleesaves, 5), "$s3"), 
+			 (List.nth(calleesaves, 6), "$s4"),
+			 (List.nth(calleesaves, 7), "$s5"),
+			 (List.nth(calleesaves, 8), "$s6"), 
+			 (List.nth(calleesaves, 9), "$s7"),
+			 (List.nth(callersaves, 2), "$t0"),
+			 (List.nth(callersaves, 3), "$t1"), 
+			 (List.nth(callersaves, 4), "$t2"), 
+			 (List.nth(callersaves, 5), "$t3"), 
+			 (List.nth(callersaves, 6), "$t4"),
+			 (List.nth(callersaves, 7), "$t5"),
+			 (List.nth(callersaves, 8), "$t6"), 
+			 (List.nth(callersaves, 9), "$t7"), 
+			 (List.nth(callersaves, 10), "$t8"),
+			 (List.nth(callersaves, 11), "$t9")]
 			
 val tempMap = foldl Temp.Table.enter' Temp.Table.empty tempRegisterPair
 
@@ -117,8 +117,8 @@ fun allocLocal (frame:frame) escape =
     in
 	frameOffset := newFrameOffset;
 	if escape
-	then InReg (Temp.newtemp())
-	else InFrame (newFrameOffset)
+	then InFrame (newFrameOffset)
+	else InReg (Temp.newtemp())
     end
 
 fun name (frame:frame) = (#name frame)

@@ -39,6 +39,7 @@ sig
     val NOP: unit -> exp
     val varDecs: exp list -> exp
     val newLet: exp * exp -> exp
+    val seqexp: exp list * exp -> exp
     val initResult: unit-> unit
     val callFun: Temp.label * exp list * level * level -> exp
 end
@@ -90,6 +91,7 @@ fun allocLocal lev esc =
      of LEVEL {frame, parent, unique} => 
 	let
 	    val access=Frame.allocLocal frame esc
+	    val _ = Error.error 1 ("Escape is "^(if esc then "True" else "False")) 
 	in
 	    (lev, access)
 	end
@@ -361,6 +363,13 @@ fun varDecs [] = NOP()
 	val exps = map unNx exps
     in
 	Nx (seq(exps))
+    end
+
+fun seqexp (exps, exp) =
+    let
+	val stms = map unNx (rev exps)
+    in	
+	Ex (T.ESEQ(seq(stms), (unEx exp)))
     end
     
 fun newLet (varExps, bodyExp) =

@@ -429,13 +429,23 @@ and transExp (level, loopEnd, venv, tenv) =
 		    {exp=Tr.NOP(), ty=defRecType}
 		  | _ => {exp=Tr.newRecord(fieldExps), ty=defRecType} 
 	    end
+	  | trexp (A.SeqExp(nil)) = {exp=(Tr.NOP()), ty=Types.UNIT }
+	  | trexp (A.SeqExp [(exp,pos)]) = trexp(exp)
 	  | trexp (A.SeqExp(exps)) =
-	    let fun checkExps nil = {exp=(Tr.NOP()), ty=Types.UNIT }
-		  | checkExps ((exp, pos)::nil) = trexp(exp)
-		  | checkExps ((exp, pos)::tail) = (trexp(exp);
-						    checkExps(tail))
+	    let fun checkExps ((exp, pos)::nil, acc) =
+		    let
+			val {exp=exp', ty=ty'} = trexp(exp)
+		    in
+			{exp=Tr.seqexp(acc, exp'), ty=ty'}
+		    end
+		  | checkExps ((exp, pos)::tail, acc) =
+		    let
+			val {exp=exp', ty=ty'} = trexp(exp)
+		    in
+			checkExps(tail, exp'::acc)
+		    end
 	    in
-		checkExps(exps)
+		checkExps(exps, [])
 	    end
 	  | trexp (A.AssignExp{var, exp, pos}) =
 	    let
