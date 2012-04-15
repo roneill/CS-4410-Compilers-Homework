@@ -5,7 +5,9 @@ struct
 structure T=Tree
 structure A=Assem
 datatype access = InFrame of int | InReg of Temp.temp
-type frame = {name: Temp.label, frameOffset: int ref, formals: access list}
+type frame = {name: Temp.label,
+	      frameOffset: int ref,
+	      formals: access list}
 datatype frag = PROC of {body: Tree.stm, frame: frame}
 	      | STRING of Temp.label * string
 type register = string
@@ -115,9 +117,9 @@ fun allocLocal (frame:frame) escape =
 	val frameOffset = (#frameOffset frame)
 	val newFrameOffset = !frameOffset - wordSize
     in
-	frameOffset := newFrameOffset;
 	if escape
-	then InFrame (newFrameOffset)
+	then (frameOffset := newFrameOffset;
+	      InFrame (newFrameOffset))
 	else InReg (Temp.newtemp())
     end
 

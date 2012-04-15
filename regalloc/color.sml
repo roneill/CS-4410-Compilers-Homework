@@ -267,7 +267,7 @@ structure RegTable = BinaryMapFn(struct
 		    loop(selectStack, initial, [])
 		end
 	    val (coloring, spilledNodes) = assignColors(selectStack)
-	
+	    val spilledTemps = map gtemp spilledNodes 
 	    val _ = degreeInvariant (simplifyWorklist,
 				     spillWorklist,
 				     precolored,
@@ -279,7 +279,7 @@ structure RegTable = BinaryMapFn(struct
 	    val _ = ErrorMsg.error 1 "Got to the end"
 	in
 	    (*Temporary*)
-	    (coloring,[])
+	    (coloring,spilledTemps)
 	end
 end
 (*
