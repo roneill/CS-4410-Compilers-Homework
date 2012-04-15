@@ -1,0 +1,13 @@
+let
+	var c := 2
+	var b := 0
+	var a := 0
+in
+	(while a < 10 do
+	 (b := a+1;
+	  c := c+b;
+	  a := b*2); c)
+end
+
+	
+	

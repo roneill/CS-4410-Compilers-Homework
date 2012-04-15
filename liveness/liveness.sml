@@ -116,7 +116,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 		iterate(tail, liveInTable', liveOutTable', changed')
 	    end
 	val (_, liveMap) = computeLiveness(liveIn, liveOut)
-	val _ = printLive (liveMap, rev(nodes))
+	(*val _ = printLive (liveMap, rev(nodes))*)
 	val graph = IGraph.newGraph()
 	(* Make nodes in the interference graph *)
 	fun makeINodes (fnode, (node2temp, temp2node)) =

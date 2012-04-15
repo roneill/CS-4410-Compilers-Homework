@@ -14,6 +14,7 @@ structure Color : COLOR =
 struct
     structure Frame = MipsFrame
     structure IGraph = Liveness.IGraph
+		       
     type allocation = Frame.register Temp.Table.table
 
 structure RegTable = BinaryMapFn(struct
@@ -80,12 +81,12 @@ structure RegTable = BinaryMapFn(struct
     fun push (nodes, node) = node::nodes		    
     fun pop nil = ErrorMsg.impossible "Worklist is empty"
       | pop (node::tail) = (tail, node)
-
-    fun degreeInvariant (simplifyWorklist, precolored, adjList, degree) = 
+    fun degreeInvariant (simplifyWorklist, spillWorklist, precolored, adjList, degree) = 
 	let
 	    fun check node =
 		let
-		    val un =  union(precolored, simplifyWorklist)
+		    val un =  union(spillWorklist,
+				    union(precolored, simplifyWorklist))
 		    val int = intersect(adjList(node), un)
 		in
 		    if degree(node) = length (int) then ()
@@ -105,10 +106,16 @@ structure RegTable = BinaryMapFn(struct
 	in
 	    app check simplifyWorklist
 	end
+    fun spillWorklistInvariant (spillWorklist, degree) =
+	app (fn node => if degree(node) >= numregs
+			then ()
+			else ErrorMsg.impossible
+				 "SpillWorklist invariant did not hold")
+	    spillWorklist
     val str = Int.toString
     fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 	       initial, spillCost, registers } =
-	let 
+	let
 	    (*
 	     simplifyWorklist: nodeSet
              adjSet: (node * node) Set
@@ -154,88 +161,121 @@ structure RegTable = BinaryMapFn(struct
 		     uncolored=uncolored,
 		     adjTable=adjTable,
 		     degreeTable=degreeTable}
-		end
-		
+		end	
 	    val {igraph,
 		 precolored,
 		 uncolored,
 		 adjTable,
 		 degreeTable} = build()
 				
-	    fun MakeWorklist (uncolored) =
+	    fun makeWorklist (uncolored) =
 		let
-		    fun iterate (nil, simplifyWorklist) = simplifyWorklist
-		      | iterate (head::tail, simplifyWorklist) =
+		    fun iterate (nil, simplifyWorklist, spillWorklist) =
+			(simplifyWorklist, spillWorklist)
+		      | iterate (head::tail, simplifyWorklist, spillWorklist) =
 			if lookup degreeTable head >= numregs
-			then iterate(tail, simplifyWorklist)
-			else iterate(tail, head::simplifyWorklist)
+			then iterate(tail, simplifyWorklist, head::spillWorklist)
+			else iterate(tail, head::simplifyWorklist, spillWorklist)
 		in
-		    iterate(uncolored, [])
+		    iterate(uncolored, [], [])
 		end
-	    val simplifyWorklist = MakeWorklist(uncolored)
+	    val (simplifyWorklist, spillWorklist) = makeWorklist(uncolored)
 	    fun adjacent (node, selectStack) = difference(lookup adjTable node,
 							  selectStack)
-	    fun decrementDegree (node, degreeTable, simplifyWorklist) =
+	    fun decrementDegree (node, degreeTable, simplifyWorklist, spillWorklist) =
 		let
 		    val d = lookup degreeTable node
 		    val degreeTable' = enter degreeTable (node, d-1)
-		    val simplifyWorklist' =
+		    val (simplifyWorklist', spillWorklist') =
 			if d = numregs
-			then union(simplifyWorklist, [node])
-			else simplifyWorklist
+			then (union(simplifyWorklist, [node]),
+			      difference(spillWorklist, [node]))
+			else (simplifyWorklist, spillWorklist)
 		in
-		    (degreeTable', simplifyWorklist')
+		    (degreeTable', simplifyWorklist', spillWorklist')
 		end 
-	    fun simplify (selectStack, simplifyWorklist, degreeTable) =
+	    fun simplify (selectStack, simplifyWorklist, spillWorklist, degreeTable) =
 		let
 		    val (simplifyWorklist', n) = pop simplifyWorklist
 		    val selectStack' = push(selectStack, n)
 		    val adjNodes = adjacent(n, selectStack')
-		    val (degreeTable', simplifyWorklist') =
-			foldl (fn (n, (d,s)) => decrementDegree (n, d, s))
-			  (degreeTable, simplifyWorklist')
+		    val (degreeTable', simplifyWorklist', spillWorklist') =
+			foldl (fn (n, (d,s, swl)) => decrementDegree (n, d, s, swl))
+			  (degreeTable, simplifyWorklist', spillWorklist)
 			  adjNodes
 		in
-		    (selectStack', simplifyWorklist', degreeTable')
+		    (selectStack', simplifyWorklist', spillWorklist', degreeTable')
 		end
-	    fun loop (selectStack, nil, degreeTable) = selectStack
-	      | loop (selectStack, simplifyWorklist, degreeTable) =
+	    fun selectSpill (selectStack, simplifyWorklist, spillWorklist, degreeTable) =
 		let
-		    val (selectStack', simplifyWorklist', degreeTable') =
-			simplify(selectStack, simplifyWorklist, degreeTable)
+		    (* TODO: we should call spill cost *)
+		    val (spillWorklist', node) = pop spillWorklist
+		    val simplifyWorklist' = push(simplifyWorklist, node)
 		in
-		    loop(selectStack', simplifyWorklist', degreeTable')
+		    (selectStack, simplifyWorklist', spillWorklist', degreeTable)
 		end
-	    val selectStack = loop([], simplifyWorklist, degreeTable)
+	    fun loop (selectStack, simplifyWorklist, spillWorklist, degreeTable) =
+		let
+		    val (selectStack', simplifyWorklist',
+			 spillWorklist', degreeTable') =
+			if not (null simplifyWorklist)
+			then simplify(selectStack,
+				      simplifyWorklist,
+				      spillWorklist,
+				      degreeTable)
+			else if not (null spillWorklist)
+			then selectSpill(selectStack,
+					 simplifyWorklist,
+					 spillWorklist,
+					 degreeTable)
+			else (selectStack, simplifyWorklist,
+			      spillWorklist, degreeTable)			
+		in
+		    if (null simplifyWorklist) andalso
+		       (null spillWorklist)
+		    then selectStack'
+		    else loop(selectStack', simplifyWorklist',
+			      spillWorklist' , degreeTable')
+		end
+	    val selectStack = loop([], simplifyWorklist,
+				   spillWorklist, degreeTable)
 	    fun assignColors (selectStack) =
 		let
 		    fun nodeColor color node =
 			Temp.Table.look(color, (gtemp node))
-		    fun loop (nil, color) = color
- 		      | loop(head::tail, color) =
+		    fun loop (nil, color, spilledNodes) = (color, spilledNodes)
+ 		      | loop(head::tail, color, spilledNodes) =
 			let
 			    val temp = gtemp head
 			    val adjNodes = lookup adjTable head
-			    val usedColors = List.mapPartial (nodeColor color) adjNodes
+			    val usedColors = List.mapPartial
+						 (nodeColor color)
+						 adjNodes
 			    val okColors = differenceT(registers, usedColors)
-			    val color' = if (null okColors)
-					 then (ErrorMsg.error 1 "Spill alert bong bong bong";
-					       color)
-					 else (Temp.Table.enter (color, temp, (hd okColors)))			 
+(*			    val _ = ErrorMsg.error 2 ("Length of okColors"^
+						      (Int.toString (length okColors))) *)
+			    val (color', spilledNodes') = if (null okColors)
+					 then (color, head::spilledNodes)
+					 else (Temp.Table.enter
+						   (color, temp, (hd okColors)),
+					      spilledNodes)
 			in
-			    loop(tail, color')
+			    loop(tail, color', spilledNodes')
 			end
 		in
-		    loop(selectStack, initial)
+		    ErrorMsg.error 2 "Boop de woop";
+		    loop(selectStack, initial, [])
 		end
-	    val coloring = assignColors(selectStack)
+	    val (coloring, spilledNodes) = assignColors(selectStack)
 	
 	    val _ = degreeInvariant (simplifyWorklist,
-				 precolored,
-				 lookup adjTable,
-				 lookup degreeTable)
+				     spillWorklist,
+				     precolored,
+				     lookup adjTable,
+				     lookup degreeTable)
 	    val _ = simplifyWorklistInvariant (simplifyWorklist,
 					       lookup degreeTable)
+	    val _ = spillWorklistInvariant(spillWorklist, lookup degreeTable)
 	    val _ = ErrorMsg.error 1 "Got to the end"
 	in
 	    (*Temporary*)
