@@ -5,8 +5,13 @@ structure MipsGen : CODEGEN =
 structure T = Tree
 structure A = Assem
 structure Frame = MipsFrame	      
- 
- fun codegen frame stm =
+
+(*TEMPORARY HACK append the exit syscall to the end of instruction list*)
+val exit = A.OPER {assem="li `d0, 10\nsyscall\n",
+    		   src=[],
+		   dst=[Frame.RV0],jump=NONE}
+
+fun codegen frame stm =
      let val ilist = ref nil
 	 val calldefs = Frame.RV0::Frame.RA::Frame.calleesaves
 	 fun emit x = ilist := x :: !ilist
@@ -84,6 +89,19 @@ structure Frame = MipsFrame
 			   src=munchExp(e)::munchArgs(args),
 			   dst=calldefs,
 			   jump=NONE})
+	   | munchStm(T.MOVE(T.TEMP t1, T.TEMP t2)) =
+	     emit (A.MOVE{assem="move `d0, `s0\n",
+			      dst=t1,
+			      src=t2})
+	   | munchStm(T.MOVE(T.TEMP t1, T.CONST i)) =
+	     emit (A.OPER{assem="li `d0, "^(str i)^"\n",
+			      dst=[t1],
+			      src=[], jump=NONE})
+	   | munchStm (T.MOVE(T.TEMP i, e2)) =
+	     emit (A.OPER {assem="move `d0, `s0\n",
+			   src=[munchExp e2],
+			   dst=[i],jump=NONE})
+
 	   | munchStm(T.JUMP (T.NAME l,labels)) =
 	     emit (A.OPER {assem="j `j0\n",
 			   src=[],
@@ -121,14 +139,6 @@ structure Frame = MipsFrame
 	     munchStm(T.CJUMP (T.LT, e1, e2, t, f))
 	   | munchStm(T.CJUMP (T.LE, e1, e2, t, f)) =
 	     munchStm(T.CJUMP (T.GE, e2, e1, t, f))
-	   | munchStm(T.MOVE(T.TEMP t1, T.TEMP t2)) =
-	     emit (A.MOVE{assem="move `d0, `s0\n",
-			      dst=t1,
-			      src=t2})
-	   | munchStm (T.MOVE(T.TEMP i, e2)) =
-	     emit (A.OPER {assem="move `d0, `s0\n",
-			   src=[munchExp e2],
-			   dst=[i],jump=NONE})
 	   | munchStm(T.EXP(T.CALL(e, args))) =
 	     emit (A.OPER{assem="jal `s0\n",
 			  src=munchExp(e)::munchArgs(args),

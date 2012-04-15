@@ -91,7 +91,6 @@ fun allocLocal lev esc =
      of LEVEL {frame, parent, unique} => 
 	let
 	    val access=Frame.allocLocal frame esc
-	    val _ = Error.error 1 ("Escape is "^(if esc then "True" else "False")) 
 	in
 	    (lev, access)
 	end

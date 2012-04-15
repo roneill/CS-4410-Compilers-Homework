@@ -93,7 +93,7 @@ fun instrs2graph instrs =
 			    case LabelNodeMap.find(label2node, label)
 			     of SOME node => node
 			      | NONE => ErrorMsg.impossible
-		              "Label is not entered into label->node table"
+		              ("Label "^(Temp.toString label)^" is not entered into label->node table")
 			val jumpNodes = map getNode jumps	
 		    in
 			jumpNodes
@@ -130,7 +130,7 @@ fun instrs2graph instrs =
 			let 
 			    val temps2str = list2str Temp.makestring
 			in 
-			    assem^", def{"^(temps2str dst)^"}, use{"^(temps2str src)^"}, "
+			    assem^"def{"^(temps2str dst)^"}, use{"^(temps2str src)^"}, "
 			end
 		      | A.MOVE {assem, src, dst} =>
 			assem^", def{ "^(Temp.makestring dst)^"}, use{ "^(Temp.makestring src)^"}, "  
