@@ -143,7 +143,7 @@ fun instrs2graph instrs =
 	    in
 		sayln (nodeString^": "^assemString^succString^predString)
 	    end
-	(*val _ = app printNodeInstr (rev nodes)*)
+	val _ = app printNodeInstr (rev nodes)
     in
 	(flowgraph, Graph.nodes control)
     end

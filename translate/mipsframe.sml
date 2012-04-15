@@ -124,6 +124,11 @@ fun allocLocal (frame:frame) escape =
 fun name (frame:frame) = (#name frame)
 fun formals (frame:frame) = (#formals frame)
 
+fun getOffset(access) =
+    case access
+	 of InFrame i => i
+	  | InReg r => r
+			    
 (* fp is either a TEMP(FP) or a series of MEM and + instructins to fetch the frame pointer *)			    
 fun exp (InFrame k) fp = T.MEM(T.BINOP(T.PLUS,fp,T.CONST(k)))
   | exp (InReg t) _ = T.TEMP t
@@ -131,6 +136,6 @@ fun exp (InFrame k) fp = T.MEM(T.BINOP(T.PLUS,fp,T.CONST(k)))
 (* This function may require extension for machine specific details *) 
 fun externalCall (s, args) =
     T.CALL (T.NAME(Temp.namedlabel s), args)
-
+    
 end
 

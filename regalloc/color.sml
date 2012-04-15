@@ -252,7 +252,7 @@ structure RegTable = BinaryMapFn(struct
 						 (nodeColor color)
 						 adjNodes
 			    val okColors = differenceT(registers, usedColors)
-(*			    val _ = ErrorMsg.error 2 ("Length of okColors"^
+			    (* val _ = ErrorMsg.error 2 ("Length of okColors"^
 						      (Int.toString (length okColors))) *)
 			    val (color', spilledNodes') = if (null okColors)
 					 then (color, head::spilledNodes)
@@ -263,7 +263,6 @@ structure RegTable = BinaryMapFn(struct
 			    loop(tail, color', spilledNodes')
 			end
 		in
-		    ErrorMsg.error 2 "Boop de woop";
 		    loop(selectStack, initial, [])
 		end
 	    val (coloring, spilledNodes) = assignColors(selectStack)
@@ -277,9 +276,9 @@ structure RegTable = BinaryMapFn(struct
 					       lookup degreeTable)
 	    val _ = spillWorklistInvariant(spillWorklist, lookup degreeTable)
 	    val _ = ErrorMsg.error 1 "Got to the end"
+	    val spills = map gtemp spilledNodes
 	in
-	    (*Temporary*)
-	    (coloring,[])
+	    (coloring, spills)
 	end
 end
 (*
