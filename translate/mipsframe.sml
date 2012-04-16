@@ -125,7 +125,9 @@ fun allocLocal (frame:frame) escape =
 
 fun name (frame:frame) = (#name frame)
 fun formals (frame:frame) = (#formals frame)
-
+fun getOffset (InFrame k) = k
+  | getOffset (InReg t) = ErrorMsg.impossible "Cannot get the frame offset of a temp"
+			    
 (* fp is either a TEMP(FP) or a series of MEM and + instructins to fetch the frame pointer *)			    
 fun exp (InFrame k) fp = T.MEM(T.BINOP(T.PLUS,fp,T.CONST(k)))
   | exp (InReg t) _ = T.TEMP t
