@@ -198,6 +198,6 @@ fun codegen frame stm =
 			  "Could not find matching tile for expression")
      in
 	 munchStm stm;
-	 rev(!ilist)
+	 Frame.procEntryExit2(frame, rev(!ilist))
      end
  end

@@ -29,14 +29,23 @@ fun rewriteProgram (frame, instrs, spills) =
 				 spills
 	fun lookup temp =
 	    Temp.Table.look(temps2locals, temp)
-	fun replace (old, newtemp) temp =
+	fun replace (old:Temp.temp, newtemp:Temp.temp) temp =
 	    if temp = old then newtemp else temp
+
+	(*
+	 This function processes the spills in the use set and def
+	 set separately.  Unfortunately it does not generate efficient
+	 code for an instruction that uses a spilled temp in both the
+	 use and the def.  Separate new temps are used for the def and
+	 the use
+	 *)
+					    
 	fun rewriteInstrs([], rewrittenInstrs) =
 	    (rev(rewrittenInstrs))
 	  | rewriteInstrs(instr::instrs, rewritten) =
 	    let
-		fun findReplace (nil) = NONE
-		  | findReplace (temp::tail) =
+		fun findReplaceTemp (nil) = NONE
+		  | findReplaceTemp(temp::tail) =
 		    (case (lookup temp)
 		      of SOME access => let val offset = Frame.getOffset(access)
 					in
@@ -44,7 +53,7 @@ fun rewriteProgram (frame, instrs, spills) =
 						  Temp.newtemp(),
 						  offset)
 					end 
-		       | NONE => findReplace(tail))
+		       | NONE => findReplaceTemp(tail))
 		fun rewriteUse (instr, oldtemp,
 				newtemp, offset) =
 		    let 
@@ -64,7 +73,7 @@ fun rewriteProgram (frame, instrs, spills) =
 			      A.MOVE {assem=assem,
 				      src=replace (oldtemp,newtemp) src,
 				      dst=dst}
-			    | _ => ErrorMsg.impossible "Trying to write a label"
+			    | A.LABEL _ => ErrorMsg.impossible "Trying to write a label"
 		    in
 			(load, newinstr)
 		    end
@@ -86,39 +95,43 @@ fun rewriteProgram (frame, instrs, spills) =
 				A.MOVE {assem=assem,
 					src=replace (oldtemp,newtemp) src,
 					dst=dst}
+			      | A.LABEL _ => ErrorMsg.impossible "Trying to write a labels"
 		    in 
 			(newinstr, store)
 		    end
-	    in 
-		case (instr)
-		 of A.OPER {assem, src, dst, jump} =>
-		    (case findReplace (src)
+		fun procInstr (instr, src, dst) =
+		    (case findReplaceTemp (src)
 		      of SOME (oldtemp, newtemp, offset) =>
 			 let
 			     val (load, newinstr) =
 				 rewriteUse(instr, oldtemp, newtemp, offset)
 			 in 
 			     rewriteInstrs(newinstr::instrs,
-					  load::rewritten)
+					   load::rewritten)
 			 end		  
 		       | NONE =>
-			 case findReplace (dst)
-			 of SOME (oldtemp, newtemp, offset) =>
-			    let
-				val (newinstr, store) =
-				    rewriteDef(instr, oldtemp, newtemp, offset)
-			    in 
-				rewriteInstrs(instrs,
-					      store::newinstr::rewritten)
-			    end
-			  | NONE =>
-			    rewriteInstrs(instrs,
-					  instr::rewritten))
-		  | A.LABEL {assem, lab} =>
-		    rewriteInstrs(instrs, instr::rewritten)
-		  | A.MOVE {assem, dst, src} =>
-		    rewriteInstrs(instrs, instr::rewritten)
+			 case findReplaceTemp (dst)
+			  of SOME (oldtemp, newtemp, offset) =>
+			     let
+				 val (newinstr, store) =
+				     rewriteDef(instr, oldtemp, newtemp, offset)
+			     in 
+				 rewriteInstrs(instrs,
+					       store::newinstr::rewritten)
+			     end
+			   | NONE =>
+			     rewriteInstrs(instrs,
+					   instr::rewritten))
+	    in 
+		    case (instr)
+		     of A.OPER {assem, src, dst, jump} =>
+			procInstr (instr, src, dst)		
+		      | A.LABEL {assem, lab} =>
+			rewriteInstrs(instrs, instr::rewritten)
+		      | A.MOVE {assem, dst, src} =>
+			procInstr (instr, [src], [dst])
 	    end
+	    
     in
 	rewriteInstrs(instrs, [])
     end
