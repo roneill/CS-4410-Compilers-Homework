@@ -36,7 +36,7 @@ val K1 = Temp.newtemp()
 
 val ZERO = Temp.newtemp()
 	     
-val specialregs = [SP, ZERO, GP, AT, K0, K1]
+val specialregs = [SP, ZERO, GP, AT, K0, K1, FP]
 val argregs = getTemps(4)
 val calleesaves = FP::RA::getTemps(8)
 val callersaves = RV0::RV1::getTemps(10)
@@ -82,6 +82,10 @@ fun tempToString (t) =
     case Temp.Table.look(tempMap, t)
      of SOME s => s
       | NONE => "$"^Temp.makestring(t) 
+
+fun str i = if (i < 0) 
+	    then "-"^(Int.toString (~i))
+	    else Int.toString i
 	      
 fun procEntryExit1 (frame, body) = body 
 fun newFrame {name, formals} =
@@ -125,8 +129,26 @@ fun allocLocal (frame:frame) escape =
 
 fun name (frame:frame) = (#name frame)
 fun formals (frame:frame) = (#formals frame)
-fun getOffset (InFrame k) = k
-  | getOffset (InReg t) = ErrorMsg.impossible "Cannot get the frame offset of a temp"
+			    
+(* Generates an instruction that loads a variable (given by an access) into a temp *)
+fun loadInstr (temp, InFrame k) = A.OPER {assem="lw `d0, "^(str k)^"(`s0)\n",
+					  src=[FP],
+					  dst=[temp],
+					  jump=NONE}
+  | loadInstr (temp, InReg t) = A.OPER {assem="move `d0, `s0\n",
+					  src=[t],
+					  dst=[temp],
+					  jump=NONE}
+(* Generates an instruction that stores a variable (given by an access) into a temp *)
+fun storeInstr (temp, InFrame k) = A.OPER {assem="sw `s0, "^(str k)^"(`d0)\n",
+					  src=[temp],
+					  dst=[FP],
+					  jump=NONE}
+  | storeInstr (temp, InReg t) = A.OPER {assem="move `d0, `s0\n",
+					  src=[temp],
+					  dst=[t],
+					  jump=NONE}
+
 			    
 (* fp is either a TEMP(FP) or a series of MEM and + instructins to fetch the frame pointer *)			    
 fun exp (InFrame k) fp = T.MEM(T.BINOP(T.PLUS,fp,T.CONST(k)))

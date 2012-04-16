@@ -16,10 +16,6 @@ structure A = Assem
 	      
 type allocation = Frame.register Temp.Table.table
 
-fun str i = if (i < 0) 
-	    then "-"^(Int.toString (~i))
-	    else Int.toString i
-
 fun rewriteProgram (frame, instrs, spills) = 
     let
 	val temps2locals = foldl (fn (t, ma) =>
@@ -47,21 +43,14 @@ fun rewriteProgram (frame, instrs, spills) =
 		fun findReplaceTemp (nil) = NONE
 		  | findReplaceTemp(temp::tail) =
 		    (case (lookup temp)
-		      of SOME access => let val offset = Frame.getOffset(access)
-					in
-					    SOME (temp,
-						  Temp.newtemp(),
-						  offset)
-					end 
+		      of SOME access => SOME (temp,
+					      Temp.newtemp(),
+					      access)
 		       | NONE => findReplaceTemp(tail))
 		fun rewriteUse (instr, oldtemp,
-				newtemp, offset) =
+				newtemp, access) =
 		    let 
-			val load =
-			    A.OPER {assem="lw `d0, "^(str offset)^"(`s0)\n",
-				    src=[Frame.FP],
-				    dst=[newtemp],
-				    jump=NONE}
+			val load = Frame.loadInstr(newtemp, access)
 			val newinstr= 
 			  case (instr)
 			   of A.OPER {assem, src, dst, jump} => 
@@ -71,19 +60,15 @@ fun rewriteProgram (frame, instrs, spills) =
 				      jump=jump}
 			    | A.MOVE {assem, src, dst} =>
 			      A.MOVE {assem=assem,
-				      src=replace (oldtemp,newtemp) src,
+				      src=newtemp,
 				      dst=dst}
-			    | A.LABEL _ => ErrorMsg.impossible "Trying to write a label"
+			    | A.LABEL _ => ErrorMsg.impossible "Trying to rewrite a label"
 		    in
 			(load, newinstr)
 		    end
-		fun rewriteDef (instr, oldtemp,newtemp, offset) =
+		fun rewriteDef (instr, oldtemp,newtemp, access) =
 		    let
-			val store =
-			    A.OPER {assem="sw `s0, "^(str offset)^"(`d0)\n",
-				    src=[newtemp],
-				    dst=[Frame.FP],
-				    jump=NONE}
+			val store = Frame.storeInstr(newtemp, access)
 			val newinstr = 
 			    case instr
 			     of A.OPER {assem, src, dst, jump} =>
@@ -95,26 +80,26 @@ fun rewriteProgram (frame, instrs, spills) =
 				A.MOVE {assem=assem,
 					src=replace (oldtemp,newtemp) src,
 					dst=dst}
-			      | A.LABEL _ => ErrorMsg.impossible "Trying to write a labels"
+			      | A.LABEL _ => ErrorMsg.impossible "Trying to rewrite a label"
 		    in 
 			(newinstr, store)
 		    end
 		fun procInstr (instr, src, dst) =
 		    (case findReplaceTemp (src)
-		      of SOME (oldtemp, newtemp, offset) =>
+		      of SOME (oldtemp, newtemp, access) =>
 			 let
 			     val (load, newinstr) =
-				 rewriteUse(instr, oldtemp, newtemp, offset)
+				 rewriteUse(instr, oldtemp, newtemp, access)
 			 in 
 			     rewriteInstrs(newinstr::instrs,
 					   load::rewritten)
 			 end		  
 		       | NONE =>
 			 case findReplaceTemp (dst)
-			  of SOME (oldtemp, newtemp, offset) =>
+			  of SOME (oldtemp, newtemp, access) =>
 			     let
 				 val (newinstr, store) =
-				     rewriteDef(instr, oldtemp, newtemp, offset)
+				     rewriteDef(instr, oldtemp, newtemp, access)
 			     in 
 				 rewriteInstrs(instrs,
 					       store::newinstr::rewritten)
@@ -145,6 +130,7 @@ fun alloc (instrs, frame) =
 						initial = Frame.tempMap,
 						spillCost = (fn n => 1),
 						registers = Frame.registers}
+	val _ = ErrorMsg.error 2 ("Spills "^(Int.toString (length spills)))
     in
 	if (null spills)
 	then (instrs, allocation)

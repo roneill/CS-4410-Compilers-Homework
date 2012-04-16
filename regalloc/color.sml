@@ -110,7 +110,7 @@ structure RegTable = BinaryMapFn(struct
 	app (fn node => if degree(node) >= numregs
 			then ()
 			else ErrorMsg.impossible
-				 "SpillWorklist invariant did not hold")
+				 "SpillWorklist invariant did not hold!")
 	    spillWorklist
     val str = Int.toString
     fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
