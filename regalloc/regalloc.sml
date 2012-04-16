@@ -49,7 +49,7 @@ fun rewriteProgram (frame, instrs, spills) =
 				newtemp, offset) =
 		    let 
 			val load =
-			    A.OPER {assem="lw `d0, "^(str offset)^"`s0\n",
+			    A.OPER {assem="lw `d0, "^(str offset)^"(`s0)\n",
 				    src=[Frame.FP],
 				    dst=[newtemp],
 				    jump=NONE}
@@ -71,7 +71,7 @@ fun rewriteProgram (frame, instrs, spills) =
 		fun rewriteDef (instr, oldtemp,newtemp, offset) =
 		    let
 			val store =
-			    A.OPER {assem="sw `s0, "^(str offset)^"`d0\n",
+			    A.OPER {assem="sw `s0, "^(str offset)^"(`d0)\n",
 				    src=[newtemp],
 				    dst=[Frame.FP],
 				    jump=NONE}

@@ -263,7 +263,6 @@ structure RegTable = BinaryMapFn(struct
 			    loop(tail, color', spilledNodes')
 			end
 		in
-		    ErrorMsg.error 2 "Boop de woop";
 		    loop(selectStack, initial, [])
 		end
 	    val (coloring, spilledNodes) = assignColors(selectStack)
@@ -279,7 +278,7 @@ structure RegTable = BinaryMapFn(struct
 	    val _ = ErrorMsg.error 1 "Got to the end"
 	in
 	    (*Temporary*)
-	    (coloring,spilledTemps)
+	    (coloring, spilledTemps)
 	end
 end
 (*
