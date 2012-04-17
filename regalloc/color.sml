@@ -144,6 +144,17 @@ structure RegTable = BinaryMapFn(struct
 								(IGraph.adj node)))
 					 IGraph.Table.empty
 					 nodes
+		    (*Precolored nodes have infinite degree*)
+		    val precoloredTable = foldl (fn (node, table) =>
+						let
+						    val degree = 100000000
+						in
+						    IGraph.Table.enter(table,
+								       node,
+								       degree)
+						end)
+				      IGraph.Table.empty
+				      precolored
 		    val degreeTable = foldl (fn (node, table) =>
 						let
 						    val degree =
@@ -153,8 +164,9 @@ structure RegTable = BinaryMapFn(struct
 								       node,
 								       degree)
 						end)
-				      IGraph.Table.empty
-				      nodes
+				      precoloredTable
+				      uncolored
+				      
 		in
 		    {igraph=interference,
 		     precolored=precolored,
@@ -179,7 +191,17 @@ structure RegTable = BinaryMapFn(struct
 		in
 		    iterate(uncolored, [], [])
 		end
+	    fun print (name, workList) =
+		let
+		    fun str node =
+			(IGraph.nodename node) ^ " "
+		    val workListString = String.concat (map str workList)
+		in
+		    ErrorMsg.error 2 ("The "^name^" worklist string is: " ^ workListString)
+		end
 	    val (simplifyWorklist, spillWorklist) = makeWorklist(uncolored)
+	    val _ = print ("Simplify", simplifyWorklist)
+	    val _ = print ("Spill", spillWorklist)
 	    fun adjacent (node, selectStack) = difference(lookup adjTable node,
 							  selectStack)
 	    fun decrementDegree (node, degreeTable, simplifyWorklist, spillWorklist) =
@@ -216,6 +238,9 @@ structure RegTable = BinaryMapFn(struct
 		end
 	    fun loop (selectStack, simplifyWorklist, spillWorklist, degreeTable) =
 		let
+		    val _ = print ("Simplify2", simplifyWorklist)
+		    val _ = print ("Spill2", spillWorklist)
+		    val _ = print ("Select2", selectStack)
 		    val (selectStack', simplifyWorklist',
 			 spillWorklist', degreeTable') =
 			if not (null simplifyWorklist)
@@ -239,6 +264,7 @@ structure RegTable = BinaryMapFn(struct
 		end
 	    val selectStack = loop([], simplifyWorklist,
 				   spillWorklist, degreeTable)
+	    val _ = print ("Select", selectStack)
 	    fun assignColors (selectStack) =
 		let
 		    fun nodeColor color node =
@@ -251,14 +277,20 @@ structure RegTable = BinaryMapFn(struct
 			    val usedColors = List.mapPartial
 						 (nodeColor color)
 						 adjNodes
+			    val _ = ErrorMsg.error 2 ("Node: "^(IGraph.nodename head))
+			    val _ = ErrorMsg.error 2 ("Adjacent Nodes: "^(Int.toString (length usedColors)))
+			    val _ = ErrorMsg.error 2 ("Used colors: "^(String.concat (map (fn s=> s^" ") usedColors)))
 			    val okColors = differenceT(registers, usedColors)
 (*			    val _ = ErrorMsg.error 2 ("Length of okColors"^
 						      (Int.toString (length okColors))) *)
+			    val _ = ErrorMsg.error 2 ("OK colors: "^(String.concat (map (fn s=> s^" ") okColors)))
 			    val (color', spilledNodes') = if (null okColors)
 					 then (color, head::spilledNodes)
-					 else (Temp.Table.enter
-						   (color, temp, (hd okColors)),
-					      spilledNodes)
+					 else  let val reg = (hd okColors) in
+						   (ErrorMsg.error 2 ("Assigning temp "^(Temp.makestring temp)^" register "^reg);
+					       (Temp.Table.enter
+						   (color, temp, reg),
+					      spilledNodes)) end
 			in
 			    loop(tail, color', spilledNodes')
 			end

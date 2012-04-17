@@ -84,11 +84,23 @@ fun codegen frame stm =
 			   dst=[],jump=NONE})
 	   | munchStm(T.MOVE(T.TEMP(t), T.CALL(e, args))) =
 	     emit (A.OPER {assem="jal `s0\n"^ (*Jump to the function*)
-				 "move "^Frame.tempToString(t)^", `d0\n",
-			   (*copy the return value stro t*)
-			   src=munchExp(e)::munchArgs(args),
-			   dst=calldefs,
+				 "move `d0, `s1\n",
+			   src=munchExp(e)::Frame.RV0::munchArgs(args),
+			   dst=t::calldefs,
 			   jump=NONE})
+	   | munchStm (T.MOVE(e1, (T.BINOP(T.PLUS, e2, T.CONST i)))) =
+	     emit(A.OPER {assem="addi `d0, `s0, "^(str i)^"\n",
+			  src=[munchExp e2],
+			  dst=[munchExp e1],
+			  jump=NONE})
+	   | munchStm (T.MOVE(e1, (T.BINOP(T.PLUS, T.CONST i, e2)))) =
+	     emit(A.OPER {assem="addi `d0, `s0, "^(str i)^"\n",
+			  src=[munchExp e2],
+			  dst=[munchExp e1], jump=NONE})
+	   | munchStm (T.MOVE(e1, (T.BINOP(T.MINUS, e2, T.CONST i)))) =
+	     emit(A.OPER {assem="addi `d0, `s0, -"^(str (i))^"\n",
+			  src=[munchExp e2],
+			  dst=[munchExp e1], jump=NONE})
 	   | munchStm(T.MOVE(T.TEMP t1, T.TEMP t2)) =
 	     emit (A.MOVE{assem="move `d0, `s0\n",
 			      dst=t1,
@@ -149,10 +161,20 @@ fun codegen frame stm =
 	   | munchStm x = (Printtree.printtree (TextIO.stdOut, x);
 			   Error.impossible "unmatched node:")
 
-	 and munchExp(T.MEM(T.BINOP(T.PLUS, e1, T.CONST i))) =
+	 and munchExp(T.CALL(e, args)) =
+	     result(fn r => emit (A.OPER
+				      {assem="jal `s0\n"^ (*Jump to the function*)
+					     "move `d0, `s1\n",
+				       (*copy the return value stro t*)
+				       src=munchExp(e)::Frame.RV0::munchArgs(args),
+				       dst=r::calldefs,
+				       jump=NONE}))
+
+	   | munchExp(T.MEM(T.BINOP(T.PLUS, e1, T.CONST i))) =
 	     result(fn r => emit (A.OPER
 				      {assem="lw `d0, "^ str i^"(`s0)\n",
 				       src=[munchExp e1], dst=[r], jump=NONE}))
+
 	   | munchExp(T.MEM(T.BINOP(T.PLUS, T.CONST i, e1))) =
 	     result (fn r => emit(A.OPER
 				      {assem="lw `d0, "^ str i^"(`s0)\n",
@@ -198,6 +220,6 @@ fun codegen frame stm =
 			  "Could not find matching tile for expression")
      in
 	 munchStm stm;
-	 Frame.procEntryExit2(frame, rev(!ilist))
+	 rev(!ilist)
      end
  end

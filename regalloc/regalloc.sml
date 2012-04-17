@@ -116,22 +116,43 @@ fun rewriteProgram (frame, instrs, spills) =
 		      | A.MOVE {assem, dst, src} =>
 			procInstr (instr, [src], [dst])
 	    end
-	    
     in
 	rewriteInstrs(instrs, [])
     end
 
 fun alloc (instrs, frame) =
-    let 
+    let
+	
 	val (fgraph, nodes) = MakeGraph.instrs2graph instrs
-	val (igraph, liveMap) = Liveness.interferenceGraph fgraph
-				
+	val (igraph as Liveness.IGRAPH{graph, tnode, gtemp, moves}, liveMap) = Liveness.interferenceGraph fgraph
+	val _ = Liveness.show(TextIO.stdOut, igraph)
 	val (allocation, spills) = Color.color {interference = igraph,
 						initial = Frame.tempMap,
 						spillCost = (fn n => 1),
 						registers = Frame.registers}
-	val _ = ErrorMsg.error 2 ("Spills "^(Int.toString (length spills)))
-    in
+(*	val _ = ErrorMsg.error 2 ("Spills "^(Int.toString (length spills)))
+	val format0 = Assem.format((fn t => case Temp.Table.look (allocation, t)
+					     of SOME reg => reg
+					      | NONE => Temp.makestring (t)))
+	val _ = ErrorMsg.error 2 "Original: "
+	val _ = app (fn i => TextIO.output(TextIO.stdOut,format0 i)) instrs
+	val instrs' = rewriteProgram(frame, instrs, map gtemp [(List.nth((IGraph.nodes graph), 19))])
+	val _ = ErrorMsg.error 2 "Rewritten: "
+	val _ = app (fn i => TextIO.output(TextIO.stdOut,format0 i)) instrs'
+		val (fgraph, nodes) = MakeGraph.instrs2graph instrs'
+	val (igraph as Liveness.IGRAPH{graph, tnode, gtemp, moves}, liveMap) = Liveness.interferenceGraph fgraph
+	val _ = Liveness.show(TextIO.stdOut, igraph)
+	val (allocation, spills) = Color.color {interference = igraph,
+						initial = Frame.tempMap,
+						spillCost = (fn n => 1),
+						registers = Frame.registers}
+	val format0 = Assem.format((fn t => case Temp.Table.look (allocation, t)
+					     of SOME reg => reg
+					      | NONE => Temp.makestring (t)))
+	val _ = app (fn i => TextIO.output(TextIO.stdOut,format0 i)) instrs'
+*)
+
+    in (*(instrs', allocation)*)
 	if (null spills)
 	then (instrs, allocation)
 	else (alloc(rewriteProgram(frame,instrs,spills), frame))

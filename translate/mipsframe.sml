@@ -38,10 +38,10 @@ val ZERO = Temp.newtemp()
 	     
 val specialregs = [SP, ZERO, GP, AT, K0, K1, FP]
 val argregs = getTemps(4)
-val calleesaves = FP::RA::getTemps(8)
+val calleesaves = RA::getTemps(8)
 val callersaves = RV0::RV1::getTemps(10)
 
-val tempRegisterPair =  [(ZERO, "$zero"),
+(*val tempRegisterPair =  [(ZERO, "$zero"),
 			 (FP, "$fp"),
 			 (RV0, "$v0"),
 			 (RV1, "$v1"),
@@ -55,14 +55,14 @@ val tempRegisterPair =  [(ZERO, "$zero"),
 			 (List.nth(argregs, 1), "$a1"), 
 			 (List.nth(argregs, 2), "$a2"), 
 			 (List.nth(argregs, 3), "$a3"),
-			 (List.nth(calleesaves, 2), "$s0"),
-			 (List.nth(calleesaves, 3), "$s1"), 
-			 (List.nth(calleesaves, 4), "$s2"), 
-			 (List.nth(calleesaves, 5), "$s3"), 
-			 (List.nth(calleesaves, 6), "$s4"),
-			 (List.nth(calleesaves, 7), "$s5"),
-			 (List.nth(calleesaves, 8), "$s6"), 
-			 (List.nth(calleesaves, 9), "$s7"),
+			 (List.nth(calleesaves, 1), "$s0"),
+			 (List.nth(calleesaves, 2), "$s1"), 
+			 (List.nth(calleesaves, 3), "$s2"), 
+			 (List.nth(calleesaves, 4), "$s3"), 
+			 (List.nth(calleesaves, 5), "$s4"),
+			 (List.nth(calleesaves, 6), "$s5"),
+			 (List.nth(calleesaves, 7), "$s6"), 
+			 (List.nth(calleesaves, 8), "$s7"),
 			 (List.nth(callersaves, 2), "$t0"),
 			 (List.nth(callersaves, 3), "$t1"), 
 			 (List.nth(callersaves, 4), "$t2"), 
@@ -72,7 +72,26 @@ val tempRegisterPair =  [(ZERO, "$zero"),
 			 (List.nth(callersaves, 8), "$t6"), 
 			 (List.nth(callersaves, 9), "$t7"), 
 			 (List.nth(callersaves, 10), "$t8"),
-			 (List.nth(callersaves, 11), "$t9")]
+			 (List.nth(callersaves, 11), "$t9")]*)
+
+val tempRegisterPair =  [(ZERO, "$zero"),
+			 (FP, "$fp"),
+			 (SP, "$sp"),
+			 (RA, "$ra"),
+			 (GP, "$gp"),
+			 (AT, "$at"),
+			 (K0, "$k0"),
+			 (K1, "$k1"),
+			 (List.nth(calleesaves, 1), "$s0"),
+			 (List.nth(calleesaves, 2), "$s1"), 
+			 (List.nth(calleesaves, 3), "$s2"), 
+			 (List.nth(calleesaves, 4), "$s3"), 
+			 (List.nth(calleesaves, 5), "$s4"),
+			 (List.nth(calleesaves, 6), "$s5"),
+			 (List.nth(calleesaves, 7), "$s6"), 
+			 (List.nth(calleesaves, 8), "$s7"),
+			 (List.nth(callersaves, 2), "$t0"),
+			 (List.nth(callersaves, 3), "$t1")]
 			
 val tempMap = foldl Temp.Table.enter' Temp.Table.empty tempRegisterPair
 
@@ -140,9 +159,9 @@ fun loadInstr (temp, InFrame k) = A.OPER {assem="lw `d0, "^(str k)^"(`s0)\n",
 					  dst=[temp],
 					  jump=NONE}
 (* Generates an instruction that stores a variable (given by an access) into a temp *)
-fun storeInstr (temp, InFrame k) = A.OPER {assem="sw `s0, "^(str k)^"(`d0)\n",
-					  src=[temp],
-					  dst=[FP],
+fun storeInstr (temp, InFrame k) = A.OPER {assem="sw `s0, "^(str k)^"(`s1)\n",
+					  src=[temp, FP],
+					  dst=[],
 					  jump=NONE}
   | storeInstr (temp, InReg t) = A.OPER {assem="move `d0, `s0\n",
 					  src=[temp],

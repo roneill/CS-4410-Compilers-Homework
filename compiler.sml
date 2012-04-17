@@ -37,12 +37,13 @@ fun emitproc out (Frame.PROC{body,frame}) =
 	 (*TEMPORARY HACK append the exit syscall to the end of instruction list*)
 	 val instrs' = Frame.procEntryExit2(frame, instrs)
 	 val instrs'' = instrs'@[Mips.exit]
-	 val(instrs''', allocation) = RegAlloc.alloc(instrs'', frame)
+	 val(instrs'', allocation) = RegAlloc.alloc(instrs'', frame)
          val format0 = Assem.format((fn t => case Temp.Table.look (allocation, t)
 					      of SOME reg => reg
 					       | NONE => ErrorMsg.impossible "Temp was not colored"))
+	 (*val format0 = Assem.format(Frame.tempToString)*)
     in
-	app (fn i => TextIO.output(out,format0 i)) instrs'''
+	app (fn i => TextIO.output(out,format0 i)) instrs''
     end
   | emitproc out (Frame.STRING(lab,s)) =()(* TextIO.output(out,Frame.string(lab,s))*)
 

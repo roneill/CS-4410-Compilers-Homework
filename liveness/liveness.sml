@@ -232,13 +232,13 @@ fun show (outstream,IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}) 
 		val adjNodes = IGraph.adj node
 		val nodeString = IGraph.nodename node
 		val temp = gtemp node
-		val tempString = Temp.makestring temp 
+		val tempString = MipsFrame.tempToString temp 
 		val adjStrings = map (fn node => 
-					 Temp.makestring (gtemp node)^" ") 
+					 MipsFrame.tempToString (gtemp node)^" ") 
 				     adjNodes
 		val adjString = "{"^(String.concat adjStrings)^"}"
 	    in
-		sayln (tempString^" "^adjString)
+		sayln (nodeString^" "^tempString^" "^adjString)
 	    end
 	val _ = app printNode nodes
 	val _ = app (fn node => sayln (IGraph.nodename node)) nodes

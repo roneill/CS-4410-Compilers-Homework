@@ -128,13 +128,13 @@ fun instrs2graph instrs =
 		    case instr
 		     of A.OPER {assem, src, dst, jump} => 
 			let 
-			    val temps2str = list2str Temp.makestring
+			    val temps2str = list2str MipsFrame.tempToString
 			in 
 			    assem^"def{"^(temps2str dst)^"}, use{"^(temps2str src)^"}, "
 			end
 		      | A.MOVE {assem, src, dst} =>
-			assem^", def{ "^(Temp.makestring dst)^"}, use{ "^(Temp.makestring src)^"}, "  
-		      | _ => ""
+			assem^", def{ "^(MipsFrame.tempToString dst)^"}, use{ "^(MipsFrame.tempToString src)^"}, "  
+		      | _ => "Label"
 		val nodeString = Graph.nodename(node)
 		val succ = Graph.succ(node)
 		val succString = "succ{"^(list2str Graph.nodename succ)^"}, "
@@ -143,7 +143,7 @@ fun instrs2graph instrs =
 	    in
 		sayln (nodeString^": "^assemString^succString^predString)
 	    end
-	(*val _ = app printNodeInstr (rev nodes)*)
+	val _ = app printNodeInstr (rev nodes)
     in
 	(flowgraph, Graph.nodes control)
     end
