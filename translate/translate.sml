@@ -359,7 +359,7 @@ fun NOP () =
 fun varDecs [] = NOP()
   | varDecs exps =
     let
-	val exps = map unNx exps
+	val exps = map unNx  (rev exps)
     in
 	Nx (seq(exps))
     end

@@ -91,7 +91,8 @@ val tempRegisterPair =  [(ZERO, "$zero"),
 			 (List.nth(calleesaves, 7), "$s6"), 
 			 (List.nth(calleesaves, 8), "$s7"),
 			 (List.nth(callersaves, 2), "$t0"),
-			 (List.nth(callersaves, 3), "$t1")]
+			 (List.nth(callersaves, 3), "$t1"),
+			 (List.nth(callersaves, 4), "$t2")]
 			
 val tempMap = foldl Temp.Table.enter' Temp.Table.empty tempRegisterPair
 

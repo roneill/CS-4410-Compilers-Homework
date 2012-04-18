@@ -64,7 +64,7 @@ structure RegTable = BinaryMapFn(struct
 	in
 	    differences
 	end
-    fun differenceT (l1, l2) =
+    fun differenceReg (l1, l2) =
 	let
 	    val table = foldl (fn (n,t) => RegTable.insert'((n,()),t))
 			      RegTable.empty
@@ -280,7 +280,7 @@ structure RegTable = BinaryMapFn(struct
 			    val _ = ErrorMsg.error 2 ("Node: "^(IGraph.nodename head))
 			    val _ = ErrorMsg.error 2 ("Adjacent Nodes: "^(Int.toString (length usedColors)))
 			    val _ = ErrorMsg.error 2 ("Used colors: "^(String.concat (map (fn s=> s^" ") usedColors)))
-			    val okColors = differenceT(registers, usedColors)
+			    val okColors = differenceReg(registers, usedColors)
 (*			    val _ = ErrorMsg.error 2 ("Length of okColors"^
 						      (Int.toString (length okColors))) *)
 			    val _ = ErrorMsg.error 2 ("OK colors: "^(String.concat (map (fn s=> s^" ") okColors)))
