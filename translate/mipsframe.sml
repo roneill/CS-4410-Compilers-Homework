@@ -41,7 +41,7 @@ val argregs = getTemps(4)
 val calleesaves = RA::getTemps(8)
 val callersaves = RV0::RV1::getTemps(10)
 
-(*val tempRegisterPair =  [(ZERO, "$zero"),
+val tempRegisterPair =  [(ZERO, "$zero"),
 			 (FP, "$fp"),
 			 (RV0, "$v0"),
 			 (RV1, "$v1"),
@@ -72,9 +72,10 @@ val callersaves = RV0::RV1::getTemps(10)
 			 (List.nth(callersaves, 8), "$t6"), 
 			 (List.nth(callersaves, 9), "$t7"), 
 			 (List.nth(callersaves, 10), "$t8"),
-			 (List.nth(callersaves, 11), "$t9")]*)
+			 (List.nth(callersaves, 11), "$t9")]
 
-val tempRegisterPair =  [(ZERO, "$zero"),
+(* Used to simulate a 2 register machine *)		  
+(*val tempRegisterPair =  [(ZERO, "$zero"),
 			 (FP, "$fp"),
 			 (SP, "$sp"),
 			 (RA, "$ra"),
@@ -91,7 +92,7 @@ val tempRegisterPair =  [(ZERO, "$zero"),
 			 (List.nth(calleesaves, 7), "$s6"), 
 			 (List.nth(calleesaves, 8), "$s7"),
 			 (List.nth(callersaves, 2), "$t0"),
-			 (List.nth(callersaves, 3), "$t1")]
+			 (List.nth(callersaves, 3), "$t1")]*)
 			
 val tempMap = foldl Temp.Table.enter' Temp.Table.empty tempRegisterPair
 

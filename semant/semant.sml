@@ -276,7 +276,7 @@ fun transDec (level, loopEnd, exps, venv, tenv,
     end
     
 and transDecs (level, loopEnd, venv, tenv, decs) =
-    foldr (fn (dec, {venv, tenv, exps}) => 
+    foldl (fn (dec, {venv, tenv, exps}) => 
 	      transDec (level, loopEnd, exps, venv, tenv, dec))
 	  {venv=venv,tenv=tenv, exps=[]}
 	  decs
