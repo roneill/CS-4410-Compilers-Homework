@@ -17,7 +17,9 @@ sig
 
     structure Table : TABLE 
     sharing type Table.key = node
-
+			     
+    val compare: node * node -> order
+	
     val nodename: node->string  (* for debugging only *)
-
+    
 end

@@ -32,6 +32,7 @@ Group is
 ./liveness/liveness.sml
 ./regalloc/regalloc.sml
 ./regalloc/color.sml
+./regalloc/moves.sml
 ./compiler.sml
 $/ml-yacc-lib.cm
 $/smlnj-lib.cm

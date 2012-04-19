@@ -76,5 +76,9 @@ struct
 
   fun nodename(g,i:int) = "n" ^ Int.toString(i)
 
+  fun compare ((g1, n1):node, (g2,n2):node) =
+      Int.compare(n1,n2)
+(*      if (g1 = g2) then Int.compare(n1,n2)
+      else ErrorMsg.impossible "Trying to compare nodes in different graphs"*)
 end
 

@@ -1,6 +1,7 @@
 signature LIVENESS =
 sig
     structure IGraph : GRAPH
+
     datatype igraph = 
 	 IGRAPH of {graph: IGraph.graph,
 		    tnode:Temp.temp -> IGraph.node,
@@ -19,24 +20,10 @@ struct
 		     
 structure Flow = Flow
 structure T = Flow.Graph.Table
-structure S = Flow.Set
 structure IGraph = Graph
+
 exception TempNotFound
 		   
-(* Move hash table to check for duplicates in the move list *)
-structure MoveTable =
-BinaryMapFn
-    (struct
-	 type ord_key = (Temp.temp * Temp.temp)
-	 val compare = (fn ((l1,l2),(r1,r2)) =>
-			   case Temp.compareTemps(l1,r1)
-			    of LESS => LESS
-			     | GREATER => GREATER
-			     | EQUAL => case Temp.compareTemps(l2,r2)
-					 of LESS => LESS
-					  | GREATER => GREATER
-					  | EQUAL => EQUAL)
-     end)
 
 datatype igraph = 
 	 IGRAPH of {graph: IGraph.graph,
@@ -58,7 +45,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 		val liveSetstr = String.concat 
 				     (map (fn temp => 
 					      (Temp.makestring temp)^" ") 
-					  (S.listItems liveset))
+					  (Flow.Set.listItems liveset))
 	    in sayln (nodestr^": {"^liveSetstr^"} ") 
 	    end 
 	(*Debug printing*)
@@ -152,14 +139,10 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 							  (IGraph.nodename node)
 							  ^" not in temp table")
 	val moves = ref []
-	val moveTable = ref MoveTable.empty
+	val moveTable = ref Move.Table.empty
 	fun inMoveTable (t1,t2) =
 	    let 
-		val entry = case Temp.compareTemps(t1,t2)
-			     of LESS => MoveTable.find(!moveTable, (t1,t2)) 
-			      | GREATER => MoveTable.find(!moveTable, (t2,t1))
-			      | EQUAL => ErrorMsg.impossible 
-					     "Temps should not be equal here"
+		val entry = Move.Table.find(!moveTable, (t1,t2)) 
 	    in
 		case entry
 		 of SOME _ => true
@@ -170,8 +153,9 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 		val defs = getOpt(T.look(def, fnode), [])
 		val liveSet = getOpt(T.look(liveMap, fnode), Flow.Set.empty)
 		val ismovep = getOpt(T.look(ismove, fnode), false) 
-		fun moveusep temp =
+		fun moveusep node =
 		    let
+			val temp = gtemp node
 			val uses = list2set(getOpt((T.look(use, fnode)), []))
 		    in
 			Flow.Set.member(uses, temp)
@@ -188,21 +172,17 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 			val n2 = tnode(t2)
 		    in
 			if t1=t2 orelse nodesAdj(n1, n2) then ()
-			else if (ismovep andalso (moveusep t2))
-			then makeMove(t1,t2)
+			else if (ismovep andalso (moveusep n2))
+			then makeMove(n1,n2)
 			else IGraph.mk_edge{from=n1, to=n2}
 		    end
-		and makeMove (t1, t2) =
-		    if (ismovep andalso (moveusep t2) andalso 
-			not(inMoveTable(t1,t2)))
+		and makeMove (n1, n2) =
+		    if (ismovep andalso (moveusep n2) andalso 
+			not(inMoveTable(n1,n2)))
 		    then
-			let
-			    val n1 = tnode(t1)
-			    val n2 = tnode(t2)
-			in
-			    moves := (n1, n2)::(!moves);
-			    moveTable := MoveTable.insert(!moveTable, (t1,t2), ())
-			end
+			(moves := (n1, n2)::(!moves);
+			 moveTable := Move.Table.insert(!moveTable, (n1, n2), ());
+			 moveTable := Move.Table.insert(!moveTable, (n2, n1), ()))
 		    else ()
 			
 	    in

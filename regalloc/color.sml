@@ -14,15 +14,31 @@ structure Color : COLOR =
 struct
     structure Frame = MipsFrame
     structure IGraph = Liveness.IGraph
-		       
-    type allocation = Frame.register Temp.Table.table
+    structure MoveSet = ListSetFn (struct type ord_key = Move.move
+				      val compare = Move.compareMoves
+			       end)
+    structure RegTable = BinaryMapFn(struct
+				 type ord_key = Frame.register
+				 val compare = String.compare
+				 end)
+		     
 
-structure RegTable = BinaryMapFn(struct
-				     type ord_key = Frame.register
-				     val compare = String.compare
-				     end)
-		      
+		    
+    type allocation = Frame.register Temp.Table.table
+    datatype worklists = WKL of
+	     {selectStack: IGraph.node list,
+	      coalecsedNodes: IGraph.node list,
+	      degreeTable: int IGraph.Table.table,
+	      adjTable: IGraph.node list IGraph.Table.table,
+	      moveTable: MoveSet.set IGraph.Table.table,
+	      simplifyWL: IGraph.node list,
+	      spillWL: IGraph.node list,
+	      freezeWL: IGraph.node list,
+	      activeMoves: MoveSet.set,
+	      workListMoves: MoveSet.set}
+	     
     val numregs = length Frame.registers
+    (*TODO use SML set functors and replace all these functions*)
     fun union (l1, l2) =
 	let
 	    val table = foldl (fn (n,t) => IGraph.Table.enter'((n,()),t))
@@ -79,45 +95,15 @@ structure RegTable = BinaryMapFn(struct
 	end
 		   
     fun push (nodes, node) = node::nodes		    
-    fun pop nil = ErrorMsg.impossible "Worklist is empty"
+    fun pop nil = ErrorMsg.impossible "WL is empty"
       | pop (node::tail) = (tail, node)
-    fun degreeInvariant (simplifyWorklist, spillWorklist, precolored, adjList, degree) = 
-	let
-	    fun check node =
-		let
-		    val un =  union(spillWorklist,
-				    union(precolored, simplifyWorklist))
-		    val int = intersect(adjList(node), un)
-		in
-		    if degree(node) = length (int) then ()
-		    else ErrorMsg.impossible
-			     "Degree invariant did not hold!"
-		end 
-	in
-	    app check simplifyWorklist
-	end
-
-    fun simplifyWorklistInvariant (simplifyWorklist, degree) =
-	let
-	    fun check node =
-		if degree(node) < numregs then ()
-		else ErrorMsg.impossible
-			 "SimplifyWorklist invariant did not hold!"
-	in
-	    app check simplifyWorklist
-	end
-    fun spillWorklistInvariant (spillWorklist, degree) =
-	app (fn node => if degree(node) >= numregs
-			then ()
-			else ErrorMsg.impossible
-				 "SpillWorklist invariant did not hold!")
-	    spillWorklist
+    
     val str = Int.toString
     fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 	       initial, spillCost, registers } =
 	let
 	    (*
-	     simplifyWorklist: nodeSet
+	     simplifyWL: nodeSet
              adjSet: (node * node) Set
              adjList: node -> node list
              degree: node -> int
@@ -129,68 +115,105 @@ structure RegTable = BinaryMapFn(struct
 		  | NONE => ErrorMsg.impossible
 				"Key not found in table"
 	    fun enter table (key,value) = IGraph.Table.enter(table, key, value) 
-	    fun build () =
-		let
-		    val nodes = IGraph.nodes graph
-		    val precolored = foldl (fn (reg, nodes) =>
-					       tnode(reg)::nodes
-					       handle TempNotFound => nodes)
-					   [] Frame.registersAsTemps
-		    val uncolored = difference(nodes,
-					       precolored)
-		    val adjTable = foldl (fn (node, table) => 
-					     IGraph.Table.enter(table,
-								node,
-								(IGraph.adj node)))
-					 IGraph.Table.empty
-					 nodes
-		    (*Precolored nodes have infinite degree*)
-		    val precoloredTable = foldl (fn (node, table) =>
-						let
-						    val degree = 100000000
-						in
-						    IGraph.Table.enter(table,
-								       node,
-								       degree)
-						end)
-				      IGraph.Table.empty
-				      precolored
-		    val degreeTable = foldl (fn (node, table) =>
-						let
-						    val degree =
-							length (lookup adjTable node)
-						in
-						    IGraph.Table.enter(table,
-								       node,
-								       degree)
-						end)
-				      precoloredTable
-				      uncolored
-				      
+
+	    val nodes = IGraph.nodes graph
+	    val precolored = foldl (fn (reg, nodes) =>
+				       tnode(reg)::nodes
+				       handle TempNotFound => nodes)
+				   [] Frame.registersAsTemps
+	    val uncolored = difference(nodes,
+				       precolored)
+	    val adjTable =
+		foldl (fn (node, table) => 
+			  IGraph.Table.enter(table,
+					     node,
+					     (IGraph.adj node)))
+		      IGraph.Table.empty
+		      nodes
+	    val emptyMovesTable(*: Move.move list IGraph.Table.table*) = IGraph.Table.empty
+	    val moveTable =
+		foldl (fn (move as (n1,n2), table) =>
+			  let
+			      val table' =
+				  case IGraph.Table.look(table, n1)
+				   of SOME moves => 
+				      IGraph.Table.enter
+					  (table, n1, MoveSet.add(moves, move))
+				    | NONE => IGraph.Table.enter
+						  (table, n1,
+						   MoveSet.singleton(move))
+			      val table'' =
+				  case IGraph.Table.look(table, n2)
+				   of SOME moves => 
+				      IGraph.Table.enter
+					  (table, n2, MoveSet.add(moves, move))
+				    | NONE => IGraph.Table.enter
+						  (table, n2,
+						   MoveSet.singleton(move))
+			  in
+			      table''
+			  end)
+		      IGraph.Table.empty
+		      moves
+	    val aliasTable = IGraph.Table.empty
+	    val activeMoves = MoveSet.empty
+	    val workListMoves = MoveSet.empty
+	    val coalescedNodes = []
+	    fun nodeMoves (activeMoves, workListMoves, moveTable)
+			  node =
+		let  
+		    val moves = lookup moveTable node
+		    val un = MoveSet.union(activeMoves, workListMoves)
 		in
-		    {igraph=interference,
-		     precolored=precolored,
-		     uncolored=uncolored,
-		     adjTable=adjTable,
-		     degreeTable=degreeTable}
-		end	
-	    val {igraph,
-		 precolored,
-		 uncolored,
-		 adjTable,
-		 degreeTable} = build()
-				
-	    fun makeWorklist (uncolored) =
-		let
-		    fun iterate (nil, simplifyWorklist, spillWorklist) =
-			(simplifyWorklist, spillWorklist)
-		      | iterate (head::tail, simplifyWorklist, spillWorklist) =
-			if lookup degreeTable head >= numregs
-			then iterate(tail, simplifyWorklist, head::spillWorklist)
-			else iterate(tail, head::simplifyWorklist, spillWorklist)
-		in
-		    iterate(uncolored, [], [])
+		    MoveSet.intersection (moves, un)
 		end
+		
+	    fun moveRelated (activeMoves, workListMoves, moveTable)
+			    node =
+		let
+		    val nmoves = nodeMoves (activeMoves, workListMoves, moveTable) node
+		in
+		    MoveSet.isEmpty(nmoves)
+		end
+		
+	    (*Precolored nodes have infinite degree*)
+	    val precoloredTable = foldl (fn (node, table) =>
+					    let
+						val degree = 100000000
+					    in
+						IGraph.Table.enter(table,
+								   node,
+								   degree)
+					    end)
+					IGraph.Table.empty
+					precolored
+					
+	    val degreeTable = foldl (fn (node, table) =>
+					let
+					    val degree =
+						length (lookup adjTable node)
+					in
+					    IGraph.Table.enter(table,
+							       node,
+							       degree)
+					end)
+				    precoloredTable
+				    uncolored
+				    
+	    fun makeWorklist (uncolored) = 
+		let
+		    fun iterate (nil, simplifyWL, spillWL, freezeWL) =
+			(simplifyWL, spillWL, freezeWL)
+		      | iterate (head::tail, simplifyWL, spillWL, freezeWL) =
+			if lookup degreeTable head >= numregs
+			then iterate(tail, simplifyWL, head::spillWL, freezeWL)
+			else if moveRelated (activeMoves, workListMoves, moveTable) head
+			then iterate(tail, simplifyWL, spillWL, head::freezeWL)
+			else iterate(tail, head::simplifyWL, spillWL, freezeWL)
+		in
+		    iterate(uncolored, [], [], [])
+		end
+		
 	    fun print (name, workList) =
 		let
 		    fun str node =
@@ -199,71 +222,188 @@ structure RegTable = BinaryMapFn(struct
 		in
 		    ErrorMsg.error 2 ("The "^name^" worklist string is: " ^ workListString)
 		end
-	    val (simplifyWorklist, spillWorklist) = makeWorklist(uncolored)
-	    val _ = print ("Simplify", simplifyWorklist)
-	    val _ = print ("Spill", spillWorklist)
-	    fun adjacent (node, selectStack) = difference(lookup adjTable node,
-							  selectStack)
-	    fun decrementDegree (node, degreeTable, simplifyWorklist, spillWorklist) =
+		
+	    val (simplifyWL, spillWL, freezeWL) = makeWorklist(uncolored)
+	    val _ = print ("Simplify", simplifyWL)
+	    val _ = print ("Spill", spillWL)
+		    
+	    fun adjacent (selectStack, coalescedNodes, adjTable) node =
+		difference(lookup adjTable node,
+			   union(selectStack, coalescedNodes))
+		
+	    fun enableMoves (activeMoves, workListMoves, moveTable) nodes =
+		let 
+		    fun enableMove (node,(activeMoves, workListMoves)) =
+			let val moves = nodeMoves (activeMoves, workListMoves, moveTable) node
+			in 
+			    MoveSet.foldl (fn (m, (activeMoves, workListMoves)) =>
+				      if MoveSet.member(activeMoves, m)
+				      then (MoveSet.delete(activeMoves, m),
+					    MoveSet.add(workListMoves, m))
+				      else (activeMoves, workListMoves))
+				  (activeMoves, workListMoves) moves
+			end
+		in
+		    foldl enableMove (activeMoves, workListMoves) nodes
+		end 
+	    fun decrementDegree  ({selectStack,
+				      coalescedNodes,
+				      degreeTable,
+				      moveTable,
+				      adjTable,
+				      simplifyWL,
+				      spillWL,
+				      freezeWL,
+				      activeMoves,
+				      workListMoves}) node =
 		let
+		    val adjNodes = adjacent (selectStack, coalescedNodes, adjTable) node
 		    val d = lookup degreeTable node
 		    val degreeTable' = enter degreeTable (node, d-1)
-		    val (simplifyWorklist', spillWorklist') =
+		    val (simplifyWL',
+			 spillWL',
+			 freezeWL',
+			 (activeMoves',
+			  workListMoves')) =
 			if d = numregs
-			then (union(simplifyWorklist, [node]),
-			      difference(spillWorklist, [node]))
-			else (simplifyWorklist, spillWorklist)
+			then if moveRelated (activeMoves, workListMoves, moveTable) node
+			     then (simplifyWL,
+				   difference(spillWL, [node]),
+				   push(freezeWL, node),
+				   enableMoves (activeMoves, workListMoves, moveTable)
+					       (node::adjNodes))
+			     else (union(simplifyWL, [node]),
+				   difference(spillWL, [node]),
+				   freezeWL,
+				   enableMoves (activeMoves, workListMoves, moveTable)
+					      (node::adjNodes))
+			else (simplifyWL, spillWL,freezeWL,(activeMoves, workListMoves))
 		in
-		    (degreeTable', simplifyWorklist', spillWorklist')
-		end 
-	    fun simplify (selectStack, simplifyWorklist, spillWorklist, degreeTable) =
+		    {selectStack=selectStack,
+		     coalescedNodes=coalescedNodes,
+		     degreeTable=degreeTable',
+		     moveTable=moveTable,
+		     adjTable=adjTable,
+		     simplifyWL=simplifyWL',
+		     spillWL=spillWL',
+		     freezeWL=freezeWL',
+		     activeMoves=activeMoves',
+		     workListMoves=workListMoves'}
+		end
+		
+	    fun simplify (worklists as {selectStack,
+					coalescedNodes,
+					degreeTable,
+					moveTable,
+					adjTable,
+					simplifyWL,
+					spillWL,
+					freezeWL,
+					activeMoves,
+					workListMoves}) =
 		let
-		    val (simplifyWorklist', n) = pop simplifyWorklist
+		    val (simplifyWL', n) = pop simplifyWL
 		    val selectStack' = push(selectStack, n)
-		    val adjNodes = adjacent(n, selectStack')
-		    val (degreeTable', simplifyWorklist', spillWorklist') =
-			foldl (fn (n, (d,s, swl)) => decrementDegree (n, d, s, swl))
-			  (degreeTable, simplifyWorklist', spillWorklist)
+		    val adjNodes = adjacent (selectStack, coalescedNodes, adjTable) n
+		    val {degreeTable=degreeTable', simplifyWL=simplifyWL'',
+			 spillWL=spillWL', freezeWL=freezeWL',
+			 activeMoves=activeMoves', workListMoves=workListMoves', ...} =
+			foldl (fn (node, worklists) =>
+				  (decrementDegree worklists node))
+			  worklists
 			  adjNodes
 		in
-		    (selectStack', simplifyWorklist', spillWorklist', degreeTable')
+		    {selectStack=selectStack',
+		     coalescedNodes=coalescedNodes,
+		     degreeTable=degreeTable',
+		     moveTable=moveTable,
+		     adjTable=adjTable,
+		     simplifyWL=simplifyWL'',
+		     spillWL=spillWL',
+		     freezeWL=freezeWL',
+		     activeMoves=activeMoves',
+		     workListMoves=workListMoves'}
 		end
-	    fun selectSpill (selectStack, simplifyWorklist, spillWorklist, degreeTable) =
+	    fun selectSpill ({selectStack,
+			      coalescedNodes,
+			      degreeTable,
+			      moveTable,
+			      simplifyWL,
+			      adjTable,
+			      spillWL,
+			      freezeWL,
+			      activeMoves,
+			      workListMoves}) =
 		let
 		    (* TODO: we should call spill cost *)
-		    val (spillWorklist', node) = pop spillWorklist
-		    val simplifyWorklist' = push(simplifyWorklist, node)
+		    val (spillWL', node) = pop spillWL
+		    val simplifyWL' = push(simplifyWL, node)
 		in
-		    (selectStack, simplifyWorklist', spillWorklist', degreeTable)
+		    {selectStack=selectStack,
+		     coalescedNodes=coalescedNodes,
+		     degreeTable=degreeTable,
+		     moveTable=moveTable,
+		     adjTable=adjTable,
+		     simplifyWL=simplifyWL',
+		     spillWL=spillWL',
+		     freezeWL=freezeWL,
+		     activeMoves=activeMoves,
+		     workListMoves=workListMoves}
 		end
-	    fun loop (selectStack, simplifyWorklist, spillWorklist, degreeTable) =
+	    fun loop (worklists as {selectStack,
+				       simplifyWL,
+				       spillWL,
+				       freezeWL,
+				       workListMoves, ...}) =
 		let
-		    val _ = print ("Simplify2", simplifyWorklist)
-		    val _ = print ("Spill2", spillWorklist)
+		    val _ = print ("Simplify2", simplifyWL)
+		    val _ = print ("Spill2", spillWL)
 		    val _ = print ("Select2", selectStack)
-		    val (selectStack', simplifyWorklist',
-			 spillWorklist', degreeTable') =
-			if not (null simplifyWorklist)
-			then simplify(selectStack,
-				      simplifyWorklist,
-				      spillWorklist,
-				      degreeTable)
-			else if not (null spillWorklist)
-			then selectSpill(selectStack,
-					 simplifyWorklist,
-					 spillWorklist,
-					 degreeTable)
-			else (selectStack, simplifyWorklist,
-			      spillWorklist, degreeTable)			
+		    val worklists' =
+			if not (null simplifyWL)
+			then simplify worklists
+			else if not (null spillWL)
+			then selectSpill worklists
+			else worklists
+			     
+		    val {simplifyWL=simplifyWL',
+			 spillWL=spillWL',
+			 freezeWL=freezeWL',
+			 workListMoves=worklistMoves',
+			 selectStack=selectStack', ...} = worklists'
 		in
-		    if (null simplifyWorklist) andalso
-		       (null spillWorklist)
+		    if (null simplifyWL') andalso
+		       (null spillWL') andalso
+		       (null freezeWL') andalso
+		       (MoveSet.isEmpty workListMoves)
 		    then selectStack'
-		    else loop(selectStack', simplifyWorklist',
-			      spillWorklist' , degreeTable')
-		end
-	    val selectStack = loop([], simplifyWorklist,
-				   spillWorklist, degreeTable)
+		    else loop worklists'
+		end		    
+		
+	    val initWorklist =  {selectStack = [],
+				coalescedNodes=coalescedNodes,
+				degreeTable=degreeTable,
+				moveTable=moveTable,
+				 adjTable=adjTable,
+				simplifyWL=simplifyWL,
+				spillWL=spillWL,
+				freezeWL=freezeWL,
+				activeMoves=activeMoves,
+				workListMoves=workListMoves}
+		
+	    val selectStack = loop initWorklist
+(*
+	    fun updateRecord {selectStack
+			      coalescedNodes
+			      degreeTable
+			      moveTable
+			      simplifyWL
+			      spillWL
+			      freezeWL
+			      activeMoves
+			      workListMoves} =
+		case *)
+					      
 	    val _ = print ("Select", selectStack)
 	    fun assignColors (selectStack) =
 		let
@@ -298,15 +438,64 @@ structure RegTable = BinaryMapFn(struct
 		    loop(selectStack, initial, [])
 		end
 	    val (coloring, spilledNodes) = assignColors(selectStack)
+	    fun check (activeMoves, workListMoves, moveList, degree) node =
+		let
+		    val deg = degree(node)
+		    val moves = moveList(node)
+		    val un = MoveSet.union(workListMoves, activeMoves)
+		    val int = MoveSet.intersection(moves, un)
+		in
+		    if (deg < numregs) andalso (MoveSet.isEmpty int) then ()
+		    else ErrorMsg.impossible
+			     "SimplifyWL invariant did not hold!"
+		end
+
 	    val spilledTemps = map gtemp spilledNodes 
-	    val _ = degreeInvariant (simplifyWorklist,
-				     spillWorklist,
+	
+	    fun simplifyWLInvariant (simplifyWL, activeMoves, workListMoves, moveList, degree)  =
+		app (check (activeMoves, workListMoves, moveList, degree)) simplifyWL
+
+	    fun freezeWLInvariant (freezeWL, activeMoves, workListMoves, moveList, degree) =
+		app (check (activeMoves, workListMoves, moveList, degree)) freezeWL
+	
+	    fun spillWLInvariant (spillWL, degree) =
+		app (fn node => if degree(node) >= numregs
+				then ()
+				else ErrorMsg.impossible
+					 "SpillWL invariant did not hold!")
+		    spillWL
+	    fun degreeInvariant (simplifyWL, spillWL, freezeWL,
+				 precolored, adjList, degree) = 
+		let
+		    fun check node =
+			let
+			    val un =  union(freezeWL,
+					    union(spillWL,
+						  union(precolored,
+							simplifyWL)))
+			    val int = intersect(adjList(node), un)
+			in
+			    if degree(node) = length (int) then ()
+			    else ErrorMsg.impossible
+				     "Degree invariant did not hold!"
+			end 
+		in
+		    app check simplifyWL
+		end
+
+	    val _ = degreeInvariant (simplifyWL,
+				     spillWL,
+				     freezeWL,
 				     precolored,
 				     lookup adjTable,
 				     lookup degreeTable)
-	    val _ = simplifyWorklistInvariant (simplifyWorklist,
-					       lookup degreeTable)
-	    val _ = spillWorklistInvariant(spillWorklist, lookup degreeTable)
+	    val _ = simplifyWLInvariant (simplifyWL, activeMoves, workListMoves,
+					 lookup moveTable,
+					 lookup degreeTable)
+	    val _ = freezeWLInvariant (freezeWL, activeMoves, workListMoves,
+				       lookup moveTable,
+				       lookup degreeTable)
+	    val _ = spillWLInvariant(spillWL, lookup degreeTable)
 	    val _ = ErrorMsg.error 1 "Got to the end"
 	in
 	    (*Temporary*)
