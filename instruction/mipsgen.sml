@@ -156,6 +156,11 @@ fun codegen frame stm =
 			  src=munchExp(e)::munchArgs(args),
 			  dst=calldefs,
 			  jump=NONE})
+	   | munchStm(T.EXP(e)) =
+	     emit (A.OPER{assem="\n",
+			  src=[munchExp(e)],
+			  dst=[],
+			  jump=NONE})
 	   | munchStm (T.LABEL lab) =
 	     emit (A.LABEL {assem=Temp.toString(lab) ^ ":\n", lab=lab })
 	   | munchStm x = (Printtree.printtree (TextIO.stdOut, x);

@@ -30,6 +30,7 @@ fun emitproc out (Frame.PROC{body,frame}) =
     let
 	(*val _ = TextIO.output(out, (Temp.toString(Frame.name frame) ^ "\n"))*)
 	         (*val _ = Printtree.printtree(out,body); *)
+	val _ = printIR()
 	 val stms = Canon.linearize body
 	         (*val _ = app (fn s => Printtree.printtree(out,s)) stms;*)
          val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
@@ -37,13 +38,13 @@ fun emitproc out (Frame.PROC{body,frame}) =
 	 (*TEMPORARY HACK append the exit syscall to the end of instruction list*)
 	 val instrs' = Frame.procEntryExit2(frame, instrs)
 	 (*val instrs'' = instrs'@[Mips.exit]*)
-	 val(instrs'', allocation) = RegAlloc.alloc(instrs', frame)
-         val format0 = Assem.format((fn t => case Temp.Table.look (allocation, t)
+	 (*val(instrs'', allocation) = RegAlloc.alloc(instrs', frame)*)
+         (*val format0 = Assem.format((fn t => case Temp.Table.look (allocation, t)
 					      of SOME reg => reg
-					       | NONE => ErrorMsg.impossible "Temp was not colored"))
-	 (*val format0 = Assem.format(Frame.tempToString)*)
+					       | NONE => ErrorMsg.impossible "Temp was not colored"))*)
+	 val format0 = Assem.format(Frame.tempToString)
     in
-	app (fn i => TextIO.output(out,format0 i)) instrs''
+	app (fn i => TextIO.output(out,format0 i)) instrs'
     end
   | emitproc out (Frame.STRING(lab,s)) =()(* TextIO.output(out,Frame.string(lab,s))*)
 
