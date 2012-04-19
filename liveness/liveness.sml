@@ -21,7 +21,8 @@ struct
 structure Flow = Flow
 structure T = Flow.Graph.Table
 structure IGraph = Graph
-
+structure Move = NodePair
+		 
 exception TempNotFound
 		   
 
