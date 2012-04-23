@@ -133,6 +133,9 @@ fun alloc (instrs, frame) =
 	val (fgraph, nodes) = MakeGraph.instrs2graph instrs
 	val (igraph as Liveness.IGRAPH{graph, tnode, gtemp, moves}, liveMap) = Liveness.interferenceGraph fgraph
 	val _ = Liveness.show(TextIO.stdOut, igraph)
+	val format0 = Assem.format(Frame.tempToString)
+	val _ = ErrorMsg.error 2 "Original: "
+	val _ = app (fn i => TextIO.output(TextIO.stdOut,format0 i)) instrs
 	val (allocation, spills) = Color.color {interference = igraph,
 						initial = Frame.tempMap,
 						spillCost = (fn n => 1),

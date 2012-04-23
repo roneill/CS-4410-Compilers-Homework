@@ -101,6 +101,11 @@ fun codegen frame stm =
 	     emit(A.OPER {assem="addi `d0, `s0, -"^(str (i))^"\n",
 			  src=[munchExp e2],
 			  dst=[munchExp e1], jump=NONE})
+	   | munchStm (T.MOVE(e1, (T.BINOP(binop, e2, e3)))) =
+	     emit(A.OPER {assem=binopInstr(binop)^" `d0, `s0, `s1\n",
+			  src=[munchExp e2, munchExp e3],
+			  dst=[munchExp e1], jump=NONE})
+
 	   | munchStm(T.MOVE(T.TEMP t1, T.TEMP t2)) =
 	     emit (A.MOVE{assem="move `d0, `s0\n",
 			      dst=t1,
@@ -110,9 +115,9 @@ fun codegen frame stm =
 			      dst=[t1],
 			      src=[], jump=NONE})
 	   | munchStm (T.MOVE(T.TEMP i, e2)) =
-	     emit (A.OPER {assem="move `d0, `s0\n",
-			   src=[munchExp e2],
-			   dst=[i],jump=NONE})
+	     emit (A.MOVE {assem="move `d0, `s0\n",
+			   src=munchExp e2,
+			   dst=i})
 
 	   | munchStm(T.JUMP (T.NAME l,labels)) =
 	     emit (A.OPER {assem="j `j0\n",

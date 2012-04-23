@@ -139,16 +139,41 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 			   | NONE => ErrorMsg.impossible ("Node "^
 							  (IGraph.nodename node)
 							  ^" not in temp table")
-	val moves = ref []
 	val moveTable = ref Move.Table.empty
-	fun inMoveTable (t1,t2) =
-	    let 
-		val entry = Move.Table.find(!moveTable, (t1,t2)) 
+	fun inMoveTable (n1,n2) =
+	    let
+		val entry = Move.Table.find(!moveTable, (n1,n2)) 
 	    in
 		case entry
 		 of SOME _ => true
 		  | NONE => false
 	    end
+	fun makeMoves (fnode, moves) =
+	    if getOpt(T.look(ismove, fnode), false)
+	    then
+		let 
+		    val def = case (T.look(def, fnode))
+			       of SOME defs => hd defs
+				| NONE => ErrorMsg.impossible
+					      "Flow graph node uses not filled in"
+		    val use = case (T.look(use, fnode))
+			       of SOME uses => hd uses
+				| NONE => ErrorMsg.impossible
+					      "Flow graph node uses not filled in"
+		    val n1 = tnode def
+		    val n2 = tnode use
+		in
+		    if not(IGraph.eq(n1,n2))
+		    then
+			(Error.error 2 "adding move";
+			 moveTable := Move.Table.insert(!moveTable, (n1, n2), ());
+			 moveTable := Move.Table.insert(!moveTable, (n1, n2), ());
+			(n1,n2)::moves)
+		    else (moves)
+		end
+	    else moves
+	val moves = foldl makeMoves [] nodes
+
 	fun makeEdges (fnode) = 
 	    let
 		val defs = getOpt(T.look(def, fnode), [])
@@ -174,18 +199,9 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 		    in
 			if t1=t2 orelse nodesAdj(n1, n2) then ()
 			else if (ismovep andalso (moveusep n2))
-			then makeMove(n1,n2)
+			then ()
 			else IGraph.mk_edge{from=n1, to=n2}
-		    end
-		and makeMove (n1, n2) =
-		    if (ismovep andalso (moveusep n2) andalso 
-			not(inMoveTable(n1,n2)))
-		    then
-			(moves := (n1, n2)::(!moves);
-			 moveTable := Move.Table.insert(!moveTable, (n1, n2), ());
-			 moveTable := Move.Table.insert(!moveTable, (n2, n1), ()))
-		    else ()
-			
+		    end	
 	    in
 		app (fn def =>
 			(app (fn live =>
@@ -193,11 +209,12 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 			     (Flow.Set.listItems liveSet)))
 		    defs
 	    end
+	    
 	val _ = app makeEdges nodes
 	fun fnode2temps fnode =
 	    (Flow.Set.listItems (getOpt(T.look(liveMap, fnode), Flow.Set.empty)))
     in
-	(IGRAPH {graph=graph, tnode=tnode, gtemp=gtemp, moves=(!moves)},
+	(IGRAPH {graph=graph, tnode=tnode, gtemp=gtemp, moves=moves},
 	 fnode2temps)
     end 
 
@@ -223,6 +240,15 @@ fun show (outstream,IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}) 
 	    end
 	val _ = app printNode nodes
 	val _ = app (fn node => sayln (IGraph.nodename node)) nodes
+	fun printMoves (name, moves) =
+	    let
+		fun str (n1, n2) =
+		    String.concat ["(",(IGraph.nodename n1),",",IGraph.nodename n2,") "]
+		val workListString = String.concat (map str moves)
+	    in
+		ErrorMsg.error 2 ("The "^name^" is: " ^ workListString)
+	    end
+	val _ = printMoves ("Liveness Moves ",moves)
     in
 	()
     end

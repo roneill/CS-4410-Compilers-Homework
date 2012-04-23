@@ -133,7 +133,7 @@ fun instrs2graph instrs =
 			    assem^"def{"^(temps2str dst)^"}, use{"^(temps2str src)^"}, "
 			end
 		      | A.MOVE {assem, src, dst} =>
-			assem^", def{ "^(MipsFrame.tempToString dst)^"}, use{ "^(MipsFrame.tempToString src)^"}, "  
+			assem^"MOVE, def{ "^(MipsFrame.tempToString dst)^"}, use{ "^(MipsFrame.tempToString src)^"}, "  
 		      | _ => "Label"
 		val nodeString = Graph.nodename(node)
 		val succ = Graph.succ(node)

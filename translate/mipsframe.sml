@@ -76,6 +76,7 @@ val callersaves = RV0::RV1::getTemps(10)
 
 val tempRegisterPair =  [(ZERO, "$zero"),
 			 (FP, "$fp"),
+			 (RV0, "$v0"),
 			 (SP, "$sp"),
 			 (RA, "$ra"),
 			 (GP, "$gp"),
