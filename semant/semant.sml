@@ -213,14 +213,15 @@ fun transDec (level, loopEnd, exps, venv, tenv,
 	fun enterFunHeader ({name,params,body,pos,result}, venv) =
 	    let 
 		val formals = map (fn p => !(#escape p)) params
+		val label = Temp.newlabel()
 		val level' = Tr.newLevel{parent=level, 
-					 name=Temp.newlabel(), 
+					 name=label, 
 					 formals=formals}
 		val result_ty = getResultTy result
 		val params' = map transparam params
 	    in
 		S.enter(venv, name, Env.FunEntry{level=level', 
-						 label=Temp.newlabel(),
+						 label=label,
 						 formals= map #ty params',
 						 result=result_ty})
 	    end

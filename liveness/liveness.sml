@@ -178,14 +178,9 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 	    let
 		val defs = getOpt(T.look(def, fnode), [])
 		val liveSet = getOpt(T.look(liveMap, fnode), Flow.Set.empty)
-		val ismovep = getOpt(T.look(ismove, fnode), false) 
-		fun moveusep node =
-		    let
-			val temp = gtemp node
-			val uses = list2set(getOpt((T.look(use, fnode)), []))
-		    in
-			Flow.Set.member(uses, temp)
-		    end
+		val ismove = getOpt(T.look(ismove, fnode), false) 
+		fun inliveSetp temp = Flow.Set.member(liveSet, temp)
+
 		fun nodesAdj (n1, n2) =
 		    let
 			val adj1 = IGraph.adj n1
@@ -197,8 +192,9 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 			val n1 = tnode(t1)
 			val n2 = tnode(t2)
 		    in
-			if t1=t2 orelse nodesAdj(n1, n2) then ()
-			else if (ismovep andalso (moveusep n2))
+			if t1=t2 orelse nodesAdj(n1, n2) 
+			then ()
+			else if (ismove ) andalso (inliveSetp t2)
 			then ()
 			else IGraph.mk_edge{from=n1, to=n2}
 		    end	

@@ -469,8 +469,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		val _ = ErrorMsg.error 2 "In combine"
 		fun addEdge (degreeTable, adjTable, adjSetTable) (u, v) =
 		    let
-			val inAdjSet = inAdjSet adjSetTable
-			val adjSetTable = if not (inAdjSet (u,v)) andalso
+			val adjSetTable = if not (inAdjSet adjSetTable (u,v)) andalso
 					      not (IGraph.eq (u,v))
 					   then Adj.Table.insert(adjSetTable, (u,v), ())
 					   else adjSetTable
@@ -775,8 +774,11 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 			 coalescedMoves=coalescedMoves} 
 		    end
 		else if (member precolored v) orelse
-			inAdjSet adjSetTable (u,v)
+			(inAdjSet adjSetTable (u,v))
 		then let
+			val _ = ErrorMsg.error 2 ("Constrain due to "^(if (member precolored v)
+								       then "precolored"
+								       else "adjacent")^String.concat ["(",(IGraph.nodename u),",",IGraph.nodename v,") "])
 			val constrainedMoves = MoveSet.add(constrainedMoves, m)
 			val (freezeWL, simplifyWL) = addWorklist (freezeWL, simplifyWL, degreeTable) u
 			val (freezeWL, simplifyWL) = addWorklist (freezeWL, simplifyWL, degreeTable) v
@@ -913,11 +915,11 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		    then selectSpill worklists
 		    else worklists
 			 
-		val {simplifyWL=simplifyWL,
-		     spillWL=spillWL,
-		     freezeWL=freezeWL,
-		     workListMoves=workListMoves,
-		     selectStack=selectStack, ...} = worklists
+		val {simplifyWL,
+		     spillWL,
+		     freezeWL,
+		     workListMoves,
+		     selectStack, coalescedNodes, aliasTable, ...} = worklists
 
 	    in
 		if (null simplifyWL) andalso
@@ -1053,6 +1055,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 				     workListMoves,
 				     lookupSet moveTable,
 				     lookup degreeTable)
+
 	val _ = freezeWLInvariant (freezeWL,
 				   activeMoves,
 				   workListMoves,
@@ -1123,6 +1126,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 	(*Temporary*)
 	(coloring, spilledTemps)
     end
+
 end
 
 

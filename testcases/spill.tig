@@ -19,7 +19,7 @@ let
 	var a17 := 0
 	var a18 := 0
 	var a19 := 0
-	/*var a20 := 0
+	var a20 := 0
 	var a21 := 0
 	var a22 := 0
 	var a23 := 0
@@ -30,7 +30,7 @@ let
 	var a28 := 0
 	var a29 := 0
 	var a30 := 0
-	var a31 := 0*/
+	var a31 := 0
 in
 	(while a0 < 10 do
 	 (a0 := a1+1;

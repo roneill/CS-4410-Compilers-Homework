@@ -6,14 +6,10 @@ structure T = Tree
 structure A = Assem
 structure Frame = MipsFrame	      
 
-(*TEMPORARY HACK append the exit syscall to the end of instruction list*)
-val exit = A.OPER {assem="li `d0, 10\nsyscall\n",
-    		   src=[],
-		   dst=[Frame.RV0],jump=NONE}
 
 fun codegen frame stm =
      let val ilist = ref nil
-	 val calldefs = Frame.RV0::Frame.RA::Frame.callersaves
+	 val calldefs = Frame.RV0::Frame.callersaves
 	 fun emit x = ilist := x :: !ilist
 	 fun str i = if (i < 0) 
 		     then "-"^(Int.toString (~i))
@@ -35,15 +31,12 @@ fun codegen frame stm =
 	     let
 		 val numArgs = length args
 		 val numArgRegs = length Frame.argregs
-		 val stackArgs = if (numArgs > numArgRegs)
-				 then (numArgRegs - numArgs)
-				 else (0)
 		 val growSP = "addi `d0, `d0, -"^
-			      (str (Frame.wordSize * stackArgs))^"\n"
+			      (str (Frame.wordSize * numArgs))^"\n"
 		 fun appendInstr(nil, _, assem) = assem
 		   | appendInstr(arg::tail, i, assem) =
 		     let
-			 val offset = ~(i-numArgRegs)*Frame.wordSize
+			 val offset = (i+1)*Frame.wordSize
 			 val copyToStack = "sw `s"^ str i ^", "^str (offset)^
 					   "(`d0)\n"
 			 val copyToReg  = "move `d"^(str (i+1))
@@ -54,9 +47,7 @@ fun codegen frame stm =
 			 else appendInstr(tail, i+1, copyToStack::assem)
 		     end
 		 val copyArgs = appendInstr(args, 0, nil)
-		 val copyArgs' = if (stackArgs > 0)
-				 then growSP::copyArgs
-				 else copyArgs
+		 val copyArgs' = growSP::copyArgs
 		 val assembly = String.concat(copyArgs')
 		 val _ = emit (A.OPER {assem=assembly,
     				       src=map munchExp args,
