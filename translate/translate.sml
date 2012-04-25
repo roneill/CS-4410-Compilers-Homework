@@ -260,12 +260,13 @@ fun ifExp (exp1, exp2, exp3) =
 		val exp3' = unEx exp3
 	    in 		
 		Ex (T.ESEQ (seq[s(t,f), 
-			T.LABEL t, 
-			T.MOVE (T.TEMP r, exp2'),
-			T.LABEL f,
-			T.MOVE (T.TEMP r, exp3'),
-			T.LABEL join],
-		    T.TEMP r))
+				T.LABEL t, 
+				T.MOVE (T.TEMP r, exp2'),
+				T.JUMP (T.NAME join, [join]),
+				T.LABEL f,
+				T.MOVE (T.TEMP r, exp3'),
+				T.LABEL join],
+			    T.TEMP r))
 	    end
     in 
 	ifExp' (exp2, exp3)
