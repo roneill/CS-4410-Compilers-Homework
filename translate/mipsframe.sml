@@ -8,7 +8,7 @@ datatype access = InFrame of int | InReg of Temp.temp
 type frame = {name: Temp.label,
 	      frameOffset: int ref,
 	      formals: access list,
-	      params: Tree.stm}
+	      params: Tree.stm list}
 datatype frag = PROC of {body: Tree.stm, frame: frame}
 	      | STRING of Temp.label * string
 type register = string
@@ -143,7 +143,7 @@ fun newFrame {name, formals} =
 	val nums = List.tabulate ((length formals'), (fn x => x))
 	val pair = ListPair.zip (formals', nums)
 
-	val moves = map (fn (formal, n) =>
+	val params = map (fn (formal, n) =>
 			     let
 				 val loc = getInputArgument n
 				 val fp = T.TEMP FP
@@ -152,10 +152,6 @@ fun newFrame {name, formals} =
 			     end)
 		     pair
 
-	val params =
-	    case moves
-	     of nil => T.EXP(T.CONST 0)
-	      | head::tail => foldr (fn (stm, seq) => T.SEQ(stm, seq)) head tail
     in
 	{name=name, frameOffset= ref 0, formals=formals', params=params}
     end
@@ -182,7 +178,12 @@ fun procEntryExit1 ({name, frameOffset, formals, params}, body) =
 	val moveExitSeq = foldr (fn (stm, seq) => T.SEQ(stm, seq))
 				(hd moveExit)
 				(tl moveExit)
-	val body = T.SEQ(params,body)
+	val paramStm =
+	    case params
+	     of nil => T.EXP(T.CONST 0)
+	      | head::tail => foldr (fn (stm, seq) => T.SEQ(stm, seq)) head tail
+
+	val body = T.SEQ(paramStm,body)
 	val body = T.SEQ(moveEntrySeq, body)
 	val body = T.SEQ(body, moveExitSeq)
     in
@@ -201,13 +202,14 @@ fun procEntryExit3 ({name=name,
 		     params=params}, body) =
     let
 	val label = (Temp.toString name)^":\n"
-	val growSP = (if not (!offset = 0)
-		      then "addi $sp, $sp, " ^Int.toString (!offset)^"\n"
-		      else "")
+	val growSP = if !offset = 0
+		     then ""
+		     else "addi $sp, $sp, -" ^Int.toString (!offset)^"\n"
 	val return = "jr\n"
-	val shrinkSP = if not (!offset = 0)
-		       then "addi $sp, $sp, -" ^Int.toString (!offset)^"\n"
-		       else ""
+	val shrinkOffset = !offset + wordSize*((length params)) 
+	val shrinkSP = if shrinkOffset = 0
+		       then ""
+		       else "addi $sp, $sp, " ^Int.toString (shrinkOffset)^"\n"
     in
 	{prolog = label^growSP,
 	 body = body,
