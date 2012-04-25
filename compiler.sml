@@ -28,23 +28,30 @@ fun printIR () =
 
 fun emitproc out (Frame.PROC{body,frame}) =
     let
+	val _ = ErrorMsg.error 2 "In emitproc"
 	(*val _ = TextIO.output(out, (Temp.toString(Frame.name frame) ^ "\n"))*)
-	         (*val _ = Printtree.printtree(out,body); *)
-	val _ = printIR()
-	 val stms = Canon.linearize body
-	         (*val _ = app (fn s => Printtree.printtree(out,s)) stms;*)
-         val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
-	 val instrs = List.concat(map (Mips.codegen frame) stms')
-	 (*TEMPORARY HACK append the exit syscall to the end of instruction list*)
-	 val instrs' = Frame.procEntryExit2(frame, instrs)
-	 (*val instrs'' = instrs'@[Mips.exit]*)
-	 (*val(instrs'', allocation) = RegAlloc.alloc(instrs', frame)*)
-         (*val format0 = Assem.format((fn t => case Temp.Table.look (allocation, t)
+	(*val _ = Printtree.printtree(out,body); *)
+	val stms = Canon.linearize body
+	(*val _ = app (fn s => Printtree.printtree(out,s)) stms;*)
+        val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
+	val instrs = List.concat(map (Mips.codegen frame) stms')
+	val _ = ErrorMsg.error 2 "Got here"
+	(*TEMPORARY HACK append the exit syscall to the end of instruction list*)
+	val instrs' = Frame.procEntryExit2(frame, instrs)
+val _ = ErrorMsg.error 2 "Got here"
+	val {prolog=prolog, body=instrs', epilog=epilog} = Frame.procEntryExit3(frame, instrs')
+val _ = ErrorMsg.error 2 "Got here"
+	(*val instrs'' = instrs'@[Mips.exit]*)
+	val(instrs'', allocation) = RegAlloc.alloc(instrs', frame)
+        (*val format0 = Assem.format((fn t => case Temp.Table.look (allocation, t)
 					      of SOME reg => reg
 					       | NONE => ErrorMsg.impossible "Temp was not colored"))*)
 	 val format0 = Assem.format(Frame.tempToString)
+	val _ = ErrorMsg.error 2 "Got here"
     in
-	app (fn i => TextIO.output(out,format0 i)) instrs'
+	TextIO.output(out, prolog);
+	app (fn i => TextIO.output(out,format0 i)) instrs';
+	TextIO.output(out, epilog)
     end
   | emitproc out (Frame.STRING(lab,s)) =()(* TextIO.output(out,Frame.string(lab,s))*)
 

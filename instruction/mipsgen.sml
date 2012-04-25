@@ -32,7 +32,7 @@ fun codegen frame stm =
 	   | relop0Instr T.NE = "bnez"
 	   | relop0Instr _ = ErrorMsg.impossible("Unsupported operator")
 	 fun munchArgs (args) =
-	     let
+	     (*let
 		 val numArgs = length args
 		 val numArgRegs = length Frame.argregs
 		 val stackArgs = if (numArgs > numArgRegs)
@@ -57,6 +57,36 @@ fun codegen frame stm =
 		 val copyArgs' = if (stackArgs > 0)
 				 then growSP::copyArgs
 				 else copyArgs
+		 val assembly = String.concat(copyArgs')
+		 val _ = emit (A.OPER {assem=assembly,
+    				       src=map munchExp args,
+				       dst=[Frame.SP]@Frame.argregs,
+				       jump=NONE})
+	     in
+		 nil
+	     end     
+
+	     *)
+	     let
+		 val numArgs = length args
+		 val numArgRegs = length Frame.argregs
+		 val growSP = "addi `d0, `d0, -"^
+			      (str (Frame.wordSize * numArgs))^"\n"
+		 fun appendInstr(nil, _, assem) = assem
+		   | appendInstr(arg::tail, i, assem) =
+		     let
+			 val offset = (i+1)*Frame.wordSize
+			 val copyToStack = "sw `s"^ str i ^", "^str (offset)^
+					   "(`d0)\n"
+			 val copyToReg  = "move `d"^(str (i+1))
+					  ^", `s"^ (str i)^"\n"
+		     in
+			 if (i < numArgRegs)
+			 then appendInstr(tail, i+1, copyToReg::assem)
+			 else appendInstr(tail, i+1, copyToStack::assem)
+		     end
+		 val copyArgs = appendInstr(args, 0, nil)
+		 val copyArgs' = growSP::copyArgs
 		 val assembly = String.concat(copyArgs')
 		 val _ = emit (A.OPER {assem=assembly,
     				       src=map munchExp args,

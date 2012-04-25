@@ -7,7 +7,8 @@ structure A=Assem
 datatype access = InFrame of int | InReg of Temp.temp
 type frame = {name: Temp.label,
 	      frameOffset: int ref,
-	      formals: access list}
+	      formals: access list,
+	      params: Tree.stm}
 datatype frag = PROC of {body: Tree.stm, frame: frame}
 	      | STRING of Temp.label * string
 type register = string
@@ -106,11 +107,21 @@ fun tempToString (t) =
 fun str i = if (i < 0) 
 	    then "-"^(Int.toString (~i))
 	    else Int.toString i
-	      
-fun procEntryExit1 (frame, body) = body 
+
+(* fp is either a TEMP(FP) or a series of MEM and + instructins to fetch the frame pointer *)			    
+fun exp (InFrame k) fp = T.MEM(T.BINOP(T.PLUS,fp,T.CONST(k)))
+  | exp (InReg t) _ = T.TEMP t
+
 fun newFrame {name, formals} =
     let
 	val argumentOffset = ref 0
+
+	fun getInputArgument n =
+	    if n < 4
+	    then InReg (List.nth(argregs, n))
+	    else InFrame ((n * wordSize)) (*The stack argument starts
+						at frame pointer offset 16.*)
+		 
 	fun getArgumentOffset () = 
 	    (argumentOffset := !argumentOffset + wordSize;
 	     !argumentOffset)
@@ -120,22 +131,29 @@ fun newFrame {name, formals} =
 	    then InFrame (getArgumentOffset())
 	    else (InReg (Temp.newtemp()))
 
+			 
 	val formals' = map allocFormal formals
+		       
+	val nums = List.tabulate ((length formals'), (fn x => x))
+	val pair = ListPair.zip (formals', nums)
+
+	val moves = map (fn (formal, n) =>
+			     let
+				 val loc = getInputArgument n
+				 val fp = T.TEMP FP
+			     in
+				 T.MOVE(exp formal fp, exp loc fp)
+			     end)
+		     pair
+
+	val params =
+	    case moves
+	     of nil => T.EXP(T.CONST 0)
+	      | head::tail => foldr (fn (stm, seq) => T.SEQ(stm, seq)) head tail
     in
-	{name=name, frameOffset= ref 0, formals=formals'}
+	{name=name, frameOffset= ref 0, formals=formals', params=params}
     end
 
-fun procEntryExit2 (frame, body) =
-    body @
-    [A.OPER{assem="",
-	    src=specialregs@calleesaves,
-	    dst=[], jump=SOME[]}]
-    
-fun procEntryExit3 (frame as {name=name, frameOffset=offset, formals=locals}, body) = 
-    {prolog = "PROCEDURE " ^ Symbol.name name ^"\n",
-      body = body,
-      epilog = "END "^Symbol.name name ^"\n" }
-    
 fun allocLocal (frame:frame) escape =
     let
 	val frameOffset = (#frameOffset frame)
@@ -146,6 +164,44 @@ fun allocLocal (frame:frame) escape =
 	      InFrame (newFrameOffset))
 	else InReg (Temp.newtemp())
     end
+    
+fun procEntryExit1 ({name, frameOffset, formals, params}, body) =
+    let
+	val tempPair = map (fn r => (T.TEMP r, T.TEMP (Temp.newtemp()))) calleesaves
+	val moveEntry = map (fn (c,t) => T.MOVE(t, c)) tempPair
+	val moveExit = map (fn (c,t) => T.MOVE(c, t)) tempPair
+	val moveEntrySeq = foldr (fn (stm, seq) => T.SEQ(stm, seq))
+				 (hd moveEntry)
+				 (tl moveEntry)
+	val moveExitSeq = foldr (fn (stm, seq) => T.SEQ(stm, seq))
+				(hd moveExit)
+				(tl moveExit)
+	val body = T.SEQ(moveExitSeq, body)
+	val body = T.SEQ(body, moveEntrySeq)
+    in
+	body
+    end
+    
+fun procEntryExit2 (frame, body) =
+    body @
+    [A.OPER{assem="",
+	    src=specialregs@calleesaves,
+	    dst=[], jump=SOME[]}]
+    
+fun procEntryExit3 ({name=name,
+			      frameOffset=offset,
+			      formals=locals,
+			      params=params}, body) =
+    let
+	val label = (Temp.toString name)^":"
+	val growSP = "addi $sp, $sp, " ^Int.toString (!offset)^"\n"
+	val shrinkSP = "addi $sp, $sp, -" ^Int.toString (!offset)^"\n"
+    in
+	{prolog = label^growSP,
+	 body = body,
+	 epilog = shrinkSP }
+    end
+    
 
 fun name (frame:frame) = (#name frame)
 fun formals (frame:frame) = (#formals frame)
@@ -159,6 +215,7 @@ fun loadInstr (temp, InFrame k) = A.OPER {assem="lw `d0, "^(str k)^"(`s0)\n",
 					  src=[t],
 					  dst=[temp],
 					  jump=NONE}
+				
 (* Generates an instruction that stores a variable (given by an access) into a temp *)
 fun storeInstr (temp, InFrame k) = A.OPER {assem="sw `s0, "^(str k)^"(`s1)\n",
 					  src=[temp, FP],
@@ -167,12 +224,7 @@ fun storeInstr (temp, InFrame k) = A.OPER {assem="sw `s0, "^(str k)^"(`s1)\n",
   | storeInstr (temp, InReg t) = A.OPER {assem="move `d0, `s0\n",
 					  src=[temp],
 					  dst=[t],
-					  jump=NONE}
-
-			    
-(* fp is either a TEMP(FP) or a series of MEM and + instructins to fetch the frame pointer *)			    
-fun exp (InFrame k) fp = T.MEM(T.BINOP(T.PLUS,fp,T.CONST(k)))
-  | exp (InReg t) _ = T.TEMP t
+					  jump=NONE}			  
 
 (* This function may require extension for machine specific details *) 
 fun externalCall (s, args) =
