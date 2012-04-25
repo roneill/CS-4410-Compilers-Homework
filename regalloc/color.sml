@@ -901,25 +901,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		val _ = printMoves ("constrainedMoves", (MoveSet.listItems constrainedMoves))
 		val _ = printMoves ("coalescedMoves", (MoveSet.listItems coalescedMoves))
 		val _ = print ("coalescedNodes", coalescedNodes)
-		(*val _ = degreeInvariant (simplifyWL,
-					 spillWL,
-					 freezeWL,
-					 precolored,
-					 lookup adjTable,
-					 lookup degreeTable)*)
-		(*val _ = simplifyWLInvariant (simplifyWL,
-					     activeMoves,
-					     workListMoves,
-					     lookupSet moveTable,
-					     lookup degreeTable)*)
-		(*val _ = freezeWLInvariant (freezeWL,
-					   activeMoves,
-					   workListMoves,
-					   lookupSet moveTable,
-					   lookup degreeTable)*)
-			
-		val _ = spillWLInvariant(spillWL, lookup degreeTable)
-		val _ = ErrorMsg.error 2 "passed invariant checks"
+		
 		val worklists =
 		    if not (null simplifyWL)
 		    then simplify worklists
@@ -1058,9 +1040,28 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 			     frozenMoves=frozenMoves,
 			     constrainedMoves=constrainedMoves,
 			     coalescedMoves=coalescedMoves}
-	val _ = ErrorMsg.error 2 "In Color5\n"
+
 	val (selectStack, coalescedNodes, aliasTable) = mainLoop initWorklist
-				  
+	val _ = degreeInvariant (simplifyWL,
+				 spillWL,
+				 freezeWL,
+				 precolored,
+				 lookup adjTable,
+				 lookup degreeTable)
+	val _ = simplifyWLInvariant (simplifyWL,
+				     activeMoves,
+				     workListMoves,
+				     lookupSet moveTable,
+				     lookup degreeTable)
+	val _ = freezeWLInvariant (freezeWL,
+				   activeMoves,
+				   workListMoves,
+				   lookupSet moveTable,
+				   lookup degreeTable)
+		
+	val _ = spillWLInvariant(spillWL, lookup degreeTable)
+	val _ = ErrorMsg.error 2 "passed invariant checks"
+
 	val _ = print ("Select", selectStack)
 	fun assignColors (selectStack) =
 	    let
@@ -1123,8 +1124,5 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 	(coloring, spilledTemps)
     end
 end
-(*
- 1. Implement Color without spilling or coalescing
-    a. 
- *)
+
 

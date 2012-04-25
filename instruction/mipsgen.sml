@@ -13,7 +13,7 @@ val exit = A.OPER {assem="li `d0, 10\nsyscall\n",
 
 fun codegen frame stm =
      let val ilist = ref nil
-	 val calldefs = Frame.RV0::Frame.RA::Frame.calleesaves
+	 val calldefs = Frame.RV0::Frame.RA::Frame.callersaves
 	 fun emit x = ilist := x :: !ilist
 	 fun str i = if (i < 0) 
 		     then "-"^(Int.toString (~i))
@@ -160,6 +160,11 @@ fun codegen frame stm =
 	     emit (A.OPER{assem="jal `s0\n",
 			  src=munchExp(e)::munchArgs(args),
 			  dst=calldefs,
+			  jump=NONE})
+	   | munchStm(T.EXP(e1)) =
+	     emit (A.OPER{assem="",
+			  src=[munchExp(e1)],
+			  dst=[],
 			  jump=NONE})
 	   | munchStm (T.LABEL lab) =
 	     emit (A.LABEL {assem=Temp.toString(lab) ^ ":\n", lab=lab })
