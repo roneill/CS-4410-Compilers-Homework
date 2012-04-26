@@ -618,7 +618,7 @@ fun transProg ast =
     let
 	val _ = Tr.initResult()
 	val level = Tr.newLevel{parent=Tr.outermost, 
-				name=Temp.newlabel(), 
+				name=Temp.namedlabel("main"), 
 				formals=[]}
 	val _ = FindEscape.findEscape(ast);
 	val {exp, ty} =  transExp(level,

@@ -63,6 +63,19 @@ fun emitproc out (Frame.PROC{body,frame}) =
     end
   | emitproc out (Frame.STRING(lab,s)) =()(* TextIO.output(out,Frame.string(lab,s))*)
 
+fun emitCruft out =
+    let
+	val spimCruft = String.concat [ ".data\n", 
+			      ".globl\n", 
+			      ".text\n\n", 
+			      "main:\n",
+			      "jal tig_main\n",
+			      "li $v0, 10\n",
+			      "syscall\n\n" ]
+    in
+	TextIO.output(out, spimCruft)
+    end
+
 fun withOpenFile fname f = 
     let val out = TextIO.openOut fname
     in (f out before TextIO.closeOut out) 
@@ -76,7 +89,7 @@ fun compile filename =
 		
     in
 	withOpenFile (filename ^ ".s") 
-		     (fn out => (app (emitproc out) fraglist))
+		     (fn out => (emitCruft out;(app (emitproc out) fraglist)))
     end
     
 fun testLiveness () =
