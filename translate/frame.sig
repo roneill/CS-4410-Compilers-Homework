@@ -36,4 +36,5 @@ sig type frame
 						      epilog: string}
     val externalCall: string * Tree.exp list -> Tree.exp
     val tempMap: register Temp.Table.table
+    val string: Tree.label * string -> string
 end

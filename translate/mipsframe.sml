@@ -225,8 +225,13 @@ fun procEntryExit3 ({name=name,
 	 body = body,
 	 epilog = shrinkSP^return^"\n" }
     end
-    
 
+fun string (label, string) =
+    let
+	val labelString = Symbol.name label
+    in
+	labelString^": .ascii \""^string^"\"\n"
+    end
 fun name (frame:frame) = (#name frame)
 fun formals (frame:frame) = (#formals frame)
 			    
@@ -252,7 +257,8 @@ fun storeInstr (temp, InFrame k) = A.OPER {assem="sw `s0, -"^(str k)^"(`s1)\n",
 
 (* This function may require extension for machine specific details *) 
 fun externalCall (s, args) =
-    T.CALL (T.NAME(Temp.namedlabel s), args)
+    (ErrorMsg.error 2 s;
+    T.CALL (T.NAME(Temp.namedlabel s), args))
 
 end
 

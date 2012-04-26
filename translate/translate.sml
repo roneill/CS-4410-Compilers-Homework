@@ -218,7 +218,7 @@ fun gt (lexp, rexp) =
 
 fun ge (lexp, rexp) =
     control(lexp, rexp, T.GE)
-
+    
 fun ifExp (exp1, exp2, exp3) =
     let
 	val s = unCx exp1
@@ -271,7 +271,8 @@ fun ifExp (exp1, exp2, exp3) =
 	    end
     in 
 	ifExp' (exp2, exp3)
-    end 
+    end
+
 fun newString (s) =
     let 
 	val label = Temp.newlabel()
