@@ -1,4 +1,4 @@
-#Team Members
+# Team Members
 Allen Lee and Robert O'Neill
 
 # New compiler functionality
@@ -19,16 +19,16 @@ This function adds IR to save and restore calle saves registers $ra,
 and $s0-$s7 to fresh temps.  At the beginning and end of procedures.
 The register allocator should coalesce these moves.
 
-# procEntryExit3
+## procEntryExit3
 
 We added the prolog and epilog assembly instructions to create and
 destroy stack frames. This function adjust the stack pointer, saves
 the old frame pointer and return address, and creates the new frame
 pointer from the old stack pointer.
 
-We also made numerous bug fixes all over the compiler.
+We also made numerous bug fixes in many parts of the compiler.
 
-# How to run*
+# How to run
 
 1.) To compile the program "prog.tig" call:
 
@@ -44,6 +44,8 @@ We also made numerous bug fixes all over the compiler.
 
 4.) Use spim to execute "prog.s"
 
+*NOTE*
+
 There are bugs in our compiler that prevent us from compiling a
 recursive factorial program that properly computes factorial. The flow
 of control through the program seems to be correct. Unwanted behavior
@@ -54,7 +56,7 @@ factorial successfully. We understand that a recursive version of factorial is a
 much better test of the capabilities of the compiler. We did feel, however, that it was
 important to demonstrate that *some* program could be compiled with our compiler.
 
-Recursive factorial listing:
+#Recursive factorial listing:
 
 Tiger:
 
@@ -147,7 +149,7 @@ lw $ra, 4($sp)		# pull old return address off stack
 addi $sp, $sp, 24	# unwind stack
 jr $ra	       		
 
-Iterative factorial program listing:
+#Iterative factorial program listing:
 
 Tiger:
 
