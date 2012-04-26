@@ -38,8 +38,7 @@ type liveMap = liveSet T.table
 fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) = 
     let
 	(*Debug*)
-	fun say s =  TextIO.output(TextIO.stdOut,s)
-	fun sayln s= (say s; say "\n")
+	val sayln = ErrorMsg.debug
 	fun printNode (node, liveset) = 
 	    let 
 		val nodestr = Graph.nodename node
@@ -165,8 +164,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 		in
 		    if not(IGraph.eq(n1,n2))
 		    then
-			(Error.error 2 "adding move";
-			 moveTable := Move.Table.insert(!moveTable, (n1, n2), ());
+			(moveTable := Move.Table.insert(!moveTable, (n1, n2), ());
 			 moveTable := Move.Table.insert(!moveTable, (n1, n2), ());
 			(n1,n2)::moves)
 		    else (moves)
@@ -216,8 +214,8 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 
 fun show (outstream,IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}) =
     let	
-    	fun say s =  TextIO.output(outstream,s)
-	fun sayln s= (say s; say "\n")
+    	
+	val sayln = ErrorMsg.debug
 
 	val nodes = IGraph.nodes graph
 
@@ -242,7 +240,7 @@ fun show (outstream,IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}) 
 		    String.concat ["(",(IGraph.nodename n1),",",IGraph.nodename n2,") "]
 		val workListString = String.concat (map str moves)
 	    in
-		ErrorMsg.error 2 ("The "^name^" is: " ^ workListString)
+		ErrorMsg.debug ("The "^name^" is: " ^ workListString)
 	    end
 	val _ = printMoves ("Liveness Moves ",moves)
     in

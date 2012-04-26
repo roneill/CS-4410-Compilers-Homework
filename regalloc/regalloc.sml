@@ -139,8 +139,8 @@ fun alloc (instrs, frame) =
 	     liveMap) = Liveness.interferenceGraph fgraph
 	val _ = Liveness.show(TextIO.stdOut, igraph)
 	val format0 = Assem.format(Frame.tempToString)
-	val _ = ErrorMsg.error 2 "Original: "
-	val _ = app (fn i => TextIO.output(TextIO.stdOut,format0 i)) instrs
+	val _ = ErrorMsg.debug "Original: "
+	val _ = app (fn i => ErrorMsg.debug (format0 i)) instrs
 
 	val (allocation, spills) = Color.color {interference = igraph,
 						initial = Frame.tempMap,
@@ -150,30 +150,12 @@ fun alloc (instrs, frame) =
 	val format0 = Assem.format((fn t => case Temp.Table.look (allocation, t)
 					     of SOME reg => reg
 					      | NONE => Temp.makestring (t)))
-	val _ = ErrorMsg.error 2 "Original: "
-	val _ = app (fn i => TextIO.output(TextIO.stdOut,format0 i)) instrs
-	
-	fun filterf (A.MOVE {assem, src, dst}) = 
-	    let
-		val s = (case Temp.Table.look (allocation, src)
-			  of SOME t => t
-			   | NONE => ErrorMsg.impossible "Temp not colored")
-		val d = (case Temp.Table.look (allocation, dst)
-			  of SOME t => t
-			   | NONE => ErrorMsg.impossible "Temp not colored")
-	    in
-		case String.compare(s,d)
-		 of EQUAL => false
-		  | _ => true
-	    end 
-	  | filterf _ = true
-	
-	val _ = ErrorMsg.error 2 "final: "
-	val _ = app (fn i => TextIO.output(TextIO.stdOut,format0 i)) (List.filter filterf instrs)
+	val _ = ErrorMsg.debug "Colored: "
+	val _ = app (fn i => ErrorMsg.debug (format0 i)) instrs
     in
 
 	if (null spills)
-	then ((List.filter filterf instrs), allocation)
+	then (instrs, allocation)
 	else (alloc(rewriteProgram(frame,instrs,spills), frame))
     end
 

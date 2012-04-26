@@ -49,7 +49,7 @@ fun traverseExp(env, d) =
 
 	and travvar(Absyn.SimpleVar(id, pos)) = 
 	    (case Symbol.look(env,id)
-	      of SOME (depth, escape) => if (d>depth) then(ErrorMsg.error 2 "Found Escape"; escape := true) else () 
+	      of SOME (depth, escape) => if (d>depth) then(escape := true) else () 
 	       | NONE => () (* Undeclared variable checks occur in the typechecker*))
 	  | travvar(Absyn.FieldVar(var, id, pos)) = travvar(var)
 	  | travvar(Absyn.SubscriptVar(var, exp, pos)) = travvar(var)    

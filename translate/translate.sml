@@ -80,7 +80,8 @@ fun formals level =
     case level
      of LEVEL {frame, parent, unique} => 
 	let
-	    val formals = Frame.formals(frame)
+	    (*strip the static link*)
+	    val formals = tl(Frame.formals(frame)) 
 	in
 	    map (fn formal => (level, formal)) formals
 	end

@@ -183,8 +183,8 @@ fun procEntryExit1 ({name, frameOffset, formals, params}, body) =
 	     of nil => T.EXP(T.CONST 0)
 	      | head::tail => foldr (fn (stm, seq) => T.SEQ(stm, seq)) head tail
 
-	val body = T.SEQ(paramStm,body)
-	val body = T.SEQ(moveEntrySeq, body)
+	(*val body = T.SEQ(paramStm,body)*)
+	(*val body = T.SEQ(moveEntrySeq, body)*)
 	val body = T.SEQ(body, moveExitSeq)
     in
 	body
@@ -211,9 +211,9 @@ fun procEntryExit3 ({name=name,
 		       then ""
 		       else "addi $sp, $sp, " ^Int.toString (shrinkOffset)^"\n"
     in
-	{prolog = label^growSP,
+	{prolog = "\n"^label^growSP,
 	 body = body,
-	 epilog = shrinkSP^return }
+	 epilog = shrinkSP^return^"\n" }
     end
     
 

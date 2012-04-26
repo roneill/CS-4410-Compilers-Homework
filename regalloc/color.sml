@@ -113,7 +113,7 @@ val str = Int.toString
 fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 	   initial, spillCost, registers } =
     let
-	val _ = ErrorMsg.error 2 "In Color\n"
+	val _ = ErrorMsg.debug "In Color\n"
 	(*
 	 simplifyWL: nodeSet
 			 adjSet: (node * node) Set
@@ -145,7 +145,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		    (IGraph.nodename node) ^ " "
 		val workListString = String.concat (map str workList)
 	    in
-		ErrorMsg.error 2 ("The "^name^" worklist is: " ^ workListString)
+		ErrorMsg.debug ("The "^name^" worklist is: " ^ workListString)
 	    end
 	    
 	fun printMoves (name, moves) =
@@ -154,7 +154,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		    String.concat ["(",(IGraph.nodename n1),",",IGraph.nodename n2,") "]
 		val workListString = String.concat (map str moves)
 	    in
-		ErrorMsg.error 2 ("The "^name^" is: " ^ workListString)
+		ErrorMsg.debug ("The "^name^" is: " ^ workListString)
 	    end
 	val _ = printMoves ("Moves", moves) 
 	fun simplifyWLInvariant (simplifyWL, activeMoves,
@@ -352,7 +352,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		    constrainedMoves,
 		    coalescedMoves} =
 	    let
-		val _ = ErrorMsg.error 2 "In Freeze"
+		val _ = ErrorMsg.debug "In Freeze"
 		val (freezeWL,u) = pop freezeWL
 		val simplifyWL = push (simplifyWL, u)
 		val freezeMoves = freezeMoves {selectStack=selectStack,
@@ -466,7 +466,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 				  coalescedMoves})
 		    (u, v) =
 	    let
-		val _ = ErrorMsg.error 2 "In combine"
+		val _ = ErrorMsg.debug "In combine"
 		fun addEdge (degreeTable, adjTable, adjSetTable) (u, v) =
 		    let
 			val adjSetTable = if not (inAdjSet adjSetTable (u,v)) andalso
@@ -588,7 +588,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		       member freezeWL u
 		    then
 			let
-			    val _ = ErrorMsg.error 2 ("in combine adding to spillWL: "^(IGraph.nodename u))
+			    val _ = ErrorMsg.debug ("in combine adding to spillWL: "^(IGraph.nodename u))
 			    val freezeWL = difference (freezeWL, [u])
 			    val spillWL = u::spillWL
 			in
@@ -629,13 +629,25 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 				    constrainedMoves,
 				    coalescedMoves}) =
 	    let
-		val _ = ErrorMsg.error 2 "In simplify"
+		val _ = ErrorMsg.debug "In simplify"
 		val (simplifyWL, n) = pop simplifyWL
 		val selectStack = push(selectStack, n)
 		val adjNodes = adjacent (selectStack, coalescedNodes, adjTable) n
-		val {degreeTable=degreeTable, simplifyWL=simplifyWL,
-		     spillWL=spillWL, freezeWL=freezeWL,
-		     activeMoves=activeMoves, workListMoves=workListMoves, ...} =
+		val {selectStack=selectStack,
+		     coalescedNodes=coalescedNodes,
+		     degreeTable=degreeTable,
+		     moveTable=moveTable,
+		     adjTable=adjTable,
+		     adjSetTable=adjSetTable,
+		     aliasTable=aliasTable,
+		     simplifyWL=simplifyWL,
+		     spillWL=spillWL,
+		     freezeWL=freezeWL,
+		     activeMoves=activeMoves,
+		     workListMoves=workListMoves,
+		     frozenMoves=frozenMoves,
+		     constrainedMoves=constrainedMoves,
+		     coalescedMoves=coalescedMoves} =
 		    foldl (fn (node, worklists) =>
 			      (decrementDegree worklists node))
 			  {selectStack=selectStack,
@@ -723,7 +735,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		      constrainedMoves,
 		      coalescedMoves} =
 	    let
-		val _ = ErrorMsg.error 2 "In coalesce"
+		val _ = ErrorMsg.debug "In coalesce"
 		fun head se =
 		    let
 			val l = MoveSet.listItems se
@@ -740,7 +752,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 			if not (member precolored u) andalso
 			   not (moveRelated (u)) andalso
 			   degree(u) < numregs
-			then (ErrorMsg.error 2 ("in addWorklist adding to simplifyWL: "^(IGraph.nodename u)); (difference(freezeWL, [u]),
+			then (ErrorMsg.debug ("in addWorklist adding to simplifyWL: "^(IGraph.nodename u)); (difference(freezeWL, [u]),
 			      push(simplifyWL, u)))
 			else (freezeWL, simplifyWL)
 		    end 
@@ -776,7 +788,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		else if (member precolored v) orelse
 			(inAdjSet adjSetTable (u,v))
 		then let
-			val _ = ErrorMsg.error 2 ("Constrain due to "^(if (member precolored v)
+			val _ = ErrorMsg.debug ("Constrain due to "^(if (member precolored v)
 								       then "precolored"
 								       else "adjacent")^String.concat ["(",(IGraph.nodename u),",",IGraph.nodename v,") "])
 			val constrainedMoves = MoveSet.add(constrainedMoves, m)
@@ -876,7 +888,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 			 coalescedMoves=coalescedMoves}
 		    end 
 	    end 
-	val _ = ErrorMsg.error 2 "In Color\n"
+	val _ = ErrorMsg.debug "In Color\n"
 	fun mainLoop (worklists as {selectStack,
 				    simplifyWL,
 				    spillWL,
@@ -892,7 +904,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 				    coalescedNodes,
 				    aliasTable,...}) =
 	    let
-		val _ = ErrorMsg.error 2 "in mainLoop"
+		val _ = ErrorMsg.debug "in mainLoop"
 		val _ = print ("Simplify", simplifyWL) 
 		val _ = print ("Spill", spillWL)
 		val _ = print ("Freeze", freezeWL)
@@ -973,7 +985,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		      end)
 		  IGraph.Table.empty
 		  moves
-	val _ = ErrorMsg.error 2 "moves"
+	val _ = ErrorMsg.debug "moves"
 	(*Precolored nodes have infinite degree*)
 	val precoloredTable = foldl (fn (node, table) =>
 					let
@@ -1021,7 +1033,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		iterate(uncolored, [], [], [])
 	    end
 	    
-	val _ = ErrorMsg.error 2 "In Color4\n"
+	val _ = ErrorMsg.debug "In Color4\n"
 	val (simplifyWL, spillWL, freezeWL) = makeWorklist(uncolored)
 	val _ = print ("Initial Simplify", simplifyWL)
 	val _ = print ("Initial Spill", spillWL)
@@ -1063,7 +1075,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 				   lookup degreeTable)
 		
 	val _ = spillWLInvariant(spillWL, lookup degreeTable)
-	val _ = ErrorMsg.error 2 "passed invariant checks"
+	val _ = ErrorMsg.debug "passed invariant checks"
 
 	val _ = print ("Select", selectStack)
 	fun assignColors (selectStack) =
@@ -1078,17 +1090,17 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 			val usedColors = List.mapPartial
 					     (nodeColor color)
 					     adjNodes
-			val _ = ErrorMsg.error 2 ("Node: "^(IGraph.nodename head))
-			val _ = ErrorMsg.error 2 ("Adjacent Nodes: "^(Int.toString (length usedColors)))
-			val _ = ErrorMsg.error 2 ("Used colors: "^(String.concat (map (fn s=> s^" ") usedColors)))
+			val _ = ErrorMsg.debug ("Node: "^(IGraph.nodename head))
+			val _ = ErrorMsg.debug ("Adjacent Nodes: "^(Int.toString (length usedColors)))
+			val _ = ErrorMsg.debug ("Used colors: "^(String.concat (map (fn s=> s^" ") usedColors)))
 			val okColors = differenceReg(registers, usedColors)
-			(*			    val _ = ErrorMsg.error 2 ("Length of okColors"^
+			(*			    val _ = ErrorMsg.debug ("Length of okColors"^
 									      (Int.toString (length okColors))) *)
-			val _ = ErrorMsg.error 2 ("OK colors: "^(String.concat (map (fn s=> s^" ") okColors)))
+			val _ = ErrorMsg.debug ("OK colors: "^(String.concat (map (fn s=> s^" ") okColors)))
 			val (color, spilledNodes) = if (null okColors)
 						      then (color, head::spilledNodes)
 						      else  let val reg = (hd okColors) in
-								(ErrorMsg.error 2 ("Assigning temp "^(Temp.makestring temp)^" register "^reg);
+								(ErrorMsg.debug ("Assigning temp "^(Temp.makestring temp)^" register "^reg);
 								 (Temp.Table.enter
 								      (color, temp, reg),
 								  spilledNodes)) end
@@ -1121,7 +1133,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 	val (coloring, spilledNodes) = assignColors(selectStack)
 	val spilledTemps = map gtemp spilledNodes
 			   
-	val _ = ErrorMsg.error 1 "Got to the end"
+	val _ = ErrorMsg.debug "Got to the end"
     in
 	(*Temporary*)
 	(coloring, spilledTemps)

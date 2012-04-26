@@ -213,6 +213,7 @@ fun transDec (level, loopEnd, exps, venv, tenv,
 	fun enterFunHeader ({name,params,body,pos,result}, venv) =
 	    let 
 		val formals = map (fn p => !(#escape p)) params
+		val _ = app (fn b => print (if b then "t " else "f ")) formals
 		val label = Temp.newlabel()
 		val level' = Tr.newLevel{parent=level, 
 					 name=label, 
@@ -240,7 +241,7 @@ fun transDec (level, loopEnd, exps, venv, tenv,
 				level
 			      | _ => Error.impossible 
 				"checkFunBody did not find function header"
-		val formals = Tr.formals level
+		val formals =  Tr.formals level 
 		val params_access = ListPair.zip(params,formals)
 		val params' = map (fn (p,a) => 
 				      let

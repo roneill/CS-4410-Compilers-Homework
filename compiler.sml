@@ -25,30 +25,40 @@ fun printIR () =
     in
 	(map printFrag (!IR); ())
     end
+fun filterMoves allocation (Assem.MOVE {assem, src, dst}) = 
+	    let
+		val s = (case Temp.Table.look (allocation, src)
+			  of SOME t => t
+			   | NONE => ErrorMsg.impossible "Temp not colored")
+		val d = (case Temp.Table.look (allocation, dst)
+			  of SOME t => t
+			   | NONE => ErrorMsg.impossible "Temp not colored")
+	    in
+		case String.compare(s,d)
+		 of EQUAL => false
+		  | _ => true
+	    end 
+  | filterMoves _  _ = true
 
 fun emitproc out (Frame.PROC{body,frame}) =
     let
-	val _ = ErrorMsg.error 2 "In emitproc"
 	(*val _ = TextIO.output(out, (Temp.toString(Frame.name frame) ^ "\n"))*)
 	(*val _ = Printtree.printtree(out,body); *)
 	val stms = Canon.linearize body
 	(*val _ = app (fn s => Printtree.printtree(out,s)) stms;*)
         val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
 	val instrs = List.concat(map (Mips.codegen frame) stms')
-	val _ = ErrorMsg.error 2 "Got here"
 	val instrs' = Frame.procEntryExit2(frame, instrs)
-val _ = ErrorMsg.error 2 "Got here"
 	val {prolog=prolog, body=instrs', epilog=epilog} = Frame.procEntryExit3(frame, instrs')
-val _ = ErrorMsg.error 2 "Got here"
-	val(instrs'', allocation) = RegAlloc.alloc(instrs', frame)
+	val (instrs'', allocation) = RegAlloc.alloc(instrs', frame)
+	val instrs''' = List.filter (filterMoves allocation) instrs''
         val format0 = Assem.format((fn t => case Temp.Table.look (allocation, t)
 					      of SOME reg => reg
 					       | NONE => ErrorMsg.impossible "Temp was not colored"))
 	(*val format0 = Assem.format(Frame.tempToString)*)
-	val _ = ErrorMsg.error 2 "Got here"
     in
 	TextIO.output(out, prolog);
-	app (fn i => TextIO.output(out,format0 i)) instrs'';
+	app (fn i => TextIO.output(out,format0 i)) instrs''';
 	TextIO.output(out, epilog)
     end
   | emitproc out (Frame.STRING(lab,s)) =()(* TextIO.output(out,Frame.string(lab,s))*)

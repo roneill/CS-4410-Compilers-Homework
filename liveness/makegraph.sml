@@ -116,8 +116,8 @@ fun instrs2graph instrs =
 				     def=def,
 				     use=use,
 				     ismove=ismove}
-	fun say s =  TextIO.output(TextIO.stdOut,s)
-	fun sayln s= (say s; say "\n")
+	
+	val sayln = ErrorMsg.debug
 	
 	fun printNodeInstr (node) =
 	    let

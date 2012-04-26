@@ -9,11 +9,13 @@ sig
     exception Error
     val impossible : string -> 'a   (* raises Error *)
     val reset : unit -> unit
+    val debug : string -> unit
 end
 
 structure ErrorMsg : ERRORMSG =
 struct
 
+  val DEBUG = false
   val anyErrors = ref false
   val fileName = ref ""
   val lineNum = ref 1
@@ -48,6 +50,11 @@ struct
       (app print ["Error: Compiler bug: ",msg,"\n"];
        TextIO.flushOut TextIO.stdOut;
        raise Error)
+  
+  fun debug msg = 
+      if DEBUG
+      then  app print [msg,"\n"]
+      else ()
 
 end  (* structure ErrorMsg *)
   
