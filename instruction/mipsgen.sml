@@ -9,7 +9,7 @@ structure Frame = MipsFrame
 
 fun codegen frame stm =
      let val ilist = ref nil
-	 val calldefs = Frame.RV0::Frame.callersaves
+	 val calldefs = Frame.RA::Frame.RV0::Frame.callersaves
 	 fun emit x = ilist := x :: !ilist
 	 fun str i = if (i < 0) 
 		     then "-"^(Int.toString (~i))
