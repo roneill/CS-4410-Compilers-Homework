@@ -167,7 +167,7 @@ fun allocLocal (frame:frame) escape =
     in
 	if escape
 	then (frameOffset := newFrameOffset;
-	      InFrame (newFrameOffset))
+	      InFrame (newFrameOffset-8))
 	else InReg (Temp.newtemp())
     end
     
@@ -205,6 +205,7 @@ fun procEntryExit3 ({name=name,
 		     formals=formals,
 		     params=params}, body) =
     let
+	
 	val label = (Temp.toString name)^":\n"
 	val frameSize = !offset + (2*wordSize) (*space for the FP and RA*)
 	val growSP = String.concat
