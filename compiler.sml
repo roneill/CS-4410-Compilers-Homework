@@ -66,7 +66,7 @@ fun emitproc out (Frame.PROC{body,frame}) =
 fun emitCruft out =
     let
 	val spimCruft = String.concat [ ".data\n", 
-			      ".globl\n", 
+			      ".globl main\n", 
 			      ".text\n\n", 
 			      "main:\n",
 			      "jal tig_main\n",

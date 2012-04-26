@@ -156,7 +156,7 @@ fun alloc (instrs, frame) =
 
 	if (null spills)
 	then (instrs, allocation)
-	else (alloc(rewriteProgram(frame,instrs,spills), frame))
+	else (ErrorMsg.debug "Spilled"; alloc(rewriteProgram(frame,instrs,spills), frame))
     end
 
 end

@@ -197,7 +197,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 			if t1=t2 orelse nodesAdj(n1, n2) 
 			then ()
 			else if (ismove ) andalso (inusep t2)
-			then (Error.debug ("Ingoring move edge from "
+			then (Error.debug ("Ignoring move edge from "
 			      ^(IGraph.nodename n1)^
 			      " to "^(IGraph.nodename n2)))
 			else (Error.debug ("Making edge from "
