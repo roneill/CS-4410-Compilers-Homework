@@ -209,17 +209,17 @@ fun procEntryExit3 ({name=name,
 	val label = (Temp.toString name)^":\n"
 	val frameSize = (!offset + (2*wordSize))
 	val growSP = String.concat
-			 ["addi $sp, $sp, -"^(Int.toString frameSize)^" #growsp\n",
-			  "sw $fp, 8($sp) #growsp\n",
-			  "sw $ra, 4($sp) #growsp\n",
-	                  "addi $fp, $sp, "^(Int.toString frameSize)^" #growsp\n"]
+			 ["addi $sp, $sp, -"^(Int.toString frameSize)^"\n",
+			  "sw $fp, 8($sp)\n",
+			  "sw $ra, 4($sp)\n",
+	                  "addi $fp, $sp, "^(Int.toString frameSize)^"\n"]
 		           
 	val return = "jr $ra\n"
 	val shrinkSize = frameSize + (length formals)*wordSize (* decrement by the argument locations as well *)
 	val shrinkSP = String.concat
-			   ["lw $fp, 8($sp) #shrinkSP\n",
-			    "lw $ra, 4($sp) #shrinkSP\n",
-			    "addi $sp, $sp, "^(Int.toString shrinkSize)^" #shrinkSP\n"]
+			   ["lw $fp, 8($sp)\n",
+			    "lw $ra, 4($sp)\n",
+			    "addi $sp, $sp, "^(Int.toString shrinkSize)^"\n"]
     in
 	{prolog = "\n"^label^growSP,
 	 body = body,
@@ -257,8 +257,7 @@ fun storeInstr (temp, InFrame k) = A.OPER {assem="sw `s0, -"^(str k)^"(`s1)\n",
 
 (* This function may require extension for machine specific details *) 
 fun externalCall (s, args) =
-    (ErrorMsg.error 2 s;
-    T.CALL (T.NAME(Temp.namedlabel s), args))
+    T.CALL (T.NAME(Temp.namedlabel s), args)
 
 end
 

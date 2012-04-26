@@ -60,20 +60,14 @@ fun emitproc out (Frame.PROC{body,frame}) =
   | emitproc out (Frame.STRING(lab,s)) =
     let
 	val string = Frame.string(lab,s)
-	val spimCruft = ".data"^string^".text"
+	val spimCruft = ".data\n"^string^".text\n"
     in
 	TextIO.output(out, spimCruft)
     end
 
 fun emitCruft out =
     let
-	val spimCruft = String.concat [ ".data\n", 
-			      ".globl main\n", 
-			      ".text\n\n", 
-			      "main:\n",
-			      "jal tig_main\n",
-			      "li $v0, 10\n",
-			      "syscall\n\n" ]
+	val spimCruft = ".data\n.text\n"
     in
 	TextIO.output(out, spimCruft)
     end

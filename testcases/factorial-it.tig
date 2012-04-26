@@ -9,5 +9,5 @@ let
 	   a
 	end
 in 
-   print(chr(factorial(5)))
+   factorial(5)
 end
