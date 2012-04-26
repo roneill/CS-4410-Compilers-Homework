@@ -157,7 +157,7 @@ fun newFrame {name, formals} =
 		     pair
 
     in
-	{name=name, frameOffset= ref (8), formals=formals', params=params}
+	{name=name, frameOffset= ref 0, formals=formals', params=params}
     end
 
 fun allocLocal (frame:frame) escape =
@@ -207,7 +207,7 @@ fun procEntryExit3 ({name=name,
     let
 	
 	val label = (Temp.toString name)^":\n"
-	val frameSize = !offset
+	val frameSize = (!offset + (2*wordSize))
 	val growSP = String.concat
 			 ["addi $sp, $sp, -"^(Int.toString frameSize)^"\n",
 			  "sw $fp, 8($sp)\n",

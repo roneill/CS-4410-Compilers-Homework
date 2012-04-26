@@ -1,0 +1,12 @@
+let 
+    function factorial (n: int) =
+    	let 
+	    var a := 1
+	    val i := 1
+	in 
+	   while i<n do
+	   (a := i*a; i := i+1); a
+	end
+in 
+   factorial(5)
+end
