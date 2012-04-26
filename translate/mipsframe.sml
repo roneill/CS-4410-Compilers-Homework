@@ -129,8 +129,12 @@ fun newFrame {name, formals} =
 						at frame pointer offset 16.*)
 		 
 	fun getArgumentOffset () = 
-	    (argumentOffset := !argumentOffset + wordSize;
-	     !argumentOffset)
+	    let 
+		val temp = !argumentOffset 
+	    in 
+		(argumentOffset := !argumentOffset + wordSize;
+		 temp)
+	    end 
 
 	fun allocFormal escape =  
 	    if escape
@@ -198,18 +202,23 @@ fun procEntryExit2 (frame, body) =
     
 fun procEntryExit3 ({name=name,
 		     frameOffset=offset,
-		     formals=locals,
+		     formals=formals,
 		     params=params}, body) =
     let
 	val label = (Temp.toString name)^":\n"
-	val growSP = if !offset = 0
-		     then ""
-		     else "addi $sp, $sp, -" ^Int.toString (!offset)^"\n"
-	val return = "jr\n"
-	val shrinkOffset = !offset + wordSize*((length params)) 
-	val shrinkSP = if shrinkOffset = 0
-		       then ""
-		       else "addi $sp, $sp, " ^Int.toString (shrinkOffset)^"\n"
+	val frameSize = !offset + (2*wordSize) (*space for the FP and RA*)
+	val growSP = String.concat
+			 ["addi $sp, $sp, -"^(Int.toString frameSize)^"\n",
+			  "sw $fp, 8($sp)\n",
+			  "sw $ra, 4($sp)\n",
+	                  "addi $fp, $sp, "^(Int.toString frameSize)^"\n"]
+		           
+	val return = "jr $ra\n"
+	val shrinkSize = frameSize + (length formals)*wordSize (* decrement by the argument locations as well *)
+	val shrinkSP = String.concat
+			   ["lw $fp, 8($sp)\n",
+			    "lw $ra, 4($sp)\n",
+			    "addi $sp, $sp, "^(Int.toString shrinkSize)^"\n"]
     in
 	{prolog = "\n"^label^growSP,
 	 body = body,

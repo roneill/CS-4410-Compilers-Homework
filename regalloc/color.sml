@@ -487,6 +487,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 			    then (IGraph.Table.enter(adjTable, v, u::adjV),
 				  IGraph.Table.enter(degreeTable, v, degV+1))
 			    else (adjTable, degreeTable)
+			val _ = ErrorMsg.debug ("adding edge from "^(IGraph.nodename u)^" to "^(IGraph.nodename v))
 		    in
 			(degreeTable, adjTable, adjSetTable)
 		    end 
@@ -890,19 +891,20 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 	    end 
 	val _ = ErrorMsg.debug "In Color\n"
 	fun mainLoop (worklists as {selectStack,
-				    simplifyWL,
-				    spillWL,
-				    freezeWL,
-				    workListMoves,
-				    degreeTable,
-				    adjTable,
-				    moveTable,
-				    activeMoves,
-				    frozenMoves, 
-				    constrainedMoves,
-				    coalescedMoves,
-				    coalescedNodes,
-				    aliasTable,...}) =
+			     coalescedNodes,
+			     degreeTable,
+			     moveTable,
+			     adjTable,
+			     adjSetTable,
+			     aliasTable,
+			     simplifyWL,
+			     spillWL,
+			     freezeWL,
+			     activeMoves,
+			     workListMoves,
+			     frozenMoves,
+			     constrainedMoves,
+			     coalescedMoves} )=
 	    let
 		val _ = ErrorMsg.debug "in mainLoop"
 		val _ = print ("Simplify", simplifyWL) 
@@ -927,18 +929,44 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 		    then selectSpill worklists
 		    else worklists
 			 
-		val {simplifyWL,
-		     spillWL,
-		     freezeWL,
-		     workListMoves,
-		     selectStack, coalescedNodes, aliasTable, ...} = worklists
+		val     {selectStack=selectStack,
+			 coalescedNodes=coalescedNodes,
+			 degreeTable=degreeTable,
+			 moveTable=moveTable,
+			 adjTable=adjTable,
+			 adjSetTable=adjSetTable,
+			 aliasTable=aliasTable,
+			 simplifyWL=simplifyWL,
+			 spillWL=spillWL,
+			 freezeWL=freezeWL,
+			 activeMoves=activeMoves,
+			 workListMoves=workListMoves,
+			 frozenMoves=frozenMoves,
+			 constrainedMoves=constrainedMoves,
+			 coalescedMoves=coalescedMoves}
+			= worklists
 
 	    in
 		if (null simplifyWL) andalso
 		   (null spillWL) andalso
 		   (null freezeWL) andalso
 		   (MoveSet.isEmpty workListMoves)
-		then (selectStack, coalescedNodes, aliasTable)
+		then 	{selectStack=selectStack,
+			 coalescedNodes=coalescedNodes,
+			 degreeTable=degreeTable,
+			 moveTable=moveTable,
+			 adjTable=adjTable,
+			 adjSetTable=adjSetTable,
+			 aliasTable=aliasTable,
+			 simplifyWL=simplifyWL,
+			 spillWL=spillWL,
+			 freezeWL=freezeWL,
+			 activeMoves=activeMoves,
+			 workListMoves=workListMoves,
+			 frozenMoves=frozenMoves,
+			 constrainedMoves=constrainedMoves,
+			 coalescedMoves=coalescedMoves}
+	
 		else mainLoop worklists
 	    end
 
@@ -1055,7 +1083,22 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 			     constrainedMoves=constrainedMoves,
 			     coalescedMoves=coalescedMoves}
 
-	val (selectStack, coalescedNodes, aliasTable) = mainLoop initWorklist
+	val {selectStack=selectStack,
+	     coalescedNodes=coalescedNodes,
+	     degreeTable=degreeTable,
+	     moveTable=moveTable,
+	     adjTable=adjTable,
+	     adjSetTable=adjSetTable,
+	     aliasTable=aliasTable,
+	     simplifyWL=simplifyWL,
+	     spillWL=spillWL,
+	     freezeWL=freezeWL,
+	     activeMoves=activeMoves,
+	     workListMoves=workListMoves,
+	     frozenMoves=frozenMoves,
+	     constrainedMoves=constrainedMoves,
+	     coalescedMoves=coalescedMoves}
+	    = mainLoop initWorklist
 	val _ = degreeInvariant (simplifyWL,
 				 spillWL,
 				 freezeWL,

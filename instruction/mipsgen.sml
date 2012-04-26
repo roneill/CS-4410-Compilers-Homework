@@ -166,7 +166,7 @@ fun codegen frame stm =
 	     result(fn r => emit (A.OPER
 				      {assem="jal `s0\n"^ (*Jump to the function*)
 					     "move `d0, `s1\n",
-				       (*copy the return value stro t*)
+				       (*copy the return values to r *)
 				       src=munchExp(e)::Frame.RV0::munchArgs(args),
 				       dst=r::calldefs,
 				       jump=NONE}))

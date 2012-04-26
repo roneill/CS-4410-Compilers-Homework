@@ -44,7 +44,7 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 		val nodestr = Graph.nodename node
 		val liveSetstr = String.concat 
 				     (map (fn temp => 
-					      (Temp.makestring temp)^" ") 
+					      (MipsFrame.tempToString temp)^" ") 
 					  (Flow.Set.listItems liveset))
 	    in sayln (nodestr^": {"^liveSetstr^"} ") 
 	    end 
@@ -86,14 +86,16 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 		val liveOut' =  getOpt(T.look(liveOutTable, node), Flow.Set.empty)
 		val uses = list2set(getOpt(T.look(use, node), []))
 		val defs = list2set(getOpt(T.look(def, node), []))
-		val liveIn = Flow.Set.union(uses,
-					    Flow.Set.difference(liveOut', defs))
 		val liveOut = foldl (fn (s, ins) => 
 					Flow.Set.union(getOpt(T.look(liveInTable, s),
 							      Flow.Set.empty),ins))
 				    (Flow.Set.empty)
 				    (Flow.Graph.succ(node))
-		val areBothSetsDifferent = not(Flow.Set.equal(liveIn',liveIn) andalso
+		val liveIn = Flow.Set.union(uses,
+					    Flow.Set.difference(liveOut, defs))
+		val _ = printNode (node, liveOut)
+		val _ = printNode (node, liveIn)
+		val areBothSetsDifferent = not(Flow.Set.equal(liveIn', liveIn) andalso
 					       Flow.Set.equal(liveOut', liveOut))
 		val changed' = changed orelse areBothSetsDifferent
 		
@@ -102,8 +104,9 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 	    in
 		iterate(tail, liveInTable', liveOutTable', changed')
 	    end
+	val _ = Error.debug "LiveOut:\nLiveIn:"
 	val (_, liveMap) = computeLiveness(liveIn, liveOut)
-	(*val _ = printLive (liveMap, rev(nodes))*)
+	val _ = printLive (liveMap, rev(nodes))
 	val graph = IGraph.newGraph()
 	(* Make nodes in the interference graph *)
 	fun makeINodes (fnode, (node2temp, temp2node)) =
@@ -194,7 +197,9 @@ fun interferenceGraph (Flow.FGRAPH{control, def, use, ismove}) =
 			then ()
 			else if (ismove ) andalso (inliveSetp t2)
 			then ()
-			else IGraph.mk_edge{from=n1, to=n2}
+			else (Error.debug ("Making edge from "
+			      ^(IGraph.nodename n1)^
+			      " to "^(IGraph.nodename n2)); IGraph.mk_edge{from=n1, to=n2})
 		    end	
 	    in
 		app (fn def =>
