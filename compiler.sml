@@ -49,13 +49,13 @@ fun emitproc out (Frame.PROC{body,frame}) =
         val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
 	val instrs = List.concat(map (Mips.codegen frame) stms')
 	val instrs' = Frame.procEntryExit2(frame, instrs)
-	val {prolog=prolog, body=instrs', epilog=epilog} = Frame.procEntryExit3(frame, instrs')
 	val (instrs'', allocation) = RegAlloc.alloc(instrs', frame)
 	val instrs''' = List.filter (filterMoves allocation) instrs''
         val format0 = Assem.format((fn t => case Temp.Table.look (allocation, t)
 					      of SOME reg => reg
 					       | NONE => ErrorMsg.impossible "Temp was not colored"))
 	(*val format0 = Assem.format(Frame.tempToString)*)
+	val {prolog=prolog, body=instrs''', epilog=epilog} = Frame.procEntryExit3(frame, instrs''')
     in
 	TextIO.output(out, prolog);
 	app (fn i => TextIO.output(out,format0 i)) instrs''';

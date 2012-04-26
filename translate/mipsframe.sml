@@ -115,7 +115,7 @@ fun str i = if (i < 0)
 	    else Int.toString i
 
 (* fp is either a TEMP(FP) or a series of MEM and + instructins to fetch the frame pointer *)			    
-fun exp (InFrame k) fp = T.MEM(T.BINOP(T.PLUS,fp,T.CONST(k)))
+fun exp (InFrame k) fp = T.MEM(T.BINOP(T.MINUS,fp,T.CONST(k)))
   | exp (InReg t) _ = T.TEMP t
 
 fun newFrame {name, formals} =
@@ -157,17 +157,17 @@ fun newFrame {name, formals} =
 		     pair
 
     in
-	{name=name, frameOffset= ref 0, formals=formals', params=params}
+	{name=name, frameOffset= ref (8), formals=formals', params=params}
     end
 
 fun allocLocal (frame:frame) escape =
     let
 	val frameOffset = (#frameOffset frame)
-	val newFrameOffset = !frameOffset - wordSize
+	val newFrameOffset = !frameOffset + wordSize
     in
 	if escape
 	then (frameOffset := newFrameOffset;
-	      InFrame (newFrameOffset-8))
+	      InFrame (newFrameOffset))
 	else InReg (Temp.newtemp())
     end
     
@@ -207,7 +207,7 @@ fun procEntryExit3 ({name=name,
     let
 	
 	val label = (Temp.toString name)^":\n"
-	val frameSize = !offset + (2*wordSize) (*space for the FP and RA*)
+	val frameSize = !offset
 	val growSP = String.concat
 			 ["addi $sp, $sp, -"^(Int.toString frameSize)^"\n",
 			  "sw $fp, 8($sp)\n",
@@ -231,7 +231,7 @@ fun name (frame:frame) = (#name frame)
 fun formals (frame:frame) = (#formals frame)
 			    
 (* Generates an instruction that loads a variable (given by an access) into a temp *)
-fun loadInstr (temp, InFrame k) = A.OPER {assem="lw `d0, "^(str k)^"(`s0)\n",
+fun loadInstr (temp, InFrame k) = A.OPER {assem="lw `d0, -"^(str k)^"(`s0)\n",
 					  src=[FP],
 					  dst=[temp],
 					  jump=NONE}
@@ -241,7 +241,7 @@ fun loadInstr (temp, InFrame k) = A.OPER {assem="lw `d0, "^(str k)^"(`s0)\n",
 					  jump=NONE}
 				
 (* Generates an instruction that stores a variable (given by an access) into a temp *)
-fun storeInstr (temp, InFrame k) = A.OPER {assem="sw `s0, "^(str k)^"(`s1)\n",
+fun storeInstr (temp, InFrame k) = A.OPER {assem="sw `s0, -"^(str k)^"(`s1)\n",
 					  src=[temp, FP],
 					  dst=[],
 					  jump=NONE}
