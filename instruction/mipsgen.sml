@@ -109,7 +109,6 @@ fun codegen frame stm =
 	     emit (A.MOVE {assem="move `d0, `s0\n",
 			   src=munchExp e2,
 			   dst=i})
-
 	   | munchStm(T.JUMP (T.NAME l,labels)) =
 	     emit (A.OPER {assem="b `j0\n",
 			   src=[],

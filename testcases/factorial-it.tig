@@ -1,0 +1,13 @@
+let 
+    function factorial (n: int) :int =
+    	let 
+	    var a := 1
+	    var i := 1
+	in 
+	   while i<n do
+	   (i := i+1;a:=a*i); 
+	   a
+	end
+in 
+   factorial(5)
+end
