@@ -252,7 +252,26 @@ fun storeInstr (temp, InFrame k) = A.OPER {assem="sw `s0, -"^(str k)^"(`s1)\n",
 
 (* This function may require extension for machine specific details *) 
 fun externalCall (s, args) =
-    T.CALL (T.NAME(Temp.namedlabel s), args)
+    call (T.NAME(Temp.namedlabel s), args)
+
+and call (func as T.NAME label, args) = 
+    let
+	val tempPair = map (fn r => (T.TEMP r, T.TEMP (Temp.newtemp()))) callersaves
+	val moveEntry = map (fn (c,t) => T.MOVE(t, c)) tempPair
+	val moveExit = map (fn (c,t) => T.MOVE(c, t)) tempPair
+	val moveEntrySeq = foldr (fn (stm, seq) => T.SEQ(stm, seq))
+				 (hd moveEntry)
+				 (tl moveEntry)
+	val moveExitSeq = foldr (fn (stm, seq) => T.SEQ(stm, seq))
+				(hd moveExit)
+				(tl moveExit)
+	val rv = Temp.newtemp()
+	val call = T.MOVE(T.TEMP rv, 
+			  T.CALL (func, args))
+    in 
+	T.ESEQ(moveEntrySeq, 
+	      T.ESEQ(call,
+		    T.ESEQ(moveExitSeq, T.TEMP rv)))
+    end 
 
 end
-

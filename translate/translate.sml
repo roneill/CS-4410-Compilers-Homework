@@ -151,14 +151,14 @@ fun callFun (label, args, expLevel, funLevel) =
 	case funLevel
 	  (* Calls to Standard Library 
 	   * - do not pass static link as first argument *)
-	 of TOP => Ex(T.CALL( T.NAME label, args))
+	 of TOP => Ex(Frame.call( T.NAME label, args))
 	  (* All other calls to user defined functions*)
 	  | LEVEL {frame, parent, unique} =>
 	    let 
 		val sl = chaseStaticLinks(parent, expLevel)
 		val args' = sl::args 
 	    in
-		Ex (T.CALL(T.NAME label, args'))
+		Ex (Frame.call(T.NAME label, args'))
 	    end
     end
 
