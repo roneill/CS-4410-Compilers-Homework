@@ -208,17 +208,17 @@ fun procEntryExit3 ({name=name,
 	val label = (Temp.toString name)^":\n"
 	val frameSize = !offset + (2*wordSize) (*space for the FP and RA*)
 	val growSP = String.concat
-			 ["addi $sp, $sp, -"^(Int.toString frameSize)^"\n",
-			  "sw $fp, 8($sp)\n",
-			  "sw $ra, 4($sp)\n",
-	                  "addi $fp, $sp, "^(Int.toString frameSize)^"\n"]
+			 ["addi $sp, $sp, -"^(Int.toString frameSize)^" #growsp\n",
+			  "sw $fp, 8($sp) #growsp\n",
+			  "sw $ra, 4($sp) #growsp\n",
+	                  "addi $fp, $sp, "^(Int.toString frameSize)^" #growsp\n"]
 		           
 	val return = "jr $ra\n"
 	val shrinkSize = frameSize + (length formals)*wordSize (* decrement by the argument locations as well *)
 	val shrinkSP = String.concat
-			   ["lw $fp, 8($sp)\n",
-			    "lw $ra, 4($sp)\n",
-			    "addi $sp, $sp, "^(Int.toString shrinkSize)^"\n"]
+			   ["lw $fp, 8($sp) #shrinkSP\n",
+			    "lw $ra, 4($sp) #shrinkSP\n",
+			    "addi $sp, $sp, "^(Int.toString shrinkSize)^" #shrinkSP\n"]
     in
 	{prolog = "\n"^label^growSP,
 	 body = body,
