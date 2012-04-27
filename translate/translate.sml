@@ -218,7 +218,7 @@ fun gt (lexp, rexp) =
 
 fun ge (lexp, rexp) =
     control(lexp, rexp, T.GE)
-
+    
 fun ifExp (exp1, exp2, exp3) =
     let
 	val s = unCx exp1
@@ -271,7 +271,8 @@ fun ifExp (exp1, exp2, exp3) =
 	    end
     in 
 	ifExp' (exp2, exp3)
-    end 
+    end
+
 fun newString (s) =
     let 
 	val label = Temp.newlabel()
@@ -299,7 +300,7 @@ fun newRecord (exps) =
     in
 	Ex (T.ESEQ
 	    (T.SEQ(T.MOVE (T.TEMP r,
-			   Frame.externalCall("malloc",
+			   Frame.externalCall("tig_malloc",
 					      [T.CONST (length(exps) * 
 							Frame.wordSize)])),
 		   initFields(exps')),
@@ -314,7 +315,7 @@ fun newArray (len, init) =
     in
 	Ex (T.ESEQ 
 	    (T.MOVE (T.TEMP r,
-		     Frame.externalCall("initArray", [len',init'])),
+		     Frame.externalCall("tig_initArray", [len',init'])),
 	     T.TEMP r))
     end
 

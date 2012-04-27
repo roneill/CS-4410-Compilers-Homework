@@ -29,7 +29,7 @@ val base_tenv = foldr S.enter' S.empty [ (S.symbol("int"), Ty.INT),
 val stdlib = map (fn (symbol, formals, result) =>
 		     (S.symbol(symbol),
 		      FunEntry {level=Tr.outermost,
-				label=Temp.newlabel(),
+				label=Temp.namedlabel symbol,
 				formals=formals, 
 				result=result }))
 		 [ ("print", [Ty.STRING], Ty.UNIT),
@@ -213,7 +213,6 @@ fun transDec (level, loopEnd, exps, venv, tenv,
 	fun enterFunHeader ({name,params,body,pos,result}, venv) =
 	    let 
 		val formals = map (fn p => !(#escape p)) params
-		val _ = app (fn b => print (if b then "t " else "f ")) formals
 		val label = Temp.newlabel()
 		val level' = Tr.newLevel{parent=level, 
 					 name=label, 

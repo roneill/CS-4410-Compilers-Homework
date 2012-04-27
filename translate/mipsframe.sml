@@ -245,8 +245,13 @@ fun procEntryExit3 ({name=name,
 	 body = body,
 	 epilog = String.concat [shrinkSP,return, ".end ", label, "\n" ]}
     end
-    
 
+fun string (label, string) =
+    let
+	val labelString = Symbol.name label
+    in
+	labelString^": .ascii \""^string^"\"\n"
+    end
 fun name (frame:frame) = (#name frame)
 fun formals (frame:frame) = (#formals frame)
 			    
