@@ -37,212 +37,84 @@ We also made numerous bug fixes in many parts of the compiler.
 2.) If the program compiles successfully, the compiler will emit a file
     "prog.tig.s"
 
-3.) In order to run this file in spim, "prog.tig.s" and
-    "runtime.s" must be concatenated
+3.) In order to run this file in spim, "prog.tig.s" and the runtime system,
+    "runtime.s" and "sysspim.s" must be concatenated
 
-    > cat "prog.tig.s" "runtime.s" "prog.s"
+    > cat prog.tig.s runtime.s sysspim.s  > "prog.s"
 
 4.) Use spim to execute "prog.s"
+    > spim -file prog.s
 
-*NOTE*
+# Factorial
+The assembly output for a recursive factorial program:
 
-There are bugs in our compiler that prevent us from compiling a
-recursive factorial program that properly computes factorial. The flow
-of control through the program seems to be correct. Unwanted behavior
-arises when we try to unwind the stack and perform the multiplication.
+    let
+	function factorial(n:int) : int =
+        	 if n = 0 then 1
+		 else n * factorial(n-1)
+    in factorial(5)
+    end
 
-We provided an iterative version of factorial that does compute
-factorial successfully. We understand that a recursive version of factorial is a
-much better test of the capabilities of the compiler. We did feel, however, that it was
-important to demonstrate that *some* program could be compiled with our compiler.
-
-#Recursive factorial listing:
-
-Tiger:
-
-/* A program to compute factorial */
-
-let
-    function factorial(n:int) : int =
-        if n = 0 then 1
-	else n * factorial(n-1)
-
-in factorial(5)
-end
-
-Assembly:
+is 
 
 .data
-.globl main
 .text
 
-main:
-jal tig_main
-li $v0, 10
-syscall
-
-
-tig_main:
-addi $sp, $sp, -12	# adjust the stack poiner
-sw $fp, 8($sp) 		# save the frame pointer
-sw $ra, 4($sp)		# save the return address
-addi $fp, $sp, 12	# the frame pointer becomes our old stack pointer
-L608:
-move $t9, $ra		# not sure why we save the return address
-sw $t8, -4($fp)		# this register was spilled (!) - odd
-addi $t9, $fp, -0	# useless frame pointer adjustment
-sw $a0, 0($t9) 		# 
-la $t8, L603		# prep for view shift
-li $t9, 5		#
-addi $sp, $sp, -8	# adjusting stack pointer to make space for outgoing arguments
-move $a1, $t9  		# first argument goes in register
-move $a0, $fp		# store the static link
-jal $t8	  		# lets perform the function call
-move $v0, $v0
-lw $t9, -4($fp)
-move $ra, $t9
-b L607
-L607:
-lw $fp, 8($sp)
-lw $ra, 4($sp)
-addi $sp, $sp, 16
-jr $ra
-
-L603:
-addi $sp, $sp, -16	# procedure entrance, adjust stack pointer
-sw $fp, 8($sp) 		# save frame pointer
-sw $ra, 4($sp)		# save return address
-addi $fp, $sp, 16	# adjust frame pointer to be old stack pointer
-L610:
-move $t9, $s7		# this is odd, $t9 immediately gets clobbered
-sw $t8, -8($fp)		# $t8 doesn't have anything useful, why store it
-move $t9, $ra
-sw $t8, -4($fp)		# $t8 doesn't have anything useful, why store it again
-move $t9, $a1		
-addi $t8, $fp, -0	# -0 ?
-sw $a0, 0($t8)
-beqz $t9, L605
-L606:
-move $s7, $t9
-la $t7, L603
-lw $t8, 0($fp)
-addi $t9, $t9, -1	# decrementing n
-addi $sp, $sp, -8	# view shift prep
-move $a1, $t9  		
-move $a0, $t8
-jal $t7
-move $a3, $v0
-mul $t9, $s7, $a3	# not multiplying anything useful here
-L604:
-move $v0, $t9
-lw $t9, -8($fp)		
-move $s7, $t9		
-lw $t9, -4($fp)		
-move $ra, $t9
-b L609
-L605:
-li $t9, 1		# base case
-b L604
-L609:
-lw $fp, 8($sp)		# pull old frame pointer off stack
-lw $ra, 4($sp)		# pull old return address off stack
-addi $sp, $sp, 24	# unwind stack
-jr $ra	       		
-
-#Iterative factorial program listing:
-
-Tiger:
-
-let 
-    function factorial (n: int) :int =
-    	let 
-	    var a := 1
-	    var i := 1
-	in 
-	   while i<n do
-	   (i := i+1;
-	    a:=a*i); a
-	end
-in 
-   factorial(5)
-end
-
-.data
-.globl main
 .text
-
-main:
-jal tig_main
-li $v0, 10
-syscall
-
 tig_main:
-addi $sp, $sp, -12
-sw $fp, 8($sp)
-sw $ra, 4($sp)
-addi $fp, $sp, 12
-L632:
-move $t9, $ra
-sw $t8, -4($fp)
-addi $t9, $fp, -0
-sw $a0, 0($t9)
-la $t8, L627
+addi $sp, $sp, -8
+sw $fp, 4($sp)
+sw $ra, 0($sp)
+addi $fp, $sp, 8
+L468:
+sw $a0, 0($fp)
+la $t8, L463
 li $t9, 5
 addi $sp, $sp, -8
 move $a1, $t9
 move $a0, $fp
 jal $t8
 move $v0, $v0
-lw $t9, -4($fp)
-move $ra, $t9
-b L631
-L631:
-lw $fp, 8($sp)
-lw $ra, 4($sp)
+b L467
+L467:
+lw $fp, 4($sp)
+lw $ra, 0($sp)
 addi $sp, $sp, 16
 jr $ra
+.end tig_main
 
-L627:
+.text
+L463:
+addi $sp, $sp, -12
+sw $fp, 4($sp)
+sw $ra, 0($sp)
+addi $fp, $sp, 12
+L470:
+sw $a0, 0($fp)
+beqz $a1, L465
+L466:
+sw $a1, -4($fp)
+la $t7, L463
+lw $t8, 0($fp)
+addi $t9, $a1, -1
 addi $sp, $sp, -8
-sw $fp, 8($sp)
-sw $ra, 4($sp)
-addi $fp, $sp, 8
-L634:
-move $t0, $s0
-move $t1, $s1
-move $t2, $s2
-move $t3, $s3
-move $t4, $s4
-move $t5, $s5
-move $t6, $s6
-move $t7, $s7
-move $a3, $ra
-move $t9, $a1
-addi $t8, $fp, -0
-sw $a0, 0($t8)
-li $t8, 1
-li $s7, 1
-L630:
-blt $s7, $t9, L629
-L628:
-move $v0, $t8
-move $s0, $t0
-move $s1, $t1
-move $s2, $t2
-move $s3, $t3
-move $s4, $t4
-move $s5, $t5
-move $s6, $t6
-move $s7, $t7
-move $ra, $a3
-b L633
-L629:
-addi $s7, $s7, 1
-mul $t8, $t8, $s7
-b L630
-L633:
-lw $fp, 8($sp)
-lw $ra, 4($sp)
-addi $sp, $sp, 16
+move $a1, $t9
+move $a0, $t8
+jal $t7
+move $a3, $v0
+lw $t9, -4($fp)
+mul $t9, $t9, $a3
+L464:
+move $v0, $t9
+b L469
+L465:
+li $t9, 1
+b L464
+L469:
+lw $fp, 4($sp)
+lw $ra, 0($sp)
+addi $sp, $sp, 20
 jr $ra
+.end L463
+
 
