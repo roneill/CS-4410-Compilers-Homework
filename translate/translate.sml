@@ -300,7 +300,7 @@ fun newRecord (exps) =
     in
 	Ex (T.ESEQ
 	    (T.SEQ(T.MOVE (T.TEMP r,
-			   Frame.externalCall("tig_malloc",
+			   Frame.externalCall("malloc",
 					      [T.CONST (length(exps) * 
 							Frame.wordSize)])),
 		   initFields(exps')),
@@ -315,7 +315,7 @@ fun newArray (len, init) =
     in
 	Ex (T.ESEQ 
 	    (T.MOVE (T.TEMP r,
-		     Frame.externalCall("tig_initArray", [len',init'])),
+		     Frame.externalCall("initArray", [len',init'])),
 	     T.TEMP r))
     end
 
