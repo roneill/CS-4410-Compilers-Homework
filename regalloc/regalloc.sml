@@ -78,8 +78,8 @@ fun rewriteProgram (frame, instrs, spills) =
 					jump=jump}
 			      | A.MOVE {assem, src, dst} =>
 				A.MOVE {assem=assem,
-					src=replace (spillTemp,newtemp) src,
-					dst=dst}
+					src=src,
+					dst=newtemp}
 			      | A.LABEL _ => ErrorMsg.impossible
 						 "Trying to rewrite a label"
 		    in 
@@ -92,7 +92,6 @@ fun rewriteProgram (frame, instrs, spills) =
 			 let
 			     (*Re-write the instruction with a load from memory
 			     into a new temp *)
-			     
 			     val (load, newinstr) =
 				 rewriteUse(instr, spillTemp, access)
 			 in 
@@ -107,9 +106,11 @@ fun rewriteProgram (frame, instrs, spills) =
 			     let
 				 val (newinstr, store) =
 				     rewriteDef(instr, spillTemp, access)
-			     in 
-				 rewriteInstrs(instrs,
-					       store::newinstr::rewritten)
+				 val format0 = Assem.format(Frame.tempToString)
+			     in
+				 ErrorMsg.debug (String.concat["Rewrite Def", format0 newinstr]);
+				 rewriteInstrs(newinstr::store::instrs,
+					       rewritten)
 			     end
 			   | NONE =>
 			     rewriteInstrs(instrs,
@@ -140,7 +141,7 @@ fun alloc (instrs, frame) =
 	val _ = Liveness.show(TextIO.stdOut, igraph)
 	val format0 = Assem.format(Frame.tempToString)
 	val _ = ErrorMsg.debug "Original: "
-	val _ = app (fn i => ErrorMsg.debug (format0 i)) instrs
+	val _ = ErrorMsg.debug (String.concat(List.concat [map (fn i =>(format0 i)) instrs]))
 
 	val (allocation, spills) = Color.color {interference = igraph,
 						initial = Frame.tempMap,
@@ -156,7 +157,8 @@ fun alloc (instrs, frame) =
 
 	if (null spills)
 	then (instrs, allocation)
-	else (ErrorMsg.debug "Spilled"; alloc(rewriteProgram(frame,instrs,spills), frame))
+	else (ErrorMsg.debug "Spilled"; 
+	      alloc(rewriteProgram(frame,instrs,spills), frame))
     end
 
 end

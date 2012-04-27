@@ -701,7 +701,7 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 			  coalescedMoves}) =
 	    let
 		(* TODO: we should call spill cost *)
-		val (spillWL, node) = pop spillWL
+		val (spillWL, node) = pop (rev spillWL)
 		val simplifyWL = push(simplifyWL, node)
 	    in
 		freezeMoves {selectStack=selectStack,

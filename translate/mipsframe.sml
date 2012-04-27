@@ -39,7 +39,7 @@ val ZERO = Temp.newtemp()
 	     
 val specialregs = [SP, ZERO, GP, AT, K0, K1, FP]
 val argregs = getTemps(4)
-val calleesaves = RA::getTemps(8)
+val calleesaves = getTemps(8)
 val callersaves = RV0::RV1::getTemps(10)
 
 val tempRegisterPair =  [(ZERO, "$zero"),
@@ -56,14 +56,14 @@ val tempRegisterPair =  [(ZERO, "$zero"),
 			 (List.nth(argregs, 1), "$a1"), 
 			 (List.nth(argregs, 2), "$a2"), 
 			 (List.nth(argregs, 3), "$a3"),
-			 (List.nth(calleesaves, 1), "$s0"),
-			 (List.nth(calleesaves, 2), "$s1"), 
-			 (List.nth(calleesaves, 3), "$s2"), 
-			 (List.nth(calleesaves, 4), "$s3"), 
-			 (List.nth(calleesaves, 5), "$s4"),
-			 (List.nth(calleesaves, 6), "$s5"),
-			 (List.nth(calleesaves, 7), "$s6"), 
-			 (List.nth(calleesaves, 8), "$s7"),
+			 (List.nth(calleesaves, 0), "$s0"),
+			 (List.nth(calleesaves, 1), "$s1"), 
+			 (List.nth(calleesaves, 2), "$s2"), 
+			 (List.nth(calleesaves, 3), "$s3"), 
+			 (List.nth(calleesaves, 4), "$s4"),
+			 (List.nth(calleesaves, 5), "$s5"),
+			 (List.nth(calleesaves, 6), "$s6"), 
+			 (List.nth(calleesaves, 7), "$s7"),
 			 (List.nth(callersaves, 2), "$t0"),
 			 (List.nth(callersaves, 3), "$t1"), 
 			 (List.nth(callersaves, 4), "$t2"), 
@@ -115,7 +115,9 @@ fun str i = if (i < 0)
 	    else Int.toString i
 
 (* fp is either a TEMP(FP) or a series of MEM and + instructins to fetch the frame pointer *)			    
-fun exp (InFrame k) fp = T.MEM(T.BINOP(T.MINUS,fp,T.CONST(k)))
+fun exp (InFrame 0) fp = T.MEM(fp) 
+  | exp (InFrame k) fp = T.MEM(T.BINOP(T.PLUS,fp,T.CONST(k)))
+ 
   | exp (InReg t) _ = T.TEMP t
 
 fun newFrame {name, formals} =
@@ -163,11 +165,12 @@ fun newFrame {name, formals} =
 fun allocLocal (frame:frame) escape =
     let
 	val frameOffset = (#frameOffset frame)
-	val newFrameOffset = !frameOffset + wordSize
+	val temp = !frameOffset
     in
 	if escape
-	then (frameOffset := newFrameOffset;
-	      InFrame (newFrameOffset))
+	then (frameOffset := !frameOffset + wordSize;
+	      InFrame (!frameOffset))
+	      
 	else InReg (Temp.newtemp())
     end
     
@@ -195,35 +198,52 @@ fun procEntryExit1 ({name, frameOffset, formals, params}, body) =
     end
     
 fun procEntryExit2 (frame, body) =
-    body @
-    [A.OPER{assem="",
-	    src=specialregs@calleesaves,
-	    dst=[], jump=SOME[]}]
-    
+    let 
+	(*These extra instructions are for directing liveness analysis*)
+
+	(* This defines the uses and defs for the instruction in the prolog that 
+           increases stack by the frame size and saves the return address.  The 
+           actual assembly has to be in procentryexit3 because we don't know the 
+           frame size here until after register allocation *)
+	val growSPOp = [A.OPER{assem="",
+			       src=[SP, FP, RA],
+			       dst=[SP, FP], jump=SOME[]}]
+        (* Ditto for the epilog *)
+	val shrinkSPOp = [A.OPER{assem="",
+				 src=[SP],
+				 dst=[SP, FP, RA], 
+				 jump=SOME[]}]
+	(* sink instruction to make specialregs and calleesaves live throughout a 
+           function *)
+	val sink = [A.OPER{assem="",
+			  src=specialregs@calleesaves,
+			  dst=[], jump=SOME[]}]
+    in  
+	List.concat [growSPOp, body, shrinkSPOp, sink]
+    end
 fun procEntryExit3 ({name=name,
 		     frameOffset=offset,
 		     formals=formals,
 		     params=params}, body) =
     let
-	
-	val label = (Temp.toString name)^":\n"
+	val init = ".text\n"
+	val label = (Temp.toString name)
 	val frameSize = (!offset + (2*wordSize))
 	val growSP = String.concat
 			 ["addi $sp, $sp, -"^(Int.toString frameSize)^"\n",
-			  "sw $fp, 8($sp)\n",
-			  "sw $ra, 4($sp)\n",
+			  "sw $fp, 4($sp)\n",
+			  "sw $ra, 0($sp)\n",
 	                  "addi $fp, $sp, "^(Int.toString frameSize)^"\n"]
-		           
+
 	val return = "jr $ra\n"
-	val shrinkSize = frameSize + (length formals)*wordSize (* decrement by the argument locations as well *)
 	val shrinkSP = String.concat
-			   ["lw $fp, 8($sp)\n",
-			    "lw $ra, 4($sp)\n",
-			    "addi $sp, $sp, "^(Int.toString shrinkSize)^"\n"]
+			   ["lw $fp, 4($sp)\n",
+			    "lw $ra, 0($sp)\n",
+			    "addi $sp, $sp, "^(Int.toString (frameSize+(2*wordSize)))^"\n"]
     in
-	{prolog = "\n"^label^growSP,
+	{prolog = String.concat ["\n",init, label, ":\n", growSP],
 	 body = body,
-	 epilog = shrinkSP^return^"\n" }
+	 epilog = String.concat [shrinkSP,return, ".end ", label, "\n" ]}
     end
     
 
