@@ -399,16 +399,16 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 			     degreeTable,
 			     moveTable,
 			     adjTable,
-			       adjSetTable,
-			       aliasTable,
-			       simplifyWL,
-			       spillWL,
-			       freezeWL,
-			       activeMoves,
-			       workListMoves,
-			       frozenMoves,
-			       constrainedMoves,
-			       coalescedMoves} node =
+			     adjSetTable,
+			     aliasTable,
+			     simplifyWL,
+			     spillWL,
+			     freezeWL,
+			     activeMoves,
+			     workListMoves,
+			     frozenMoves,
+			     constrainedMoves,
+			     coalescedMoves} node =
 	    let
 		val adjNodes = adjacent (selectStack, coalescedNodes, adjTable) node
 		val d = lookup degreeTable node
@@ -1178,7 +1178,6 @@ fun color {interference as Liveness.IGRAPH{graph, tnode, gtemp, moves},
 			   
 	val _ = ErrorMsg.debug "Got to the end"
     in
-	(*Temporary*)
 	(coloring, spilledTemps)
     end
 

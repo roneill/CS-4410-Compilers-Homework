@@ -199,7 +199,7 @@ fun procEntryExit1 ({name, frameOffset, formals, params}, body) =
     
 fun procEntryExit2 (frame, body) =
     let 
-	(*These extra instructions are for directing liveness analysis*)
+	(*These extra instructions direct liveness analysis*)
 
 	(* This defines the uses and defs for the instruction in the prolog that 
            increases stack by the frame size and saves the return address.  The 
@@ -236,10 +236,11 @@ fun procEntryExit3 ({name=name,
 	                  "addi $fp, $sp, "^(Int.toString frameSize)^"\n"]
 
 	val return = "jr $ra\n"
+	val shrinkSize = frameSize+((length formals)*wordSize)
 	val shrinkSP = String.concat
 			   ["lw $fp, 4($sp)\n",
 			    "lw $ra, 0($sp)\n",
-			    "addi $sp, $sp, "^(Int.toString (frameSize+(2*wordSize)))^"\n"]
+			    "addi $sp, $sp, "^(Int.toString shrinkSize)^"\n"]
     in
 	{prolog = String.concat ["\n",init, label, ":\n", growSP],
 	 body = body,
